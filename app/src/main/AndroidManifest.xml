@@ -5,6 +5,9 @@
 
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
+    <!-- Gesto de arrastar para baixo: abre as notificações. -->
+    <uses-permission android:name="android.permission.EXPAND_STATUS_BAR" />
+
     <queries>
         <intent>
             <action android:name="com.brendon978.menulauncher.action.ASSISTANT" />
@@ -59,6 +62,19 @@
             <intent-filter>
                 <action android:name="android.service.notification.NotificationListenerService" />
             </intent-filter>
+        </service>
+
+        <service
+            android:name=".gestures.LauncherAccessibility"
+            android:exported="false"
+            android:label="@string/app_name"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/accessibility" />
         </service>
 
         <service

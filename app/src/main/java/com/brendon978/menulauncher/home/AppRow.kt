@@ -14,16 +14,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.brendon978.menulauncher.apps.AppEntry
 import com.brendon978.menulauncher.icons.IconRenderer
 
+/** Ícone + nome, com tamanho, cor, traço e sombra de [look] (ver [rowLook]). */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun AppRow(
     entry: AppEntry,
     override: String?,
-    color: Int,
+    look: RowLook,
     renderer: IconRenderer,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
@@ -32,11 +32,11 @@ fun AppRow(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
-            .height(42.dp)
+            .height(look.height)
             .combinedClickable(onClick = onClick, onLongClick = onLongClick),
     ) {
-        AppIcon(entry, override, color, 24.dp, renderer)
+        AppIcon(entry, override, look.color, look.iconSize, renderer, stroke = look.stroke, shadow = look.shadow)
         Spacer(Modifier.width(14.dp))
-        Text(entry.label, color = Color(color), fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(entry.label, color = Color(look.color), fontSize = look.textSize, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }

@@ -30,4 +30,16 @@ class FavoritesOpsTest {
         val s = LauncherSettings(favorites = listOf(a))
         assertEquals(s, FavoritesOps.prune(s, setOf(a, b)))
     }
+    @Test fun esconderTiraDosFavoritosEMostrarDevolveALista() {
+        val s = LauncherSettings(favorites = listOf(a, b))
+        val hidden = FavoritesOps.setHidden(s, b, hidden = true)
+        assertEquals(listOf(a), hidden.favorites)
+        assertEquals(setOf(b), hidden.hiddenApps)
+        assertEquals(emptySet<AppKey>(), FavoritesOps.setHidden(hidden, b, hidden = false).hiddenApps)
+    }
+
+    @Test fun pruneTiraDesinstaladosDosEscondidos() {
+        val s = LauncherSettings(hiddenApps = setOf(a, c))
+        assertEquals(setOf(a), FavoritesOps.prune(s, setOf(a, b)).hiddenApps)
+    }
 }

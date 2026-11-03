@@ -26,6 +26,7 @@ fun AppActionsSheet(
     onChangeIcon: () -> Unit,
     onAppInfo: () -> Unit,
     onUninstall: () -> Unit,
+    onHide: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     ModalBottomSheet(
@@ -37,6 +38,7 @@ fun AppActionsSheet(
             Text(label, color = Color.White.copy(alpha = 0.6f), fontSize = 13.sp, modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp))
             Action(if (isFavorite) "Remover dos favoritos" else "Favoritar") { onToggleFavorite(); onDismiss() }
             Action("Trocar ícone") { onChangeIcon(); onDismiss() }
+            Action("Esconder app") { onHide(); onDismiss() }
             Action("Informações do app") { onAppInfo(); onDismiss() }
             if (canUninstall) Action("Desinstalar") { onUninstall(); onDismiss() }
         }

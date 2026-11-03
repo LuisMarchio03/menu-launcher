@@ -39,7 +39,10 @@ import com.brendon978.menulauncher.ai.pruneAi
 import com.brendon978.menulauncher.apps.AppEntry
 import com.brendon978.menulauncher.apps.AppKey
 import com.brendon978.menulauncher.apps.AppRepository
+import com.brendon978.menulauncher.gestures.LauncherAccessibility
 import com.brendon978.menulauncher.home.HomeScreen
+import com.brendon978.menulauncher.home.ProvideLauncherText
+import com.brendon978.menulauncher.home.smallTextSize
 import com.brendon978.menulauncher.home.SearchScreen
 import com.brendon978.menulauncher.icons.AppFilter
 import com.brendon978.menulauncher.icons.IconRenderer
@@ -49,11 +52,14 @@ import com.brendon978.menulauncher.music.MusicCard
 import com.brendon978.menulauncher.music.MusicControls
 import com.brendon978.menulauncher.music.MusicRepository
 import com.brendon978.menulauncher.onboarding.FirstRunScreen
+import com.brendon978.menulauncher.settings.ColorSource
 import com.brendon978.menulauncher.settings.FavoritesOps
+import com.brendon978.menulauncher.settings.GestureAction
 import com.brendon978.menulauncher.settings.HomeMode
 import com.brendon978.menulauncher.settings.LauncherSettings
 import com.brendon978.menulauncher.settings.SettingsRepository
 import com.brendon978.menulauncher.settingsui.SettingsScreen
+import com.brendon978.menulauncher.wallpaper.WallpaperColorSource
 import kotlinx.coroutines.launch
 
 /** Tema escuro neutro para as telas internas (ajustes, seletor): branco sobre quase preto. */
@@ -80,6 +86,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var musicRepo: MusicRepository
     private lateinit var aiRepo: AiRepository
     private lateinit var voice: VoiceCapture
+    private var wallpaperColors: WallpaperColorSource? = null
     private val listening = mutableStateOf(false)
     private val micPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         toast(if (granted) "Microfone liberado. Segure o símbolo e fale." else "Sem o microfone, segurar só abre a IA.")
@@ -121,7 +128,18 @@ class MainActivity : ComponentActivity() {
             val settings = loaded ?: LauncherSettings(firstRunDone = true)
             val music by musicRepo.state.collectAsState()
             val byKey = remember(apps) { apps.associateBy { it.key } }
-            val color = Color(settings.strokeColor)
+            // O que a tela inicial desenha: com a cor do papel de parede, se escolhida. Os ajustes gravam o original.
+            // A fonte da cor só existe (e só escuta o sistema) enquanto essa opção está ligada.
+            val wallpaperColor = if (settings.colorSource == ColorSource.WALLPAPER) {
+                remember { wallpaperColorSource() }.color.collectAsState().value
+            } else {
+                null
+            }
+            val shown = remember(settings, wallpaperColor) {
+                if (wallpaperColor != null) settings.copy(strokeColor = wallpaperColor) else settings
+            }
+            val visibleApps = remember(apps, settings.hiddenApps) { apps.filter { it.key !in settings.hiddenApps } }
+            val color = Color(shown.strokeColor)
             val current = music.takeIf { settings.showMusic }
 
             // App desinstalado sai dos favoritos e das trocas de ícone.
@@ -162,10 +180,12 @@ class MainActivity : ComponentActivity() {
                 return@run
             }
 
+            // Fonte e sombra escolhidas valem em todas as telas do launcher.
+            ProvideLauncherText(shown) {
             when (val s = screen.value) {
                 Screen.Home -> HomeScreen(
-                    apps = apps,
-                    settings = settings,
+                    apps = visibleApps,
+                    settings = shown,
                     renderer = renderer,
                     resetSignal = resetSignal.intValue,
                     onLaunch = { appRepo.launch(it.key) },
@@ -174,20 +194,21 @@ class MainActivity : ComponentActivity() {
                     onSearch = { screen.value = Screen.Search },
                     musicPlaying = music?.playing == true,
                     // Na grade o símbolo fica no meio dos ícones e parece parte do fundo: só no modo uma mão.
-                    overlay = { if (settings.mode == HomeMode.ONE_HAND) AiOverlay(settings, apps) },
+                    overlay = { if (settings.mode == HomeMode.ONE_HAND) AiOverlay(shown, apps) },
+                    onGesture = ::performGesture,
                     // Pedido do Brendon: controles logo abaixo do cartão, no topo (modo uma mão).
                     musicSlotTop = {
                         current?.let {
                             Column {
-                                MusicCard(it, color)
+                                MusicCard(it, color, textSize = settings.smallTextSize)
                                 MusicControls(it.playing, color, musicRepo::previous, musicRepo::playPause, musicRepo::next)
                             }
                         }
                     },
                 )
                 Screen.Search -> SearchScreen(
-                    apps = apps,
-                    settings = settings,
+                    apps = visibleApps,
+                    settings = shown,
                     renderer = renderer,
                     onLaunch = {
                         appRepo.launch(it.key)
@@ -231,6 +252,7 @@ class MainActivity : ComponentActivity() {
                     },
                 )
             }
+            }
 
             sheetFor.value?.let { entry ->
                 AppActionsSheet(
@@ -241,11 +263,30 @@ class MainActivity : ComponentActivity() {
                     onChangeIcon = { screen.value = Screen.IconPicker(entry) },
                     onAppInfo = { openAppInfo(entry.key) },
                     onUninstall = { uninstall(entry.key) },
+                    onHide = { updateSettings { FavoritesOps.setHidden(it, entry.key, hidden = true) } },
                     onDismiss = { sheetFor.value = null },
                 )
             }
         }
     }
+
+    private fun performGesture(action: GestureAction) {
+        when (action) {
+            GestureAction.NONE -> Unit
+            GestureAction.SEARCH -> screen.value = Screen.Search
+            GestureAction.SETTINGS -> screen.value = Screen.Settings
+            GestureAction.NOTIFICATIONS -> if (!LauncherAccessibility.notifications(this)) {
+                toast("Ligue a acessibilidade do menu-launcher para abrir as notificações")
+            }
+            GestureAction.LOCK -> if (!LauncherAccessibility.lock()) {
+                toast("Para bloquear com o gesto, ligue a acessibilidade do menu-launcher")
+                startActivity(Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS))
+            }
+        }
+    }
+
+    private fun wallpaperColorSource(): WallpaperColorSource =
+        wallpaperColors ?: WallpaperColorSource(this).also { wallpaperColors = it }
 
     private fun updateSettings(f: (LauncherSettings) -> LauncherSettings) {
         lifecycleScope.launch { settingsRepo.update(f) }
@@ -291,10 +332,10 @@ class MainActivity : ComponentActivity() {
         val pkg = settings.aiPackage ?: return
         val activity = settings.aiActivity ?: return
         val px = with(androidx.compose.ui.platform.LocalDensity.current) { 34.dp.roundToPx() }
-        val symbol by androidx.compose.runtime.produceState<androidx.compose.ui.graphics.ImageBitmap?>(null, pkg, activity, settings.strokeColor, apps) {
+        val symbol by androidx.compose.runtime.produceState<androidx.compose.ui.graphics.ImageBitmap?>(null, pkg, activity, settings.strokeColor, settings.strokeScale, apps) {
             value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
                 aiRepo.symbol(pkg, activity, px, settings.strokeColor)?.asImageBitmap()
-                    ?: apps.firstOrNull { it.key.packageName == pkg }?.let { renderer.iconFor(it, null, px, settings.strokeColor) }
+                    ?: apps.firstOrNull { it.key.packageName == pkg }?.let { renderer.iconFor(it, null, px, settings.strokeColor, settings.strokeScale) }
             }
         }
         AiSymbol(
@@ -339,6 +380,7 @@ class MainActivity : ComponentActivity() {
         appRepo.close()
         musicRepo.close()
         voice.cancel()
+        wallpaperColors?.close()
         super.onDestroy()
     }
 

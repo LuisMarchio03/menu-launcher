@@ -31,6 +31,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.brendon978.menulauncher.apps.AppEntry
@@ -69,7 +70,11 @@ fun SettingsScreen(
             Chip("Grade", settings.mode == HomeMode.GRID) { onChange { it.copy(mode = HomeMode.GRID) } }
         }
 
+        SizeSection(settings, onChange)
+        ClockSection(settings, onChange)
+
         Section("Cor do traço")
+        ColorSourceChoice(settings, onChange)
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             COLOR_CHOICES.forEach { c ->
                 Box(
@@ -93,6 +98,12 @@ fun SettingsScreen(
             modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
         )
 
+        IconLookSection(settings, onChange)
+        FontSection(settings, onChange)
+        BarSideSection(settings, onChange)
+        GridSection(settings, onChange)
+        GestureSection(settings, onChange)
+
         Section("Música")
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("Mostrar o que está tocando", color = Color.White, modifier = Modifier.weight(1f))
@@ -112,6 +123,8 @@ fun SettingsScreen(
             }
         }
 
+        HiddenAppsSection(settings, apps, onChange)
+
         Section("Robozinho")
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("Robozinho na tela inicial", color = Color.White, modifier = Modifier.weight(1f))
@@ -124,6 +137,8 @@ fun SettingsScreen(
         Section("Papel de parede")
         WallpaperSection()
 
+        BackupSection(settings, onChange)
+
         Section("Sistema")
         Text(
             "Definir como tela inicial padrão",
@@ -135,15 +150,16 @@ fun SettingsScreen(
 }
 
 @Composable
-private fun Section(title: String) {
+internal fun Section(title: String) {
     Text(title, color = Color.White.copy(alpha = 0.55f), fontSize = 13.sp, modifier = Modifier.padding(top = 24.dp, bottom = 10.dp))
 }
 
 @Composable
-private fun Chip(text: String, selected: Boolean, onClick: () -> Unit) {
+internal fun Chip(text: String, selected: Boolean, fontFamily: FontFamily? = null, onClick: () -> Unit) {
     Text(
         text,
         color = if (selected) Color.Black else Color.White,
+        fontFamily = fontFamily,
         modifier = Modifier
             .background(if (selected) Color.White else Color.Transparent, RoundedCornerShape(10.dp))
             .border(1.dp, Color.White.copy(alpha = 0.3f), RoundedCornerShape(10.dp))

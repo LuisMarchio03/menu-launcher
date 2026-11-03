@@ -55,6 +55,7 @@ class SettingsRepository(private val context: Context) {
             prefs[K.aiX] = next.aiX
             prefs[K.aiY] = next.aiY
             prefs[K.showPet] = next.showPet
+            for ((f, key) in LOOK_KEYS) prefs[key] = f.write(next)
         }
     }
 
@@ -75,7 +76,7 @@ class SettingsRepository(private val context: Context) {
 
     private fun Preferences.toSettings(): LauncherSettings {
         val d = LauncherSettings()
-        return LauncherSettings(
+        val base = LauncherSettings(
             mode = this[K.mode]?.let { runCatching { HomeMode.valueOf(it) }.getOrNull() } ?: d.mode,
             favorites = this[K.favorites]?.split("\n")?.mapNotNull { AppKey.decode(it) } ?: d.favorites,
             strokeColor = this[K.strokeColor] ?: d.strokeColor,
@@ -91,9 +92,12 @@ class SettingsRepository(private val context: Context) {
             aiY = this[K.aiY] ?: d.aiY,
             showPet = this[K.showPet] ?: d.showPet,
         )
+        // Personalização: uma chave de texto por campo, no mesmo formato do arquivo de exportação.
+        return LOOK_KEYS.entries.fold(base) { s, (f, key) -> this[key]?.let { f.read(s, it) } ?: s }
     }
 
     private companion object {
         const val SEP = '\t'
+        val LOOK_KEYS = SettingsCodec.FIELDS.filterNot { it.legacy }.associateWith { stringPreferencesKey("look_${it.name}") }
     }
 }

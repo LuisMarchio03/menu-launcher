@@ -32,6 +32,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -67,6 +68,7 @@ fun SearchScreen(
     var query by rememberSaveable { mutableStateOf("") }
     val results = remember(apps, query) { searchApps(apps, query) }
     val focus = remember { FocusRequester() }
+    val look = settings.rowLook
     LaunchedEffect(Unit) { focus.requestFocus() }
 
     Column(
@@ -87,7 +89,7 @@ fun SearchScreen(
                 AppRow(
                     entry = entry,
                     override = settings.iconOverrides[entry.key],
-                    color = settings.strokeColor,
+                    look = look,
                     renderer = renderer,
                     onClick = { onLaunch(entry) },
                     onLongClick = { onAppLongPress(entry) },
@@ -122,7 +124,7 @@ private fun SearchField(
         value = value,
         onValueChange = onValueChange,
         singleLine = true,
-        textStyle = TextStyle(color = color, fontSize = 17.sp),
+        textStyle = LocalTextStyle.current.merge(TextStyle(color = color, fontSize = 17.sp)),
         cursorBrush = SolidColor(color),
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
         keyboardActions = KeyboardActions(onGo = { onGo() }),

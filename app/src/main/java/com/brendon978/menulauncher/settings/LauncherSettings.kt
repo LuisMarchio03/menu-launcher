@@ -4,6 +4,22 @@ import com.brendon978.menulauncher.apps.AppKey
 
 enum class HomeMode { ONE_HAND, GRID }
 
+/** Fino e grande (o original), negrito com horas sobre minutos, analógico de contorno, por extenso. */
+enum class ClockStyle { THIN, STACKED, ANALOG, WORDS }
+
+/** "ter, 3 de novembro" (o original), "terça-feira, 3 de novembro", "03/11/2026", sem data. */
+enum class DateStyle { SHORT, LONG, NUMERIC, HIDDEN }
+
+/** Cor do traço: a fixa escolhida nos ajustes (o original) ou tirada do papel de parede. */
+enum class ColorSource { FIXED, WALLPAPER }
+
+/** Fontes do sistema: a padrão da One UI, condensada, serifada e monoespaçada. */
+enum class FontChoice { SYSTEM, CONDENSED, SERIF, MONO }
+
+enum class BarSide { RIGHT, LEFT }
+
+enum class GestureAction { NONE, NOTIFICATIONS, SEARCH, LOCK, SETTINGS }
+
 data class LauncherSettings(
     val mode: HomeMode = HomeMode.ONE_HAND,
     val favorites: List<AppKey> = emptyList(),
@@ -20,4 +36,30 @@ data class LauncherSettings(
     val aiY: Float = 0.55f,
     /** Robozinho na tela inicial (modo uma mão). */
     val showPet: Boolean = true,
+    /** Multiplicadores de tamanho (1 = o original). */
+    val clockScale: Float = 1f,
+    val iconScale: Float = 1f,
+    val textScale: Float = 1f,
+    val rowScale: Float = 1f,
+    val clockStyle: ClockStyle = ClockStyle.THIN,
+    val dateStyle: DateStyle = DateStyle.SHORT,
+    /** Segundo relógio, com o id do fuso (ex.: "Europe/Lisbon"); null = só o local. */
+    val secondZone: String? = null,
+    val colorSource: ColorSource = ColorSource.FIXED,
+    /** Multiplicador da espessura do traço dos ícones. */
+    val strokeScale: Float = 1f,
+    val textShadow: Boolean = false,
+    val font: FontChoice = FontChoice.SYSTEM,
+    val barSide: BarSide = BarSide.RIGHT,
+    /** Colunas da grade; 0 = automático pela largura da tela. */
+    val gridColumns: Int = 0,
+    val gridLabels: Boolean = true,
+    val hiddenApps: Set<AppKey> = emptySet(),
+    val swipeDown: GestureAction = GestureAction.NOTIFICATIONS,
+    val swipeUp: GestureAction = GestureAction.SEARCH,
+    val doubleTap: GestureAction = GestureAction.NONE,
 )
+
+/** O símbolo da IA fica ao lado da barra de letras: troca de lado junto, para não cair em cima da lista. */
+fun LauncherSettings.withBarSide(to: BarSide): LauncherSettings =
+    if (barSide == to) this else copy(barSide = to, aiX = 1f - aiX)

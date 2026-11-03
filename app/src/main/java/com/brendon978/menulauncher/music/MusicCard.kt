@@ -21,12 +21,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 /** Topo: só mostra o que está tocando. Os controles ficam embaixo (MusicControls). */
 @Composable
-fun MusicCard(state: MusicState, color: Color, modifier: Modifier = Modifier) {
+fun MusicCard(state: MusicState, color: Color, modifier: Modifier = Modifier, textSize: TextUnit = 12.sp) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier
@@ -43,11 +44,11 @@ fun MusicCard(state: MusicState, color: Color, modifier: Modifier = Modifier) {
         }
         Spacer(Modifier.width(10.dp))
         Column {
-            Text(state.title, color = color, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(state.title, color = color, fontSize = textSize, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(
                 listOfNotNull(state.artist, state.appLabel).joinToString(" · "),
                 color = color.copy(alpha = 0.6f),
-                fontSize = 12.sp,
+                fontSize = textSize,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )

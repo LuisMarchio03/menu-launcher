@@ -23,15 +23,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.brendon978.menulauncher.apps.AppEntry
 import com.brendon978.menulauncher.apps.LetterIndex
 import com.brendon978.menulauncher.pet.petObstacle
 import com.brendon978.menulauncher.icons.IconRenderer
+import com.brendon978.menulauncher.settings.BarSide
 import com.brendon978.menulauncher.settings.LauncherSettings
 
 /**
- * Metade de baixo: favoritos (ou os apps da letra escolhida) + controles de música; barra de letras à direita.
+ * Metade de baixo: favoritos (ou os apps da letra escolhida) + controles de música; barra de letras na borda
+ * escolhida nos ajustes (direita por padrão).
  * [resetSignal] muda quando o usuário volta para a tela inicial: a seleção volta para ★.
  */
 @Composable
@@ -61,6 +62,8 @@ fun OneHandMode(
         else -> selected.toString()
     }
 
+    val left = settings.barSide == BarSide.LEFT
+    val look = settings.rowLook
     BoxWithConstraints(modifier.fillMaxSize()) {
         val half = maxHeight / 2
         Column(
@@ -69,10 +72,10 @@ fun OneHandMode(
                 .align(Alignment.BottomStart)
                 .fillMaxWidth()
                 .heightIn(max = half)
-                .padding(start = 22.dp, end = 52.dp)
+                .padding(start = if (left) 52.dp else 22.dp, end = if (left) 22.dp else 52.dp)
                 .petObstacle("list"),
         ) {
-            Text(header, color = color.copy(alpha = 0.6f), fontSize = 12.sp, modifier = Modifier.padding(bottom = 4.dp))
+            Text(header, color = color.copy(alpha = 0.6f), fontSize = settings.smallTextSize, modifier = Modifier.padding(bottom = 4.dp))
             LazyColumn(
                 verticalArrangement = Arrangement.Bottom,
                 modifier = Modifier.weight(1f, fill = false),
@@ -81,7 +84,7 @@ fun OneHandMode(
                     AppRow(
                         entry = entry,
                         override = settings.iconOverrides[entry.key],
-                        color = settings.strokeColor,
+                        look = look,
                         renderer = renderer,
                         onClick = { onLaunch(entry) },
                         onLongClick = { onAppLongPress(entry) },
@@ -97,10 +100,11 @@ fun OneHandMode(
             color = color,
             onSelect = { selected = it },
             onSearch = onSearch,
+            side = settings.barSide,
             modifier = Modifier
-                .align(Alignment.BottomEnd)
+                .align(if (left) Alignment.BottomStart else Alignment.BottomEnd)
                 .heightIn(max = half)
-                .padding(end = 4.dp, bottom = 8.dp)
+                .padding(start = if (left) 4.dp else 0.dp, end = if (left) 0.dp else 4.dp, bottom = 8.dp)
                 .petObstacle("bar"),
         )
     }

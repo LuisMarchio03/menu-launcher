@@ -1,6 +1,7 @@
 package com.brendon978.menulauncher.home
 
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -13,6 +14,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -26,10 +28,15 @@ import com.brendon978.menulauncher.pet.RobotPet
 import com.brendon978.menulauncher.pet.petObstacle
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import com.brendon978.menulauncher.apps.AppEntry
 import com.brendon978.menulauncher.icons.IconRenderer
+import com.brendon978.menulauncher.settings.GestureAction
 import com.brendon978.menulauncher.settings.HomeMode
 import com.brendon978.menulauncher.settings.LauncherSettings
 
@@ -48,21 +55,59 @@ fun HomeScreen(
     musicPlaying: Boolean = false,
     /** Desenhado por cima de tudo (símbolo flutuante da IA). */
     overlay: @Composable () -> Unit = {},
+    /** Gesto numa área vazia (arrastar para cima/baixo, toque duplo), com a ação escolhida nos ajustes. */
+    onGesture: (GestureAction) -> Unit = {},
 ) {
     val color = Color(settings.strokeColor)
     val obstacles = remember { PetObstacles() }
+    val current by rememberUpdatedState(settings)
+    val gesture by rememberUpdatedState(onGesture)
+    val swipeThreshold = with(LocalDensity.current) { 72.dp.toPx() }
+    val swipe = remember(swipeThreshold) {
+        SwipeTracker(swipeThreshold) { gesture(current.actionFor(it)) }
+    }
+    // Arrasto que começa numa lista (favoritos, grade): o que a lista não rolou (já no topo, ou sem
+    // o que rolar) vale como gesto, decidido ao soltar o dedo.
+    val listSwipe = remember(swipe) {
+        object : NestedScrollConnection {
+            override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
+                if (source == NestedScrollSource.UserInput) swipe.add(available.y)
+                return Offset.Zero
+            }
+
+            override suspend fun onPreFling(available: Velocity): Velocity {
+                swipe.finish()
+                return Velocity.Zero
+            }
+        }
+    }
     CompositionLocalProvider(LocalPetObstacles provides obstacles) {
     Box(
         Modifier
             .fillMaxSize()
-            .pointerInput(Unit) { detectTapGestures(onLongPress = { onEmptyLongPress() }) }
+            .pointerInput(settings.doubleTap == GestureAction.NONE) {
+                detectTapGestures(
+                    onLongPress = { onEmptyLongPress() },
+                    // Sem ação no toque duplo, o detector nem espera o segundo toque.
+                    onDoubleTap = if (current.doubleTap == GestureAction.NONE) null else ({ gesture(current.doubleTap) }),
+                )
+            }
+            .nestedScroll(listSwipe)
+            .pointerInput(swipe) {
+                // Listas e a barra de letras consomem o próprio arrasto; aqui só chega o de área vazia.
+                detectVerticalDragGestures(
+                    onDragStart = { swipe.reset() },
+                    onDragEnd = { swipe.finish() },
+                    onDragCancel = { swipe.reset() },
+                ) { _, dy -> swipe.add(dy) }
+            }
             .statusBarsPadding()
             .navigationBarsPadding(),
     ) {
         when (settings.mode) {
             HomeMode.ONE_HAND -> {
                 Column(Modifier.padding(start = 22.dp, end = 22.dp, top = 24.dp).petObstacle("top")) {
-                    TopInfo(color)
+                    TopInfo(settings, color)
                     musicSlotTop()
                 }
                 OneHandMode(
@@ -79,7 +124,7 @@ fun HomeScreen(
             // Grade: player ao lado do relógio; a grade começa logo abaixo do que for mais alto.
             HomeMode.GRID -> Column(Modifier.fillMaxSize()) {
                 Row(Modifier.padding(start = 22.dp, end = 22.dp, top = 24.dp, bottom = 12.dp)) {
-                    TopInfo(color)
+                    TopInfo(settings, color)
                     Box(Modifier.weight(1f).padding(start = 16.dp)) { musicSlotTop() }
                 }
                 GridMode(

@@ -20,13 +20,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.brendon978.menulauncher.apps.AppEntry
 import com.brendon978.menulauncher.apps.LetterIndex
 import com.brendon978.menulauncher.icons.IconRenderer
 import com.brendon978.menulauncher.settings.LauncherSettings
 
-/** Todos os apps em ordem alfabética; controles de música embaixo. */
+/** Todos os apps em ordem alfabética; controles de música embaixo. Colunas e nomes vêm dos ajustes. */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun GridMode(
@@ -42,7 +41,8 @@ fun GridMode(
     val sorted = remember(apps) { LetterIndex.sorted(apps) }
     Column(modifier.fillMaxSize()) {
         LazyVerticalGrid(
-            columns = GridCells.Adaptive(76.dp),
+            columns = if (settings.gridColumns > 0) GridCells.Fixed(settings.gridColumns)
+            else GridCells.Adaptive(76.dp * settings.iconScale.coerceAtLeast(1f)),
             verticalArrangement = Arrangement.spacedBy(18.dp),
             modifier = Modifier.weight(1f).padding(horizontal = 14.dp),
         ) {
@@ -54,16 +54,26 @@ fun GridMode(
                         onLongClick = { onAppLongPress(entry) },
                     ),
                 ) {
-                    AppIcon(entry, settings.iconOverrides[entry.key], settings.strokeColor, 28.dp, renderer)
-                    Spacer(Modifier.height(6.dp))
-                    Text(
-                        entry.label,
-                        color = Color(settings.strokeColor),
-                        fontSize = 11.sp,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        textAlign = TextAlign.Center,
+                    AppIcon(
+                        entry,
+                        settings.iconOverrides[entry.key],
+                        settings.strokeColor,
+                        settings.gridIconSize,
+                        renderer,
+                        stroke = settings.strokeScale,
+                        shadow = settings.textShadow,
                     )
+                    if (settings.gridLabels) {
+                        Spacer(Modifier.height(6.dp))
+                        Text(
+                            entry.label,
+                            color = Color(settings.strokeColor),
+                            fontSize = settings.gridTextSize,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            textAlign = TextAlign.Center,
+                        )
+                    }
                 }
             }
         }

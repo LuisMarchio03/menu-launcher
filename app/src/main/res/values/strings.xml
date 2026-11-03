@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">menu-launcher</string>
+    <string name="accessibility_description">Deixa o menu-launcher bloquear a tela e abrir as notificações pelos gestos da tela inicial. Não lê nada do que aparece na tela.</string>
 </resources>
