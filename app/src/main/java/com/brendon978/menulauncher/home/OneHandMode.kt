@@ -66,13 +66,14 @@ fun OneHandMode(
     val look = settings.rowLook
     BoxWithConstraints(modifier.fillMaxSize()) {
         val half = maxHeight / 2
+        val barRoom = barWidth(settings.barScale)
         Column(
             verticalArrangement = Arrangement.Bottom,
             modifier = Modifier
                 .align(Alignment.BottomStart)
                 .fillMaxWidth()
                 .heightIn(max = half)
-                .padding(start = if (left) 52.dp else 22.dp, end = if (left) 22.dp else 52.dp)
+                .padding(start = if (left) barRoom else 22.dp, end = if (left) 22.dp else barRoom)
                 .petObstacle("list"),
         ) {
             Text(header, color = color.copy(alpha = 0.6f), fontSize = settings.smallTextSize, modifier = Modifier.padding(bottom = 4.dp))
@@ -101,9 +102,10 @@ fun OneHandMode(
             onSelect = { selected = it },
             onSearch = onSearch,
             side = settings.barSide,
+            scale = settings.barScale,
             modifier = Modifier
                 .align(if (left) Alignment.BottomStart else Alignment.BottomEnd)
-                .heightIn(max = half)
+                .heightIn(max = barMaxHeight(maxHeight, settings.barScale))
                 .padding(start = if (left) 4.dp else 0.dp, end = if (left) 0.dp else 4.dp, bottom = 8.dp)
                 .petObstacle("bar"),
         )

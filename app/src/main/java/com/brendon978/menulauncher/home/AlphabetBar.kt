@@ -63,6 +63,7 @@ fun AlphabetBar(
     onSearch: () -> Unit,
     modifier: Modifier = Modifier,
     side: BarSide = BarSide.RIGHT,
+    scale: Float = 1f,
 ) {
     val letters = LetterIndex.BAR
     val left = side == BarSide.LEFT
@@ -72,7 +73,7 @@ fun AlphabetBar(
     val currentOnSelect = rememberUpdatedState(onSelect)
 
     BoxWithConstraints(modifier) {
-        val itemHeight = min(15.5.dp, maxHeight / letters.size)
+        val itemHeight = min(15.5.dp * scale, maxHeight / letters.size)
         val density = LocalDensity.current
         val itemPx = with(density) { itemHeight.toPx() }
         // Altura de cada letra é fixa em dp: a fonte não pode crescer com a escala do sistema.
@@ -156,6 +157,12 @@ fun AlphabetBar(
         )
     }
 }
+
+/** Espaço que a barra ocupa na lateral: a lista não entra embaixo dela. */
+fun barWidth(scale: Float): Dp = 52.dp * scale
+
+/** Altura máxima da barra: metade da tela no tamanho original, sem nunca subir até o relógio. */
+fun barMaxHeight(available: Dp, scale: Float): Dp = min(available / 2 * scale, available * 0.75f)
 
 private fun curveOf(i: Int, count: Int) = (sin(i / (count - 1).toFloat() * PI) * 22).roundToInt().dp
 

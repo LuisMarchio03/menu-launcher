@@ -20,6 +20,7 @@ class SettingsCodecTest {
         iconScale = 1.25f,
         textScale = 0.9f,
         rowScale = 1.1f,
+        barScale = 1.25f,
         clockStyle = ClockStyle.WORDS,
         dateStyle = DateStyle.NUMERIC,
         secondZone = "Europe/Lisbon",

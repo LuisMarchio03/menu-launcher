@@ -65,6 +65,7 @@ object SettingsCodec {
         scale("icon_scale", { it.iconScale }) { s, f -> s.copy(iconScale = f) },
         scale("text_scale", { it.textScale }) { s, f -> s.copy(textScale = f) },
         scale("row_scale", { it.rowScale }) { s, f -> s.copy(rowScale = f) },
+        scale("bar_scale", { it.barScale }) { s, f -> s.copy(barScale = f) },
         scale("stroke_scale", { it.strokeScale }) { s, f -> s.copy(strokeScale = f) },
         enumField("clock_style", { it.clockStyle }, { s, v -> s.copy(clockStyle = v) }),
         enumField("date_style", { it.dateStyle }, { s, v -> s.copy(dateStyle = v) }),

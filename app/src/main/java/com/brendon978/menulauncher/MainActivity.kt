@@ -40,6 +40,8 @@ import com.brendon978.menulauncher.ai.VoiceCapture
 import com.brendon978.menulauncher.ai.clampFraction
 import com.brendon978.menulauncher.ai.holdAction
 import com.brendon978.menulauncher.ai.pruneAi
+import com.brendon978.menulauncher.aloy.AloyScreen
+import com.brendon978.menulauncher.aloy.EXTRA_TELA
 import com.brendon978.menulauncher.apps.AppEntry
 import com.brendon978.menulauncher.apps.AppKey
 import com.brendon978.menulauncher.apps.AppRepository
@@ -123,6 +125,16 @@ class MainActivity : ComponentActivity() {
         })
 
         setContent { MaterialTheme(colorScheme = LAUNCHER_COLORS) { Content() } }
+        openRequestedScreen(intent)
+    }
+
+    /** A ALOY pede a busca ou os ajustes pelo extra [EXTRA_TELA]. */
+    private fun openRequestedScreen(intent: Intent) {
+        when (intent.getStringExtra(EXTRA_TELA)) {
+            AloyScreen.SEARCH.name -> screen.value = Screen.Search
+            AloyScreen.SETTINGS.name -> screen.value = Screen.Settings
+        }
+        intent.removeExtra(EXTRA_TELA) // vale uma vez: recriar a Activity não reabre a tela
     }
 
     @androidx.compose.runtime.Composable
@@ -410,6 +422,7 @@ class MainActivity : ComponentActivity() {
         sheetFor.value = null
         screen.value = Screen.Home
         resetSignal.intValue++
+        openRequestedScreen(intent)
     }
 
     private companion object {

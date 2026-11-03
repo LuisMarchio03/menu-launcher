@@ -102,13 +102,16 @@ fun SizeSection(settings: LauncherSettings, onChange: OnChange) {
     ScaleSlider("Ícones", settings.iconScale, 0.75f..1.75f) { v -> onChange { it.copy(iconScale = v) } }
     ScaleSlider("Texto", settings.textScale, 0.8f..1.5f) { v -> onChange { it.copy(textScale = v) } }
     ScaleSlider("Altura das linhas", settings.rowScale, 0.8f..1.6f) { v -> onChange { it.copy(rowScale = v) } }
+    ScaleSlider("Barra de letras", settings.barScale, 0.8f..1.5f) { v -> onChange { it.copy(barScale = v) } }
     Text(
         "Voltar ao tamanho original",
         color = Color.White.copy(alpha = 0.8f),
         modifier = Modifier
             .clickable {
                 val d = LauncherSettings()
-                onChange { it.copy(clockScale = d.clockScale, iconScale = d.iconScale, textScale = d.textScale, rowScale = d.rowScale) }
+                onChange {
+                    it.copy(clockScale = d.clockScale, iconScale = d.iconScale, textScale = d.textScale, rowScale = d.rowScale, barScale = d.barScale)
+                }
             }
             .padding(vertical = 10.dp),
     )
