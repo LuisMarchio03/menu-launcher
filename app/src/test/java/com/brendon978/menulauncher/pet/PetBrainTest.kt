@@ -75,6 +75,40 @@ class PetBrainTest {
         assertEquals(Reaction.SERIOUS, a.levelReaction(4_000)) // 3.0
     }
 
+    @Test fun marchaDepoisQueGuardaAMira() {
+        // estava ameaçando e parou: marcha por MARCH_MS
+        assertEquals(1_000L + MARCH_MS, marchUntil(wasMenacing = true, menacing = false, now = 1_000, current = 0))
+        // ainda ameaçando ou nunca ameaçou: não muda
+        assertEquals(0L, marchUntil(wasMenacing = true, menacing = true, now = 1_000, current = 0))
+        assertEquals(500L, marchUntil(wasMenacing = false, menacing = false, now = 1_000, current = 500))
+    }
+
+    @Test fun risadinhaNaoFala() {
+        assertEquals(null, angerLine(Reaction.GIGGLE, Random(1)))
+    }
+
+    @Test fun cadaNivelDeRaivaTemSuaFala() {
+        val r = Random(5)
+        for (level in listOf(Reaction.SERIOUS, Reaction.ANGRY, Reaction.MENACE, Reaction.FLEE)) {
+            val line = angerLine(level, r)!!
+            assertTrue(line in ANGER_LINES.getValue(level))
+        }
+        assertTrue(MARCH_LINES.isNotEmpty())
+    }
+
+    @Test fun passoDeDancaNuncaRepeteSeguido() {
+        val r = Random(9)
+        var cur = DanceMove.SWAY
+        val seen = mutableSetOf(cur)
+        repeat(500) {
+            val next = nextDanceMove(r, cur)
+            assertTrue(next != cur)
+            seen += next
+            cur = next
+        }
+        assertEquals(DanceMove.entries.toSet(), seen)
+    }
+
     @Test fun irritacaoBaixaSozinha() {
         var a = Annoyance()
         repeat(4) { i -> a = a.tap(i * 200L).first }

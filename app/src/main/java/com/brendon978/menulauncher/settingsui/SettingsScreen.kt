@@ -24,6 +24,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -125,11 +126,12 @@ fun SettingsScreen(
 
         HiddenAppsSection(settings, apps, onChange)
 
-        Section("Robozinho")
+        Section("Glitch")
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Robozinho na tela inicial", color = Color.White, modifier = Modifier.weight(1f))
+            Text("Glitch na tela inicial", color = Color.White, modifier = Modifier.weight(1f))
             Switch(settings.showPet, onCheckedChange = { v -> onChange { it.copy(showPet = v) } })
         }
+        if (settings.showPet) GlitchPanel()
 
         Section("IA")
         aiSection()
@@ -177,4 +179,33 @@ private fun SmallButton(text: String, enabled: Boolean, onClick: () -> Unit) {
         Text(text, color = Color.White.copy(alpha = if (enabled) 0.9f else 0.25f))
     }
     Spacer(Modifier.width(2.dp))
+}
+
+/** O cérebro do Glitch ao vivo: o que ele está fazendo, as vontades e o vínculo com você. */
+@Composable
+private fun GlitchPanel() {
+    val snap by com.brendon978.menulauncher.pet.GlitchLive.state.collectAsState()
+    val s = snap
+    if (s == null) {
+        Text("Abra a tela inicial no modo uma mão para acordar o Glitch.", color = Color.White.copy(alpha = .6f), fontSize = 13.sp)
+        return
+    }
+    Text(s.doing, color = Color.White, fontSize = 15.sp, modifier = Modifier.padding(top = 8.dp, bottom = 6.dp))
+    Bar("Energia", s.drives.energy)
+    Bar("Tédio", s.drives.boredom)
+    Bar("Carência", s.drives.longing)
+    Bar("Curiosidade", s.drives.curiosity)
+    Bar("Irritação", s.irritation.coerceIn(0f, 1f))
+    Bar("Vínculo com você", s.bond)
+}
+
+@Composable
+private fun Bar(label: String, value: Float) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+        Text(label, color = Color.White.copy(alpha = .75f), fontSize = 13.sp, modifier = Modifier.width(130.dp))
+        Box(Modifier.weight(1f).height(8.dp).background(Color.White.copy(alpha = .12f), RoundedCornerShape(4.dp))) {
+            Box(Modifier.fillMaxWidth(value.coerceIn(0f, 1f)).height(8.dp).background(Color.White.copy(alpha = .85f), RoundedCornerShape(4.dp)))
+        }
+        Text("${(value * 100).toInt()}%", color = Color.White.copy(alpha = .6f), fontSize = 12.sp, modifier = Modifier.width(44.dp).padding(start = 8.dp))
+    }
 }

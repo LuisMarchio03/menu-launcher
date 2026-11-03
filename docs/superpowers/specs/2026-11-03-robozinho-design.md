@@ -1,4 +1,4 @@
-# Robozinho — design
+# Glitch (o robozinho) — design
 
 Data: 2026-11-03
 Projeto: menu-launcher (`docs/superpowers/specs/2026-11-03-meu-launcher-design.md`)
@@ -52,6 +52,8 @@ As notificações e a música usam o acesso às notificações que o launcher j�
     1. **Sério**: olhos retos, sem risadinha.
     2. **Bravo**: sobrancelhas na telinha, bate o pé e a antena pisca.
     3. **Ameaça** (muito bravo): para, saca uma **AK-47 de brinquedo** e aponta para você, com a arma de frente e o cano para fora da tela, segura no meio do peito pelas duas mãos. **Nunca atira.** Ele não anda com ela: guarda quando se acalma.
+    - Depois de guardar a mira, ele **marcha com a arma** atravessada no peito por 20 s, com cara séria e passo duro (pedido do Brendon).
+    - **Balão de fala** com frases de raiva em cada nível ("Para com isso!", "Vai encarar?", "Fui!") e frases de marcha ("Esquerda, direita!"). A risadinha não fala.
     4. **Foge**: se você continuar importunando, ele dá um glitch e reaparece longe, **ainda apontando a arma**, até se acalmar.
   - Sem toques, ele se acalma em poucos segundos e volta ao humor normal.
 - O toque nele não abre os Ajustes nem passa para o que está por baixo.
@@ -80,3 +82,14 @@ As notificações e a música usam o acesso às notificações que o launcher j�
 - Música: ele dança só quando a música está **tocando de fato** (pausada não conta, mesmo com o cartão ainda na tela). Isso vale mesmo com o cartão de música desligado nos Ajustes.
 - Toque durante qualquer humor (dormindo, cansado, dançando): a reação (risadinha, sério ou bravo) aparece por cima por um instante, e depois ele volta ao humor do momento. Tocar não acorda o robô de vez.
 - Contagem de notificações: o serviço de notificações que o launcher já tem passa a informar quantas notificações "de verdade" existem, sem contar as persistentes nem as de mídia.
+
+## Autonomia (cérebro do Glitch) — 2026-11-03
+
+Nome escolhido pelo Brendon: **Glitch**. Inspirado nas ideias do projeto Pestinha (GPL-3.0): só as ideias, o código é todo nosso.
+
+- **Vontades** (0–100%): energia, tédio, carência e curiosidade mudam com o tempo e com eventos (música, notificação, toque gentil). Só andam com a tela inicial à vista.
+- **Decisão** a cada 7–13 s, pela maior vontade com um pouco de sorte: passear, cochilar, pedir atenção (vem para o meio, acena e fala), explorar (vai até algo da tela e escaneia), ficar emburrado (de costas, resmungando) ou dançar. Com vínculo ruim ele recusa dançar.
+- **Vínculo** (salvo entre os dias): sobe com risadinha e desce com raiva, ameaça e fuga. Vínculo alto deixa ele mais paciente; baixo, explosivo.
+- **Volta depois de sumir** (mais de 2 h sem ver a tela inicial): ele cumprimenta com saudade ou emburrado, conforme o vínculo.
+- **Ajustes → Glitch**: liga e desliga, e mostra ao vivo o que ele está fazendo e as barras das vontades e do vínculo.
+- Noite e bateria baixa continuam mandando (dorme ou fica cansado); a raiva, a AK e a marcha passam por cima de tudo.

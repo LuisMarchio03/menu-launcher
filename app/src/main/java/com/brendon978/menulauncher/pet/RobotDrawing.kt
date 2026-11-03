@@ -16,7 +16,8 @@ import androidx.compose.ui.graphics.drawscope.translate
 import kotlin.math.sin
 
 /** Rosto na telinha quadrada. */
-enum class Face { NORMAL, SLEEP, MUSIC, HEART, TIRED, SCAN, GIGGLE, SERIOUS, ANGRY }
+/** SURPRISED: pego no colo/voando; DIZZY: tonto depois do arremesso; BLISS: derretendo de carinho. */
+enum class Face { NORMAL, SLEEP, MUSIC, HEART, TIRED, SCAN, GIGGLE, SERIOUS, ANGRY, SURPRISED, DIZZY, BLISS }
 
 /**
  * Pose de um quadro. Ângulos em graus; [phase] é um relógio em segundos para as animações do rosto.
@@ -34,9 +35,19 @@ data class RobotPose(
     val blink: Float = 1f,
     val antennaOn: Boolean = true,
     val phase: Float = 0f,
-    /** Muito bravo: segura a AK de brinquedo apontando para a frente (nunca atira). */
-    val gun: Boolean = false,
+    /** AK de brinquedo (nunca atira): apontando para você, ou atravessada no peito marchando. */
+    val gun: GunHold = GunHold.NONE,
+    /** Cabeça inclinando no pescoço (headbang, robô). */
+    val headTilt: Float = 0f,
+    /** Deslize do corpo, em unidades do desenho (moonwalk, passinho de lado). */
+    val offsetX: Float = 0f,
+    /** Largura do corpo: 1 normal, perto de 0 de perfil (giro). */
+    val spin: Float = 1f,
+    /** De costas: sem telinha nem LEDs, com grade de ventilação e tampa traseira. */
+    val back: Boolean = false,
 )
+
+enum class GunHold { NONE, AIM, MARCH }
 
 /** Proporção do desenho (viewBox do esboço: 120 × 170). */
 const val ROBOT_ASPECT = 120f / 170f
@@ -46,24 +57,39 @@ fun DrawScope.drawRobot(color: Color, pose: RobotPose) {
     val u = size.height / 170f
     val line = Stroke(width = 2.2f, cap = StrokeCap.Round, join = StrokeJoin.Round)
     scale(u, u, pivot = Offset.Zero) {
-        scale(if (pose.facingLeft) -1f else 1f, 1f, pivot = Offset(60f, 0f)) {
-            translate(top = -pose.lift) {
+        // de perfil no giro ele não some de vez: no mínimo 8% de largura
+        val spin = if (kotlin.math.abs(pose.spin) < .08f) (if (pose.spin < 0f) -.08f else .08f) else pose.spin
+        val sx = (if (pose.facingLeft) -1f else 1f) * spin
+        scale(sx, 1f, pivot = Offset(60f, 0f)) {
+            translate(left = pose.offsetX, top = -pose.lift) {
                 rotate(pose.tilt, pivot = Offset(60f, 153f)) {
                     // pernas sanfonadas com pé em cúpula (giram no quadril)
                     leg(52f, pose.legL, color, line)
                     leg(68f, pose.legR, color, line)
                     // corpo
                     drawRoundRect(color, Offset(44f, 80f), Size(32f, 44f), CornerRadius(8f), style = line)
-                    drawCircle(color, 1.6f, Offset(53f, 94f))
-                    drawCircle(color.copy(alpha = color.alpha * .5f), 1.6f, Offset(59f, 94f))
-                    drawLine(color.copy(alpha = color.alpha * .5f), Offset(52f, 106f), Offset(68f, 106f), 2.2f, StrokeCap.Round)
-                    if (pose.gun) ak47(color)
+                    if (pose.back) {
+                        // tampa traseira com 4 parafusos
+                        drawRoundRect(color.copy(alpha = color.alpha * .7f), Offset(49f, 88f), Size(22f, 26f), CornerRadius(3f), style = Stroke(1.4f))
+                        for ((sx, sy) in listOf(51.5f to 90.5f, 68.5f to 90.5f, 51.5f to 111.5f, 68.5f to 111.5f)) drawCircle(color, 1f, Offset(sx, sy))
+                    } else {
+                        drawCircle(color, 1.6f, Offset(53f, 94f))
+                        drawCircle(color.copy(alpha = color.alpha * .5f), 1.6f, Offset(59f, 94f))
+                        drawLine(color.copy(alpha = color.alpha * .5f), Offset(52f, 106f), Offset(68f, 106f), 2.2f, StrokeCap.Round)
+                    }
+                    when (pose.gun) {
+                        GunHold.AIM -> ak47(color)
+                        GunHold.MARCH -> rotate(-42f, pivot = Offset(60f, 101f)) { ak47Side(color) }
+                        GunHold.NONE -> Unit
+                    }
                     // braços sanfonados (por cima da arma: as garrinhas seguram ela) (iguais às pernas) com mão de 3 garrinhas; abertos 10° para fora
                     arm(40f, 10f + pose.armL, color, line)
                     arm(80f, -10f + pose.armR, color, line)
                     // cabeça (no esboço: translate(9 2) scale(.85) sobre o desenho da cabeça)
-                    translate(9f, 2f) {
-                        scale(.85f, .85f, pivot = Offset.Zero) { head(color, pose, line) }
+                    rotate(pose.headTilt, pivot = Offset(60f, 80f)) {
+                        translate(9f, 2f) {
+                            scale(.85f, .85f, pivot = Offset.Zero) { head(color, pose, line) }
+                        }
                     }
                 }
             }
@@ -109,6 +135,23 @@ private fun DrawScope.ak47(c: Color) {
     drawPath(Path().apply { moveTo(57f, 109f); quadraticTo(56f, 116f, 58f, 122f); lineTo(63f, 121f); quadraticTo(62f, 115f, 63f, 109f) }, c, style = st)
 }
 
+/** AK de lado (para marchar com ela atravessada no peito), centrada em (60, 101). */
+private fun DrawScope.ak47Side(c: Color) {
+    val st = Stroke(1.6f, cap = StrokeCap.Round, join = StrokeJoin.Round)
+    // coronha
+    drawPath(Path().apply { moveTo(40f, 99f); lineTo(30f, 100.5f); lineTo(29f, 106f); lineTo(40f, 103f); close() }, c, style = st)
+    // caixa da culatra
+    drawRoundRect(c, Offset(40f, 97.5f), Size(22f, 6f), CornerRadius(1.2f), style = st)
+    // empunhadura e carregador curvo
+    drawPath(Path().apply { moveTo(46f, 103.5f); lineTo(44.5f, 109f); lineTo(48f, 109f); lineTo(49f, 103.5f) }, c, style = st)
+    drawPath(Path().apply { moveTo(53f, 103.5f); quadraticTo(53f, 110f, 56f, 114f); lineTo(59.5f, 112.5f); quadraticTo(57.5f, 108f, 57.5f, 103.5f) }, c, style = st)
+    // guarda-mão, tubo de gás e cano
+    drawRoundRect(c, Offset(62f, 98f), Size(11f, 4.5f), CornerRadius(1f), style = st)
+    drawLine(c, Offset(62f, 96.5f), Offset(76f, 96.5f), 1.2f, StrokeCap.Round)
+    drawLine(c, Offset(73f, 100.2f), Offset(90f, 100.2f), 1.8f, StrokeCap.Round)
+    drawLine(c, Offset(86f, 100.2f), Offset(86f, 96.8f), 1.4f, StrokeCap.Round)
+}
+
 /** Braço de tubo com anéis, girando no ombro (topo), e mão de três garrinhas. */
 private fun DrawScope.arm(x: Float, angle: Float, color: Color, line: Stroke) {
     rotate(angle, pivot = Offset(x, 90f)) {
@@ -133,9 +176,15 @@ private fun DrawScope.head(color: Color, pose: RobotPose, line: Stroke) {
     drawLine(color, Offset(60f, 26f), Offset(60f, 16f), 2.2f, StrokeCap.Round)
     drawCircle(if (pose.antennaOn) color else color.copy(alpha = color.alpha * .2f), 3f, Offset(60f, 13f), style = line)
     drawRoundRect(color, Offset(30f, 26f), Size(60f, 62f), CornerRadius(14f), style = line)
-    drawRoundRect(color, Offset(38f, 36f), Size(44f, 44f), CornerRadius(4f), style = line)
     drawLine(color, Offset(30f, 52f), Offset(25f, 52f), 2.2f, StrokeCap.Round)
     drawLine(color, Offset(90f, 52f), Offset(95f, 52f), 2.2f, StrokeCap.Round)
+    if (pose.back) {
+        // nuca: grade de ventilação e dois parafusos
+        for (y in listOf(46f, 52f, 58f, 64f)) drawLine(color, Offset(44f, y), Offset(76f, y), 1.8f, StrokeCap.Round)
+        drawCircle(color, 1.4f, Offset(40f, 78f)); drawCircle(color, 1.4f, Offset(80f, 78f))
+        return
+    }
+    drawRoundRect(color, Offset(38f, 36f), Size(44f, 44f), CornerRadius(4f), style = line)
     // o rosto não sai da telinha
     clipRect(39f, 37f, 81f, 79f) { face(color, pose) }
     if (pose.face == Face.SLEEP) zzz(color, pose.phase)
@@ -179,6 +228,29 @@ private fun DrawScope.face(c: Color, pose: RobotPose) {
             drawPath(Path().apply { moveTo(46f, 60f); lineTo(50.5f, 54f); lineTo(55f, 60f) }, c, style = Stroke(2.4f, cap = StrokeCap.Round, join = StrokeJoin.Round))
             drawPath(Path().apply { moveTo(65f, 60f); lineTo(69.5f, 54f); lineTo(74f, 60f) }, c, style = Stroke(2.4f, cap = StrokeCap.Round, join = StrokeJoin.Round))
             drawArc(c, 0f, 180f, false, Offset(55f, 64f), Size(10f, 8f), style = Stroke(2f, cap = StrokeCap.Round))
+        }
+        Face.SURPRISED -> {
+            drawCircle(c, 4.2f, Offset(51f, 56f), style = Stroke(2f)); drawCircle(c, 1.4f, Offset(51f, 56f))
+            drawCircle(c, 4.2f, Offset(69f, 56f), style = Stroke(2f)); drawCircle(c, 1.4f, Offset(69f, 56f))
+            drawCircle(c, 2.6f, Offset(60f, 70f), style = Stroke(1.8f))
+        }
+        Face.DIZZY -> {
+            // espirais girando nos olhos
+            for (cx in listOf(51f, 69f)) {
+                for (k in 0 until 3) {
+                    val r = 1.5f + k * 1.6f
+                    drawArc(c, t * 400f + k * 120f, 220f, false, Offset(cx - r, 56f - r), Size(r * 2, r * 2), style = Stroke(1.4f, cap = StrokeCap.Round))
+                }
+            }
+            drawPath(Path().apply { moveTo(52f, 70f); quadraticTo(55f, 67f, 58f, 70f); quadraticTo(61f, 73f, 64f, 70f); quadraticTo(66f, 68f, 68f, 70f) }, c, style = Stroke(1.6f, cap = StrokeCap.Round))
+        }
+        Face.BLISS -> {
+            // olhos fechados de felicidade, bochechas e sorrisão
+            drawArc(c, 180f, 180f, false, Offset(46f, 53f), Size(10f, 8f), style = Stroke(2.2f, cap = StrokeCap.Round))
+            drawArc(c, 180f, 180f, false, Offset(64f, 53f), Size(10f, 8f), style = Stroke(2.2f, cap = StrokeCap.Round))
+            drawLine(c.copy(alpha = c.alpha * .6f), Offset(43f, 64f), Offset(47f, 62f), 1.4f, StrokeCap.Round)
+            drawLine(c.copy(alpha = c.alpha * .6f), Offset(73f, 62f), Offset(77f, 64f), 1.4f, StrokeCap.Round)
+            drawArc(c, 0f, 180f, false, Offset(54f, 64f), Size(12f, 8f), style = Stroke(2f, cap = StrokeCap.Round))
         }
         Face.SERIOUS -> { px(46f, 56f, 9f, 3f); px(65f, 56f, 9f, 3f); ln(55f, 70f, 65f, 70f) }
         Face.ANGRY -> {
