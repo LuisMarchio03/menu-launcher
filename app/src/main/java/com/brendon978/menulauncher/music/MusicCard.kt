@@ -34,6 +34,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
+import com.brendon978.menulauncher.home.LocalBorderWidth
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -41,20 +43,21 @@ import androidx.compose.ui.unit.sp
 /** Topo: só mostra o que está tocando. Os controles ficam embaixo (MusicControls). */
 @Composable
 fun MusicCard(state: MusicState, color: Color, modifier: Modifier = Modifier, textSize: TextUnit = 12.sp) {
+    val border = LocalBorderWidth.current
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier
             .padding(top = 16.dp)
             .fillMaxWidth()
-            .border(1.dp, color.copy(alpha = 0.35f), RoundedCornerShape(14.dp))
-            .songProgressOutline(state, color)
+            .border(border, color.copy(alpha = 0.35f), RoundedCornerShape(14.dp))
+            .songProgressOutline(state, color, border * 2)
             .padding(10.dp),
     ) {
         val art = remember(state.art) { state.art?.asImageBitmap() }
         if (art != null) {
             Image(art, null, contentScale = ContentScale.Crop, modifier = Modifier.size(36.dp).clip(RoundedCornerShape(8.dp)))
         } else {
-            Box(Modifier.size(36.dp).border(1.dp, color.copy(alpha = 0.35f), RoundedCornerShape(8.dp)))
+            Box(Modifier.size(36.dp).border(border, color.copy(alpha = 0.35f), RoundedCornerShape(8.dp)))
         }
         Spacer(Modifier.width(10.dp))
         Column {
@@ -74,7 +77,7 @@ fun MusicCard(state: MusicState, color: Color, modifier: Modifier = Modifier, te
  * Contorno de progresso: uma linha vai sendo desenhada em volta da caixa conforme a música passa,
  * começando no meio do topo e andando no sentido do relógio. Fechou a volta, acabou a música.
  */
-private fun Modifier.songProgressOutline(state: MusicState, color: Color): Modifier = composed {
+private fun Modifier.songProgressOutline(state: MusicState, color: Color, width: Dp): Modifier = composed {
     var now by remember { mutableLongStateOf(SystemClock.elapsedRealtime()) }
     // só anda quadro a quadro enquanto toca (e a tela está visível)
     LaunchedEffect(state.playing, state.updatedAt) {
@@ -85,7 +88,7 @@ private fun Modifier.songProgressOutline(state: MusicState, color: Color): Modif
     drawWithContent {
         drawContent()
         if (progress == null || progress <= 0f) return@drawWithContent
-        val stroke = 2.dp.toPx()
+        val stroke = width.toPx()
         val r = 14.dp.toPx()
         val inset = stroke / 2
         val w = size.width - stroke

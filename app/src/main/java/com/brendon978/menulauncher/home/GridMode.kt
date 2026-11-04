@@ -68,7 +68,7 @@ fun GridMode(
                     }
                     is GridItem.Folder -> GridCell(item.name, settings, onClick = { openFolder = item.name }, onLongClick = { openFolder = item.name }) {
                         // pasta: moldura com até 4 mini ícones
-                        Box(Modifier.size(settings.gridCellSize).border(1.4.dp, color, RoundedCornerShape(8.dp)).padding(3.dp)) {
+                        Box(Modifier.size(settings.gridCellSize).border(LocalBorderWidth.current * 1.4f, color, RoundedCornerShape(8.dp)).padding(3.dp)) {
                             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                                 item.apps.take(4).chunked(2).forEach { row ->
                                     Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {

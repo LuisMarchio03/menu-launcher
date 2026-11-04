@@ -35,4 +35,14 @@ class AiPlugTest {
         assertNull(s.aiPackage)
         assert(s.aiY >= 0.5f) { "símbolo deve nascer na metade de baixo" }
     }
+
+    @Test fun posicaoNoMapaViraFracaoDaTela() {
+        assertEquals(0.25f, positionFraction(50f, 200f))
+        assertEquals(1f, positionFraction(260f, 200f))
+        assertEquals(0f, positionFraction(-10f, 200f))
+    }
+
+    @Test fun mapaSemTamanhoFicaNoMeio() {
+        assertEquals(0.5f, positionFraction(10f, 0f))
+    }
 }

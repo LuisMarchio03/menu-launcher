@@ -4,6 +4,8 @@ import android.graphics.Typeface
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.geometry.Offset
@@ -47,15 +49,18 @@ val FontChoice.family: FontFamily
         FontChoice.MONO -> FontFamily.Monospace
     }
 
+/** Borda fina dos contornos (1 dp no original), com a espessura dos ajustes. */
+val LocalBorderWidth = compositionLocalOf { 1.dp }
+
 /** Sombra escura atrás do texto, para ler sobre papel de parede claro. */
 private val TEXT_SHADOW = Shadow(Color.Black.copy(alpha = 0.65f), Offset(0f, 2f), blurRadius = 6f)
 
-/** Fonte e sombra escolhidas, para todo Text dentro de [content]. */
+/** Fonte, sombra e espessura das bordas escolhidas, para tudo dentro de [content]. */
 @Composable
 fun ProvideLauncherText(settings: LauncherSettings, content: @Composable () -> Unit) {
     val base = LocalTextStyle.current
     val style = remember(base, settings.font, settings.textShadow) {
         base.merge(TextStyle(fontFamily = settings.font.family, shadow = if (settings.textShadow) TEXT_SHADOW else null))
     }
-    ProvideTextStyle(style, content)
+    CompositionLocalProvider(LocalBorderWidth provides 1.dp * settings.borderScale) { ProvideTextStyle(style, content) }
 }

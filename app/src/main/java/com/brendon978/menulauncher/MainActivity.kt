@@ -67,6 +67,7 @@ import com.brendon978.menulauncher.settings.GestureAction
 import com.brendon978.menulauncher.settings.HomeMode
 import com.brendon978.menulauncher.settings.LauncherSettings
 import com.brendon978.menulauncher.settings.SettingsRepository
+import com.brendon978.menulauncher.settingsui.AiPositionPicker
 import com.brendon978.menulauncher.settingsui.SettingsScreen
 import com.brendon978.menulauncher.wallpaper.WallpaperColorSource
 import kotlinx.coroutines.launch
@@ -271,6 +272,7 @@ class MainActivity : ComponentActivity() {
                                     .clickable { updateSettings { it.copy(aiPackage = null, aiActivity = null) } }
                                     .padding(vertical = 12.dp),
                             )
+                            AiPositionPicker(settings, ::updateSettings)
                         }
                     },
                     onClose = { screen.value = Screen.Home },
@@ -298,7 +300,17 @@ class MainActivity : ComponentActivity() {
                     label = entry.label,
                     isFavorite = entry.key in settings.favorites,
                     canUninstall = canUninstall(entry.key),
-                    onToggleFavorite = { updateSettings { it.copy(favorites = FavoritesOps.toggle(it.favorites, entry.key)) } },
+                    onToggleFavorite = {
+                        val adding = entry.key !in settings.favorites
+                        updateSettings { it.copy(favorites = FavoritesOps.toggle(it.favorites, entry.key)) }
+                        toast(
+                            when {
+                                !adding -> "${entry.label} saiu dos favoritos"
+                                settings.mode == HomeMode.GRID -> "${entry.label} nos favoritos (aparecem no modo uma mão)"
+                                else -> "${entry.label} nos favoritos"
+                            },
+                        )
+                    },
                     onChangeIcon = { screen.value = Screen.IconPicker(entry) },
                     onAppInfo = { openAppInfo(entry.key) },
                     onUninstall = { uninstall(entry.key) },

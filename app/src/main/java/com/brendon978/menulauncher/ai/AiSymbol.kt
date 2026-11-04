@@ -34,6 +34,7 @@ import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import com.brendon978.menulauncher.home.LocalBorderWidth
 import com.brendon978.menulauncher.pet.petObstacle
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.math.roundToInt
@@ -87,7 +88,7 @@ fun AiSymbol(
                     scaleX = s
                     scaleY = s
                 }
-                .border(if (listening) 2.dp else 1.dp, color.copy(alpha = if (listening) 1f else 0.45f), CircleShape)
+                .border(if (listening) LocalBorderWidth.current * 2 else LocalBorderWidth.current, color.copy(alpha = if (listening) 1f else 0.45f), CircleShape)
                 .pointerInput(maxX, maxY) {
                     val slop = viewConfiguration.touchSlop
                     awaitEachGesture {

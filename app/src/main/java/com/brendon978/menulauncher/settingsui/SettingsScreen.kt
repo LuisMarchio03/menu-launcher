@@ -20,6 +20,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -131,6 +132,8 @@ fun SettingsScreen(
             }
         }
 
+        AddFavorite(settings, apps, onChange)
+
         HiddenAppsSection(settings, apps, onChange)
 
         Section("Glitch")
@@ -178,6 +181,8 @@ internal fun Chip(text: String, selected: Boolean, fontFamily: FontFamily? = nul
         text,
         color = if (selected) Color.Black else Color.White,
         fontFamily = fontFamily,
+        // A sombra da tela inicial borra o texto escuro no chip selecionado.
+        style = LocalTextStyle.current.copy(shadow = null),
         modifier = Modifier
             .background(if (selected) Color.White else Color.Transparent, RoundedCornerShape(10.dp))
             .border(1.dp, Color.White.copy(alpha = 0.3f), RoundedCornerShape(10.dp))

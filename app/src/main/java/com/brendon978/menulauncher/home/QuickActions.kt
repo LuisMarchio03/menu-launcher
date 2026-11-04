@@ -83,7 +83,7 @@ private fun QuickButton(color: Color, active: Boolean, onClick: () -> Unit, icon
             .size(38.dp)
             .clip(CircleShape)
             .background(if (active) color else Color.Transparent, CircleShape)
-            .border(1.dp, color.copy(alpha = .4f), CircleShape)
+            .border(LocalBorderWidth.current, color.copy(alpha = .4f), CircleShape)
             .clickable(onClick = onClick),
     ) {
         Canvas(Modifier.size(18.dp)) { icon(if (active) Color(0xFF0C0C0E) else color) }

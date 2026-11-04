@@ -42,6 +42,8 @@ data class LauncherSettings(
     val textScale: Float = 1f,
     val rowScale: Float = 1f,
     val barScale: Float = 1f,
+    /** Multiplicador da espessura das bordas (cartão de música, busca, pastas, atalhos, símbolo da IA). */
+    val borderScale: Float = 1f,
     val clockStyle: ClockStyle = ClockStyle.THIN,
     val dateStyle: DateStyle = DateStyle.SHORT,
     /** Segundo relógio, com o id do fuso (ex.: "Europe/Lisbon"); null = só o local. */

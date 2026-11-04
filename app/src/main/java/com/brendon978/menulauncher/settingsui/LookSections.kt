@@ -2,6 +2,35 @@ package com.brendon978.menulauncher.settingsui
 
 import android.content.Intent
 import android.provider.Settings
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalConfiguration
+import com.brendon978.menulauncher.ai.positionFraction
+import com.brendon978.menulauncher.settings.HomeMode
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.FlowRow
@@ -23,6 +52,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.brendon978.menulauncher.apps.AppEntry
@@ -155,7 +186,8 @@ fun ColorSourceChoice(settings: LauncherSettings, onChange: OnChange) {
 @Composable
 fun IconLookSection(settings: LauncherSettings, onChange: OnChange) {
     Section("Ícones e texto")
-    ScaleSlider("Espessura do traço", settings.strokeScale, 0.5f..2f) { v -> onChange { it.copy(strokeScale = v) } }
+    ScaleSlider("Espessura do traço dos ícones", settings.strokeScale, 0.5f..3f) { v -> onChange { it.copy(strokeScale = v) } }
+    ScaleSlider("Espessura das bordas", settings.borderScale, 0.5f..3f) { v -> onChange { it.copy(borderScale = v) } }
     SwitchRow("Sombra (para papel de parede claro)", settings.textShadow) { v -> onChange { it.copy(textShadow = v) } }
 }
 
@@ -226,7 +258,7 @@ fun GestureSection(settings: LauncherSettings, onChange: OnChange) {
 fun HiddenAppsSection(settings: LauncherSettings, apps: Map<AppKey, AppEntry>, onChange: OnChange) {
     Section("Apps escondidos")
     if (settings.hiddenApps.isEmpty()) {
-        Text("Nenhum. Segure um app e toque em \"Esconder app\".", color = Color.White.copy(alpha = 0.6f), fontSize = 13.sp)
+        Text("Nenhum. Segure um app e toque em \"Esconder\".", color = Color.White.copy(alpha = 0.6f), fontSize = 13.sp)
     }
     settings.hiddenApps.sortedBy { apps[it]?.label ?: it.packageName }.forEach { key ->
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().height(48.dp)) {
@@ -240,4 +272,110 @@ fun HiddenAppsSection(settings: LauncherSettings, apps: Map<AppKey, AppEntry>, o
             )
         }
     }
+}
+
+/** "Adicionar app": procura e favorita sem sair dos Ajustes; a folha fica aberta para escolher vários. */
+@Composable
+fun AddFavorite(settings: LauncherSettings, apps: Map<AppKey, AppEntry>, onChange: OnChange) {
+    var open by remember { mutableStateOf(false) }
+    Text(
+        "Adicionar app",
+        color = WHITE,
+        modifier = Modifier.fillMaxWidth().clickable { open = true }.padding(vertical = 12.dp),
+    )
+    if (settings.mode == HomeMode.GRID) Hint("Os favoritos aparecem no modo uma mão; a grade mostra todos os apps.")
+    if (open) FavoriteSheet(settings, apps, onChange) { open = false }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun FavoriteSheet(settings: LauncherSettings, apps: Map<AppKey, AppEntry>, onChange: OnChange, onClose: () -> Unit) {
+    var query by remember { mutableStateOf("") }
+    val found = remember(apps, settings.favorites, settings.hiddenApps, query) { FavoritesOps.candidates(apps.values, settings, query) }
+    ModalBottomSheet(
+        onDismissRequest = onClose,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = Color(0xFF18181B),
+    ) {
+        Column(Modifier.navigationBarsPadding().imePadding().padding(horizontal = 20.dp)) {
+            OutlinedTextField(
+                value = query,
+                onValueChange = { query = it },
+                singleLine = true,
+                placeholder = { Text("Buscar app") },
+                modifier = Modifier.fillMaxWidth(),
+            )
+            LazyColumn(Modifier.padding(top = 8.dp).heightIn(max = 420.dp)) {
+                items(found, key = { it.key.encode() }) { entry ->
+                    Text(
+                        entry.label,
+                        color = WHITE,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onChange { it.copy(favorites = FavoritesOps.add(it.favorites, entry.key)) } }
+                            .padding(vertical = 14.dp),
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** Mapa da tela: arraste ou toque para escolher onde o símbolo da IA fica (ele aparece no modo uma mão). */
+@Composable
+fun AiPositionPicker(settings: LauncherSettings, onChange: OnChange) {
+    val config = LocalConfiguration.current
+    val ratio = config.screenWidthDp / config.screenHeightDp.coerceAtLeast(1).toFloat()
+    var spot by remember { mutableStateOf(Offset(settings.aiX, settings.aiY)) }
+    LaunchedEffect(settings.aiX, settings.aiY) { spot = Offset(settings.aiX, settings.aiY) }
+    val commit by rememberUpdatedState(onChange)
+    val dot = 22.dp
+    SubLabel("Posição do símbolo")
+    BoxWithConstraints(
+        Modifier
+            .height(240.dp)
+            .aspectRatio(ratio)
+            .border(1.dp, Color.White.copy(alpha = 0.3f), RoundedCornerShape(14.dp))
+            .pointerInput(Unit) {
+                val dotPx = dot.toPx()
+                fun place(p: Offset) {
+                    spot = Offset(
+                        positionFraction(p.x - dotPx / 2, size.width - dotPx),
+                        positionFraction(p.y - dotPx / 2, size.height - dotPx),
+                    )
+                }
+                awaitEachGesture {
+                    val down = awaitFirstDown()
+                    down.consume() // o arrasto é do mapa, não da rolagem dos Ajustes
+                    place(down.position)
+                    do {
+                        val change = awaitPointerEvent().changes.first()
+                        change.consume()
+                        place(change.position)
+                    } while (change.pressed)
+                    val chosen = spot
+                    commit { it.copy(aiX = chosen.x, aiY = chosen.y) }
+                }
+            },
+    ) {
+        val free = with(LocalDensity.current) { IntOffset(constraints.maxWidth - dot.roundToPx(), constraints.maxHeight - dot.roundToPx()) }
+        Box(
+            Modifier
+                // lido na fase de layout: arrastar não recompõe a tela
+                .offset { IntOffset((free.x * spot.x).roundToInt(), (free.y * spot.y).roundToInt()) }
+                .size(dot)
+                .background(WHITE, CircleShape),
+        )
+    }
+    Text(
+        "Voltar ao lugar padrão",
+        color = Color.White.copy(alpha = 0.8f),
+        modifier = Modifier
+            .clickable {
+                val d = LauncherSettings().withBarSide(settings.barSide)
+                onChange { it.copy(aiX = d.aiX, aiY = d.aiY) }
+            }
+            .padding(vertical = 10.dp),
+    )
+    if (settings.mode == HomeMode.GRID) Hint("O símbolo só aparece no modo uma mão.")
 }

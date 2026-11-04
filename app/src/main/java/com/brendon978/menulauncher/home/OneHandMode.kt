@@ -78,8 +78,8 @@ fun OneHandMode(
                 .petObstacle("list"),
         ) {
             if (settings.showMostUsed && selected == LetterIndex.STAR) {
-                val most = remember(settings.usage, settings.favorites, byKey) {
-                    com.brendon978.menulauncher.settings.Usage.top(settings.usage, 5, settings.favorites.toSet()).mapNotNull { byKey[it] }
+                val most = remember(settings.usage, settings.favorites, settings.hiddenApps, byKey) {
+                    com.brendon978.menulauncher.settings.Usage.top(settings.usage, 5, settings.favorites.toSet() + settings.hiddenApps).mapNotNull { byKey[it] }
                 }
                 if (most.isNotEmpty()) {
                     Text("Mais usados", color = color.copy(alpha = 0.6f), fontSize = settings.smallTextSize, modifier = Modifier.padding(bottom = 6.dp))

@@ -21,11 +21,12 @@ object SettingsCodec {
     private fun boolField(name: String, get: (LauncherSettings) -> Boolean, set: (LauncherSettings, Boolean) -> LauncherSettings) =
         Field(name, { get(it).toString() }, { s, v -> v.toBooleanStrictOrNull()?.let { set(s, it) } })
 
-    private fun scale(name: String, get: (LauncherSettings) -> Float, set: (LauncherSettings, Float) -> LauncherSettings) =
-        Field(name, { get(it).toString() }, { s, v -> v.toFloatOrNull()?.let { set(s, it.coerceIn(SCALE_MIN, SCALE_MAX)) } })
-
-    private const val SCALE_MIN = 0.5f
-    private const val SCALE_MAX = 2f
+    private fun scale(
+        name: String,
+        get: (LauncherSettings) -> Float,
+        max: Float = 2f,
+        set: (LauncherSettings, Float) -> LauncherSettings,
+    ) = Field(name, { get(it).toString() }, { s, v -> v.toFloatOrNull()?.let { set(s, it.coerceIn(0.5f, max)) } })
 
     val FIELDS: List<Field> = listOf(
         scale("clock_scale", { it.clockScale }) { s, f -> s.copy(clockScale = f) },
@@ -33,7 +34,8 @@ object SettingsCodec {
         scale("text_scale", { it.textScale }) { s, f -> s.copy(textScale = f) },
         scale("row_scale", { it.rowScale }) { s, f -> s.copy(rowScale = f) },
         scale("bar_scale", { it.barScale }) { s, f -> s.copy(barScale = f) },
-        scale("stroke_scale", { it.strokeScale }) { s, f -> s.copy(strokeScale = f) },
+        scale("stroke_scale", { it.strokeScale }, max = 3f) { s, f -> s.copy(strokeScale = f) },
+        scale("border_scale", { it.borderScale }, max = 3f) { s, f -> s.copy(borderScale = f) },
         enumField("clock_style", { it.clockStyle }) { s, v -> s.copy(clockStyle = v) },
         enumField("date_style", { it.dateStyle }) { s, v -> s.copy(dateStyle = v) },
         Field("second_zone", { it.secondZone.orEmpty() }, { s, v -> s.copy(secondZone = v.ifEmpty { null }) }),

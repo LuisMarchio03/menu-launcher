@@ -39,7 +39,7 @@ class BackupTest {
         val s = LauncherSettings(
             clockScale = 1.3f, iconScale = 1.25f, textScale = 0.9f, rowScale = 1.1f, barScale = 1.25f,
             clockStyle = ClockStyle.WORDS, dateStyle = DateStyle.NUMERIC, secondZone = "Europe/Lisbon",
-            colorSource = ColorSource.WALLPAPER, strokeScale = 1.5f, textShadow = true, font = FontChoice.SERIF,
+            colorSource = ColorSource.WALLPAPER, strokeScale = 2.5f, borderScale = 2.5f, textShadow = true, font = FontChoice.SERIF,
             gridColumns = 5, gridLabels = false,
             swipeDown = GestureAction.SETTINGS, swipeUp = GestureAction.NONE, doubleTap = GestureAction.LOCK,
         )

@@ -204,7 +204,7 @@ private fun SearchPillFrame(
             .clip(shape)
             .then(if (onClick != null) Modifier.clickable(onClickLabel = "Buscar app", onClick = onClick) else Modifier)
             .background(Color.White.copy(alpha = 0.08f))
-            .border(1.dp, color.copy(alpha = 0.3f), shape)
+            .border(LocalBorderWidth.current, color.copy(alpha = 0.3f), shape)
             .padding(start = 18.dp, end = 6.dp),
     ) {
         Canvas(Modifier.size(18.dp)) {

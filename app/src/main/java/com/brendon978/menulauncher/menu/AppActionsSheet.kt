@@ -44,7 +44,8 @@ fun AppActionsSheet(
     ) {
         Column(Modifier.navigationBarsPadding().padding(bottom = 12.dp)) {
             Text(label, color = Color.White.copy(alpha = 0.6f), fontSize = 13.sp, modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp))
-            Action(if (isFavorite) "Remover dos favoritos" else "Favoritar") { onToggleFavorite(); onDismiss() }
+            // App escondido não aparece na lista de favoritos: a opção só enganaria.
+            if (!isHidden) Action(if (isFavorite) "Remover dos favoritos" else "Favoritar") { onToggleFavorite(); onDismiss() }
             Action("Trocar ícone") { onChangeIcon(); onDismiss() }
             onRename?.let { r -> Action("Renomear") { r(); onDismiss() } }
             onToggleHidden?.let { h -> Action(if (isHidden) "Mostrar na tela inicial" else "Esconder") { h(); onDismiss() } }
