@@ -9,6 +9,36 @@ class PetBrainTest {
     private fun mood(hour: Int = 12, battery: Int? = 80, charging: Boolean = false, music: Boolean = false, happyUntil: Long = 0, now: Long = 1000) =
         baseMood(hour, battery, charging, music, happyUntil, now)
 
+    private val tela = Area(0f, 0f, 100f, 200f)
+    private val lista = Area(0f, 120f, 100f, 200f)
+
+    @Test fun lugarLivreContinuaOndeEsta() {
+        assertEquals(20f to 50f, nearestFree(20f, 50f, 10f, 20f, tela, listOf(lista)))
+    }
+
+    @Test fun emCimaDaListaSobeAteAcimaDela() {
+        assertEquals(20f to 100f, nearestFree(20f, 150f, 10f, 20f, tela, listOf(lista)))
+    }
+
+    @Test fun saidaBloqueadaProcuraOutroLado() {
+        val barra = Area(0f, 80f, 60f, 120f)
+        assertEquals(60f to 100f, nearestFree(50f, 150f, 10f, 20f, tela, listOf(lista, barra)))
+    }
+
+    @Test fun telaTodaOcupadaNaoTemLugar() {
+        assertEquals(null, nearestFree(20f, 50f, 10f, 20f, tela, listOf(tela)))
+    }
+
+    @Test fun caboParaNoItemAbaixoDele() {
+        assertEquals(120f, floorUnder(20f, 50f, tela, listOf(lista)), 0f)
+    }
+
+    @Test fun semItemAbaixoOCaboVaiAteOFim() {
+        val aoLado = Area(0f, 120f, 50f, 200f)
+        val acima = Area(60f, 0f, 100f, 40f)
+        assertEquals(200f, floorUnder(70f, 50f, tela, listOf(aoLado, acima)), 0f)
+    }
+
     @Test fun dormeDas23As7() {
         assertEquals(Mood.SLEEPING, mood(hour = 23))
         assertEquals(Mood.SLEEPING, mood(hour = 3))

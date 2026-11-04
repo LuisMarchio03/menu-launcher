@@ -426,12 +426,32 @@ fun RobotPet(
     fun spotNear(target: Offset): Offset? =
         (0 until 20).mapNotNull { spot(pos.value, widthPx) }.minByOrNull { (it + Offset(widthPx / 2, heightPx / 2) - target).getDistance() }
 
-    suspend fun walkTo(target: Offset) {
-        facingLeft = target.x < pos.value.x
+    // o mais perto de um ponto sem pisar em nada: as brincadeiras miram em qualquer lugar da tela
+    fun freeNear(target: Offset): Offset? =
+        nearestFree(target.x, target.y, widthPx, heightPx, currentArea, currentObstacles)?.let { Offset(it.first, it.second) }
+
+    // anda até lá sem atravessar o que é tocável; sem caminho livre, vai num glitch
+    suspend fun dash(target: Offset, speed: Float, maxMs: Int = Int.MAX_VALUE) {
+        val here = pos.value
+        if (!pathClear(here.x to here.y, target.x to target.y, widthPx, heightPx, currentObstacles)) return glitchTo(target)
+        facingLeft = target.x < here.x
         walking = true
-        val speed = with(density) { 38.dp.toPx() }
-        val ms = ((target - pos.value).getDistance() / speed * 1000).roundToInt().coerceAtLeast(1)
+        val ms = ((target - here).getDistance() / speed * 1000).roundToInt().coerceIn(1, maxMs)
         try { pos.animateTo(target, tween(ms, easing = LinearEasing)) } finally { walking = false }
+    }
+
+    suspend fun walkTo(target: Offset) = dash(target, with(density) { 38.dp.toPx() })
+
+    // em cima de algo tocável o passeio não acha caminho e ele ficaria ali para sempre: sai num glitch
+    val mayLeave by rememberUpdatedState(!hidden && !menuOpen)
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(1_000)
+            val p = pos.value
+            if (!placed || held || flying || walking || !mayLeave || !p.isSpecified) continue
+            val me = Area(p.x, p.y, p.x + widthPx, p.y + heightPx)
+            if (currentObstacles.any { it.intersects(me) }) spot(null, 0f)?.let { glitchTo(it) }
+        }
     }
 
     LaunchedEffect(stillMood, placed, marching, activity, protesting, game) {
@@ -483,16 +503,12 @@ fun RobotPet(
                     val away = (me - f).let { it / it.getDistance().coerceAtLeast(1f) }
                     val want = me + away * with(density) { 130.dp.toPx() } - Offset(widthPx / 2, heightPx / 2)
                     val a = currentArea
-                    val clamped = Offset(want.x.coerceIn(a.l, a.r - widthPx), want.y.coerceIn(a.t, a.b - heightPx))
+                    val clamped = freeNear(Offset(want.x.coerceIn(a.l, a.r - widthPx), want.y.coerceIn(a.t, a.b - heightPx))) ?: pos.value
                     if ((clamped - pos.value).getDistance() < widthPx * .4f) {
                         spot(null, 0f)?.let { glitchTo(it) }
                         if (brainRandom.nextInt(2) == 0) say(TAG_LINES.random(brainRandom), 1_000)
                     } else {
-                        facingLeft = clamped.x < pos.value.x
-                        walking = true
-                        val speed = with(density) { 260.dp.toPx() }
-                        val ms = ((clamped - pos.value).getDistance() / speed * 1000).roundToInt().coerceIn(1, 500)
-                        try { pos.animateTo(clamped, tween(ms, easing = LinearEasing)) } finally { walking = false }
+                        dash(clamped, with(density) { 260.dp.toPx() }, maxMs = 500)
                     }
                 } else delay(80)
             }
@@ -506,19 +522,16 @@ fun RobotPet(
                 val target = bubbles.minByOrNull { (Offset(it.x, it.y) - me).getDistance() }
                 if (target == null) { delay(150); continue }
                 val tc = Offset(target.x, target.y)
-                if ((tc - me).getDistance() < with(density) { 44.dp.toPx() }) {
+                val a = currentArea
+                val dest = freeNear(Offset((tc.x - widthPx / 2).coerceIn(a.l, a.r - widthPx), (tc.y - heightPx / 2).coerceIn(a.t, a.b - heightPx))) ?: pos.value
+                // bolha em cima de um item: ele chega o mais perto que pode e estoura de lá
+                if ((tc - me).getDistance() < with(density) { 44.dp.toPx() } || (dest - pos.value).getDistance() < widthPx * .25f) {
                     bubbles = bubbles.filter { it.id != target.id }
                     pops = pops + (tc to System.currentTimeMillis())
                     if (brainRandom.nextInt(3) == 0) say(BUBBLE_LINES.random(brainRandom), 900)
                     continue
                 }
-                val a = currentArea
-                val dest = Offset((tc.x - widthPx / 2).coerceIn(a.l, a.r - widthPx), (tc.y - heightPx / 2).coerceIn(a.t, a.b - heightPx))
-                facingLeft = dest.x < pos.value.x
-                walking = true
-                val speed = with(density) { 150.dp.toPx() }
-                val ms = ((dest - pos.value).getDistance() / speed * 1000).roundToInt().coerceIn(1, 250)
-                try { pos.animateTo(dest, tween(ms, easing = LinearEasing)) } finally { walking = false }
+                dash(dest, with(density) { 150.dp.toPx() }, maxMs = 250)
             }
             if (game == GameKind.BUBBLES) { say("Ufa, cansei!", 1_800); game = null; bubbles = emptyList() }
             return@LaunchedEffect
@@ -540,16 +553,14 @@ fun RobotPet(
                 val me = pos.value + Offset(widthPx / 2, heightPx / 2)
                 // pés na altura do chão da bola, ao lado dela
                 val side = if (me.x < ballCenter.x) -1f else 1f
-                val target = Offset(
-                    (ballCenter.x + side * (widthPx * .55f) - widthPx / 2).coerceIn(currentArea.l, currentArea.r - widthPx),
-                    (b.y + ballPx - heightPx).coerceIn(currentArea.t, currentArea.b - heightPx),
-                )
+                val target = freeNear(
+                    Offset(
+                        (ballCenter.x + side * (widthPx * .55f) - widthPx / 2).coerceIn(currentArea.l, currentArea.r - widthPx),
+                        (b.y + ballPx - heightPx).coerceIn(currentArea.t, currentArea.b - heightPx),
+                    ),
+                ) ?: pos.value
                 if ((target - pos.value).getDistance() > widthPx * .25f) {
-                    facingLeft = target.x < pos.value.x
-                    walking = true
-                    val speed = with(density) { 90.dp.toPx() }
-                    val ms = ((target - pos.value).getDistance() / speed * 1000).roundToInt().coerceIn(1, 700)
-                    try { pos.animateTo(target, tween(ms, easing = LinearEasing)) } finally { walking = false }
+                    dash(target, with(density) { 90.dp.toPx() }, maxMs = 700)
                     continue
                 }
                 // chute: manda a bola para o lado contrário de onde ele está, para cima
@@ -800,6 +811,7 @@ fun RobotPet(
     LaunchedEffect(Unit) {
         PetDebug.commands.collect { cmd ->
             when (cmd) {
+                "pisar" -> currentObstacles.maxByOrNull { (it.r - it.l) * (it.b - it.t) }?.let { pos.snapTo(Offset(it.l + widthPx, it.t + 40f)) }
                 "parar" -> {
                     debugHold = true
                     val a = currentArea
@@ -1192,7 +1204,8 @@ fun RobotPet(
     if (battery.charging && visible > 0f && !hidden) {
         Canvas(Modifier.fillMaxSize()) {
             val from = Offset(pos.value.x + widthPx * .5f, pos.value.y + heightPx * .62f)
-            val to = Offset((from.x + widthPx * .8f).coerceAtMost(area.r - 6f), area.b)
+            val plugX = (from.x + widthPx * .8f).coerceAtMost(area.r - 6f)
+            val to = Offset(plugX, floorUnder(plugX, from.y, area, obstacles))
             val cable = androidx.compose.ui.graphics.Path().apply {
                 moveTo(from.x, from.y)
                 cubicTo(from.x + widthPx * .9f, from.y, to.x - widthPx * .3f, to.y - heightPx * .6f, to.x, to.y - 14f)
