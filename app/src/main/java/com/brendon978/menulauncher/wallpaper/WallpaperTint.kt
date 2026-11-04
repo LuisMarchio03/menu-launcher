@@ -5,8 +5,22 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.pow
 
+/** Abaixo disso (diferença entre o canal maior e o menor, 0 a 255) a cor parece preta, cinza ou branca. */
+private const val MIN_CHROMA = 38
+
 /**
- * Cor do traço a partir da cor principal do papel de parede: mesmo matiz, clareada (papel escuro)
+ * Cor do papel de parede que dá o matiz do traço, entre as principais em ordem de presença: a primeira
+ * que tem cor de fato. Em papel escuro a principal costuma ser o fundo quase preto, que daria traço cinza.
+ */
+fun strokeBase(colors: List<Int>): Int = colors.firstOrNull { chroma(it) >= MIN_CHROMA } ?: colors.first()
+
+private fun chroma(c: Int): Int {
+    val (r, g, b) = Triple(c shr 16 and 0xFF, c shr 8 and 0xFF, c and 0xFF)
+    return max(r, max(g, b)) - min(r, min(g, b))
+}
+
+/**
+ * Cor do traço a partir da cor do papel de parede ([strokeBase]): mesmo matiz, clareada (papel escuro)
  * ou escurecida (papel claro, [darkText]) até ter contraste 7:1 com o fundo. Sempre opaca.
  */
 fun legibleStroke(argb: Int, darkText: Boolean): Int {

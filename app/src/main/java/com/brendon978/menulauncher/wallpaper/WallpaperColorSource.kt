@@ -28,8 +28,9 @@ class WallpaperColorSource(private val context: Context) {
     fun close() = wm.removeOnColorsChangedListener(listener)
 
     private fun compute(colors: WallpaperColors?): Int {
-        val primary = colors?.primaryColor?.toArgb() ?: context.getColor(android.R.color.system_accent1_500)
+        val base = colors?.let { c -> strokeBase(listOfNotNull(c.primaryColor, c.secondaryColor, c.tertiaryColor).map { it.toArgb() }) }
+            ?: context.getColor(android.R.color.system_accent1_500)
         val darkText = colors != null && colors.colorHints and WallpaperColors.HINT_SUPPORTS_DARK_TEXT != 0
-        return legibleStroke(primary, darkText)
+        return legibleStroke(base, darkText)
     }
 }

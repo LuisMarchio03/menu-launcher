@@ -37,6 +37,27 @@ class WallpaperTintTest {
         assertTrue(abs((gray shr 16 and 0xFF) - (gray and 0xFF)) <= 2)
     }
 
+    @Test fun fundoPretoCedeParaACorDeVerdade() {
+        val orange = 0xFFE06010.toInt()
+        assertEquals(orange, strokeBase(listOf(0xFF050505.toInt(), 0xFF202020.toInt(), orange)))
+    }
+
+    @Test fun quaseCinzaEscuroNaoContaComoCor() {
+        // em HSL este quase preto tem saturação alta, mas a olho é preto
+        val green = 0xFF20A050.toInt()
+        assertEquals(green, strokeBase(listOf(0xFF0A0508.toInt(), green)))
+    }
+
+    @Test fun corPrincipalComMatizFica() {
+        val navy = 0xFF204080.toInt()
+        assertEquals(navy, strokeBase(listOf(navy, 0xFFE06010.toInt())))
+    }
+
+    @Test fun papelSemCorFicaNaPrincipal() {
+        val gray = 0xFF404040.toInt()
+        assertEquals(gray, strokeBase(listOf(gray, 0xFF808080.toInt(), 0xFFC0C0C0.toInt())))
+    }
+
     @Test fun saiOpaco() {
         assertEquals(0xFF, legibleStroke(0x400000FF, darkText = false) ushr 24)
     }
