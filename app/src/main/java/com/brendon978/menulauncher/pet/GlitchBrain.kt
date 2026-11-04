@@ -30,7 +30,7 @@ data class TickCtx(
 /** O que ele escolhe fazer quando não está dormindo de noite nem cansado pela bateria. */
 /** SAD: carente e ignorado há muito tempo, vai para um canto. PLAY: entediado e com energia, joga bola. */
 /** PRANK: entediado mas não carente, apronta (cola post-its na tela). */
-enum class Activity { WANDER, NAP, SEEK_ATTENTION, EXPLORE, SULK, DANCE, SAD, PLAY, PRANK }
+enum class Activity { WANDER, NAP, SEEK_ATTENTION, EXPLORE, SULK, DANCE, SAD, PLAY, PRANK, EAT, PERCH }
 
 enum class GlitchEvent { GENTLE_TAP, NOTIFICATION, MUSIC_START }
 

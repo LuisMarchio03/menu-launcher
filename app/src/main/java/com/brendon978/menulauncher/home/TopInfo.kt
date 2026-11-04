@@ -23,6 +23,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.brendon978.menulauncher.clock.formatDate
@@ -58,7 +59,12 @@ fun TopInfo(settings: LauncherSettings, color: Color, modifier: Modifier = Modif
     val second = remember(now, is24h, settings.secondZone) {
         settings.secondZone?.let { "${zoneLabel(it)} ${formatTime(now, TimeZone.getTimeZone(it), is24h)}" }
     }
-    val openAlarms = Modifier.clickable(remember { MutableInteractionSource() }, indication = null) {
+    // travessura do Glitch: entorta o relógio até você cutucar ele
+    val clockTilt by androidx.compose.animation.core.animateFloatAsState(
+        if (com.brendon978.menulauncher.pet.GlitchMischief.current.value == com.brendon978.menulauncher.pet.Mischief.CLOCK) -8f else 0f,
+        label = "relogio",
+    )
+    val openAlarms = Modifier.graphicsLayer { rotationZ = clockTilt }.clickable(remember { MutableInteractionSource() }, indication = null) {
         runCatching {
             context.startActivity(Intent(AlarmClock.ACTION_SHOW_ALARMS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
         }

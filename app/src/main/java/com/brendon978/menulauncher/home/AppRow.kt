@@ -27,6 +27,7 @@ fun AppRow(
     renderer: IconRenderer,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
+    tracksBadge: Boolean = false,
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -35,7 +36,7 @@ fun AppRow(
             .height(look.height)
             .combinedClickable(onClick = onClick, onLongClick = onLongClick),
     ) {
-        AppIcon(entry, override, look.color, look.iconSize, renderer, stroke = look.stroke, shadow = look.shadow)
+        AppIcon(entry, override, look.color, look.iconSize, renderer, stroke = look.stroke, shadow = look.shadow, tracksBadge = tracksBadge)
         Spacer(Modifier.width(14.dp))
         Text(entry.label, color = Color(look.color), fontSize = look.textSize, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }

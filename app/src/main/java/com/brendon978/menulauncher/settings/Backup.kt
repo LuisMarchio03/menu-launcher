@@ -36,6 +36,13 @@ object Backup {
         p["usage"] = s.usage.entries.joinToString("\n") { "${it.key.encode()}$SEP${it.value}" }
         p["showQuickActions"] = s.showQuickActions.toString()
         p["showNextEvent"] = s.showNextEvent.toString()
+        p["timeProfiles"] = s.timeProfiles.toString()
+        p["profileFavorites"] = s.profileFavorites.entries.joinToString("\n") { (name, keys) -> name + SEP + keys.joinToString(",") { it.encode() } }
+        p["searchContacts"] = s.searchContacts.toString()
+        p["glitchComments"] = s.glitchComments.toString()
+        p["glitchMischief"] = s.glitchMischief.toString()
+        p["birthday"] = s.birthday
+        p["weatherCity"] = s.weatherCity
         SettingsCodec.FIELDS.forEach { p[LOOK_PREFIX + it.name] = it.write(s) }
         extra.forEach { (k, v) -> p[k] = v }
         return StringWriter().also { p.store(it, "menu-launcher") }.toString()
@@ -72,6 +79,16 @@ object Backup {
             usage = pairs("usage").mapNotNull { (k, v) -> v.toFloatOrNull()?.let { k to it } }.toMap(),
             showQuickActions = p.getProperty("showQuickActions")?.toBooleanStrictOrNull() ?: d.showQuickActions,
             showNextEvent = p.getProperty("showNextEvent")?.toBooleanStrictOrNull() ?: d.showNextEvent,
+            timeProfiles = p.getProperty("timeProfiles")?.toBooleanStrictOrNull() ?: d.timeProfiles,
+            profileFavorites = lines("profileFavorites").mapNotNull { l ->
+                val i = l.indexOf(SEP)
+                if (i <= 0) null else l.substring(0, i) to l.substring(i + 1).split(",").mapNotNull { AppKey.decode(it) }
+            }.toMap(),
+            searchContacts = p.getProperty("searchContacts")?.toBooleanStrictOrNull() ?: d.searchContacts,
+            glitchComments = p.getProperty("glitchComments")?.toBooleanStrictOrNull() ?: d.glitchComments,
+            glitchMischief = p.getProperty("glitchMischief")?.toBooleanStrictOrNull() ?: d.glitchMischief,
+            birthday = p.getProperty("birthday") ?: d.birthday,
+            weatherCity = p.getProperty("weatherCity") ?: d.weatherCity,
         ).let { base ->
             SettingsCodec.FIELDS.fold(base) { s, f -> p.getProperty(LOOK_PREFIX + f.name)?.let { f.read(s, it) } ?: s }
         }

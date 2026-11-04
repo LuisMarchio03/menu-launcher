@@ -70,6 +70,10 @@ fun SearchScreen(
     val results = remember(apps, query) { searchApps(apps, query) }
     val math = remember(query) { calc(query) }
     val context = androidx.compose.ui.platform.LocalContext.current
+    val system = remember(query) { com.brendon978.menulauncher.apps.searchSystem(query) }
+    val contacts by androidx.compose.runtime.produceState(emptyList<Pair<String, android.net.Uri>>(), query, settings.searchContacts) {
+        value = if (settings.searchContacts) searchContacts(context, query) else emptyList()
+    }
     val focus = remember { FocusRequester() }
     val look = settings.rowLook
     LaunchedEffect(Unit) { focus.requestFocus() }
@@ -100,7 +104,17 @@ fun SearchScreen(
             }
         }
         val strokeColor = Color(settings.strokeColor)
-        if (query.isNotBlank() && results.isEmpty() && math == null) {
+        contacts.forEach { (name, uri) ->
+            ResultLine("Contato · $name", strokeColor) {
+                runCatching { context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, uri).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)) }
+            }
+        }
+        system.forEach { t ->
+            ResultLine("Ajuste · ${t.label}", strokeColor) {
+                runCatching { context.startActivity(android.content.Intent(t.action).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)) }
+            }
+        }
+        if (query.isNotBlank() && results.isEmpty() && math == null && contacts.isEmpty() && system.isEmpty()) {
             Text("Nenhum app com “$query”", color = Color.White.copy(alpha = 0.6f), fontSize = 13.sp, modifier = Modifier.padding(vertical = 8.dp))
         }
         // conta: mostra o resultado; tocar copia
@@ -142,6 +156,37 @@ fun SearchScreen(
                 .padding(top = 8.dp)
                 .focusRequester(focus),
         )
+    }
+}
+
+@Composable
+private fun ResultLine(text: String, color: Color, onClick: () -> Unit) {
+    Text(
+        text,
+        color = color,
+        fontSize = 15.sp,
+        maxLines = 1,
+        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 10.dp),
+    )
+}
+
+/** Até 3 contatos que batem com o texto; sem permissão ou sem texto, nada. */
+private suspend fun searchContacts(context: android.content.Context, query: String): List<Pair<String, android.net.Uri>> {
+    if (query.trim().length < 2) return emptyList()
+    if (context.checkSelfPermission(android.Manifest.permission.READ_CONTACTS) != android.content.pm.PackageManager.PERMISSION_GRANTED) return emptyList()
+    return kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        runCatching {
+            val c = android.provider.ContactsContract.Contacts.CONTENT_FILTER_URI.buildUpon().appendPath(query.trim()).build()
+            val cols = arrayOf(android.provider.ContactsContract.Contacts._ID, android.provider.ContactsContract.Contacts.LOOKUP_KEY, android.provider.ContactsContract.Contacts.DISPLAY_NAME_PRIMARY)
+            context.contentResolver.query(c, cols, null, null, null)?.use { r ->
+                buildList {
+                    while (r.moveToNext() && size < 3) {
+                        add(r.getString(2).orEmpty() to android.provider.ContactsContract.Contacts.getLookupUri(r.getLong(0), r.getString(1)))
+                    }
+                }
+            }.orEmpty()
+        }.getOrDefault(emptyList())
     }
 }
 

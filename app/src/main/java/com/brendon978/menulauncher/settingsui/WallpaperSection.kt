@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.brendon978.menulauncher.wallpaper.LockWallpaperService
 import com.brendon978.menulauncher.wallpaper.StaticTarget
 import com.brendon978.menulauncher.wallpaper.WallpaperApplier
 import com.brendon978.menulauncher.wallpaper.WallpaperKind
@@ -56,6 +57,21 @@ fun WallpaperSection() {
         }
     }
 
+    // o Glitch no bloqueio: escolhe o fundo e a prévia do sistema aplica
+    val lockPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        scope.launch {
+            busy = true
+            runCatching { applier.prepareLockBackground(uri) }
+                .onSuccess {
+                    toast("Na tela seguinte, escolha Tela de bloqueio")
+                    context.startActivity(applier.livePreviewIntent(LockWallpaperService::class.java))
+                }
+                .onFailure { toast("Não consegui abrir essa imagem") }
+            busy = false
+        }
+    }
+
     Text(
         if (busy) "Aplicando…" else "Escolher imagem ou vídeo",
         color = Color.White,
@@ -66,6 +82,19 @@ fun WallpaperSection() {
     )
     Text(
         "Imagem: tela inicial, de bloqueio ou as duas. Vídeo ou GIF: animado na tela inicial.",
+        color = Color.White.copy(alpha = 0.5f),
+        fontSize = 12.sp,
+    )
+    Text(
+        "Glitch na tela de bloqueio",
+        color = Color.White,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(enabled = !busy) { lockPicker.launch(arrayOf("image/*")) }
+            .padding(top = 12.dp, bottom = 4.dp),
+    )
+    Text(
+        "Escolha a imagem de fundo. A digital e as notificações continuam normais.",
         color = Color.White.copy(alpha = 0.5f),
         fontSize = 12.sp,
     )

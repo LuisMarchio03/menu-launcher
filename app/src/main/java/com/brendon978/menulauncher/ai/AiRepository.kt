@@ -76,24 +76,38 @@ class AiRepository(private val context: Context) {
      */
     fun sendCommand(pkg: String, text: String): Boolean {
         commandReceiver(pkg)?.let { r ->
-            context.sendBroadcast(
+            // quem responde RESULT_OK resolveu sem abrir nada; quem não responde e tem Activity abre por ela
+            val fallback = commandActivity(pkg)
+            context.sendOrderedBroadcast(
                 Intent(AiContract.ACTION_COMMAND)
                     .setComponent(ComponentName(r.packageName, r.name))
                     .putExtra(Intent.EXTRA_TEXT, text)
-                    .addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES),
+                    .addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES or Intent.FLAG_RECEIVER_FOREGROUND),
+                null,
+                // a IA confere que quem manda é o launcher antes de obedecer em silêncio
+                android.app.BroadcastOptions.makeBasic().setShareIdentityEnabled(true).toBundle(),
+                object : android.content.BroadcastReceiver() {
+                    override fun onReceive(c: Context, i: Intent) {
+                        if (resultCode != android.app.Activity.RESULT_OK && fallback != null) openCommand(fallback.packageName, fallback.name, text)
+                    }
+                },
+                null,
+                android.app.Activity.RESULT_CANCELED,
+                null,
+                null,
             )
             return true
         }
-        commandActivity(pkg)?.let { a ->
-            return runCatching {
-                context.startActivity(
-                    Intent(AiContract.ACTION_COMMAND)
-                        .setComponent(ComponentName(a.packageName, a.name))
-                        .putExtra(Intent.EXTRA_TEXT, text)
-                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
-                )
-            }.isSuccess
-        }
+        commandActivity(pkg)?.let { a -> return openCommand(a.packageName, a.name, text) }
         return false
     }
+
+    private fun openCommand(pkg: String, activity: String, text: String): Boolean = runCatching {
+        context.startActivity(
+            Intent(AiContract.ACTION_COMMAND)
+                .setComponent(ComponentName(pkg, activity))
+                .putExtra(Intent.EXTRA_TEXT, text)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+        )
+    }.isSuccess
 }

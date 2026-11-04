@@ -76,6 +76,20 @@ data class LauncherSettings(
     val showQuickActions: Boolean = false,
     /** Próximo compromisso da agenda embaixo da data (pede acesso à agenda). */
     val showNextEvent: Boolean = false,
+    /** Favoritos diferentes de dia, no trabalho e à noite. */
+    val timeProfiles: Boolean = false,
+    /** Lista de cada horário (nome de TimeProfile -> apps); vazia usa [favorites]. */
+    val profileFavorites: Map<String, List<AppKey>> = emptyMap(),
+    /** Contatos nos resultados da busca (pede acesso aos contatos). */
+    val searchContacts: Boolean = false,
+    /** O Glitch comenta o app de onde você voltou. */
+    val glitchComments: Boolean = true,
+    /** O Glitch apronta com o relógio e os favoritos. */
+    val glitchMischief: Boolean = true,
+    /** Seu aniversário, "dia/mês" (vazio = sem festa). */
+    val birthday: String = "",
+    /** Cidade para o clima do Glitch (vazia = ele não consulta a internet). */
+    val weatherCity: String = "",
 )
 
 /** O símbolo da IA fica ao lado da barra de letras: troca de lado junto, para não cair em cima da lista. */

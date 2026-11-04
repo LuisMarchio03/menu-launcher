@@ -64,6 +64,9 @@ import com.brendon978.menulauncher.onboarding.FirstRunScreen
 import com.brendon978.menulauncher.settings.ColorSource
 import com.brendon978.menulauncher.settings.FavoritesOps
 import com.brendon978.menulauncher.settings.GestureAction
+import com.brendon978.menulauncher.settings.activeFavorites
+import com.brendon978.menulauncher.settings.currentProfile
+import com.brendon978.menulauncher.settings.editFavorites
 import com.brendon978.menulauncher.settings.HomeMode
 import com.brendon978.menulauncher.settings.LauncherSettings
 import com.brendon978.menulauncher.settings.SettingsRepository
@@ -130,6 +133,8 @@ class MainActivity : ComponentActivity() {
             }
         })
 
+        lifecycleScope.launch { settingsRepo.settings.collect { settingsSnapshot = it } }
+        lifecycleScope.launch { com.brendon978.menulauncher.pet.GlitchTalk.requests.collect { talkThroughGlitch() } }
         setContent { MaterialTheme(colorScheme = LAUNCHER_COLORS) { Content() } }
         openRequestedScreen(intent)
     }
@@ -298,11 +303,12 @@ class MainActivity : ComponentActivity() {
             sheetFor.value?.let { entry ->
                 AppActionsSheet(
                     label = entry.label,
-                    isFavorite = entry.key in settings.favorites,
+                    isFavorite = entry.key in settings.activeFavorites(currentProfile()),
                     canUninstall = canUninstall(entry.key),
                     onToggleFavorite = {
-                        val adding = entry.key !in settings.favorites
-                        updateSettings { it.copy(favorites = FavoritesOps.toggle(it.favorites, entry.key)) }
+                        val profile = currentProfile()
+                        val adding = entry.key !in settings.activeFavorites(profile)
+                        updateSettings { it.editFavorites(profile) { f -> FavoritesOps.toggle(f, entry.key) } }
                         toast(
                             when {
                                 !adding -> "${entry.label} saiu dos favoritos"
@@ -405,6 +411,21 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    // print da tela inicial: o Glitch faz pose
+    private val screenCapture = ScreenCaptureCallback {
+        com.brendon978.menulauncher.pet.GlitchSignals.screenshots.tryEmit(Unit)
+    }
+
+    override fun onStart() {
+        super.onStart()
+        registerScreenCaptureCallback(mainExecutor, screenCapture)
+    }
+
+    override fun onStop() {
+        unregisterScreenCaptureCallback(screenCapture)
+        super.onStop()
+    }
+
     override fun onResume() {
         super.onResume()
         musicRepo.refresh()
@@ -458,6 +479,35 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    /** Falar com a IA pelo Glitch: ele mostra que ouviu e a resposta volta no balão. */
+    private fun talkThroughGlitch() {
+        val pkg = settingsSnapshot?.aiPackage ?: return
+        val talk = com.brendon978.menulauncher.pet.GlitchTalk.state
+        if (checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            micPermission.launch(android.Manifest.permission.RECORD_AUDIO)
+            return
+        }
+        talk.value = "Ouvindo..."
+        lifecycleScope.launch {
+            kotlinx.coroutines.delay(15_000)
+            if (talk.value == "Ouvindo...") { voice.cancel(); talk.value = null } // o microfone não entregou nada
+        }
+        voice.start { text ->
+            if (text == null || !aiRepo.sendCommand(pkg, text)) {
+                talk.value = null
+                toast("Não entendi")
+                return@start
+            }
+            talk.value = "Pensando..."
+            lifecycleScope.launch {
+                kotlinx.coroutines.delay(25_000)
+                if (talk.value == "Pensando...") talk.value = null // a IA não respondeu
+            }
+        }
+    }
+
+    private var settingsSnapshot: LauncherSettings? = null
 
     private fun toast(msg: String) = android.widget.Toast.makeText(this, msg, android.widget.Toast.LENGTH_SHORT).show()
 

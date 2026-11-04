@@ -45,6 +45,9 @@ class LauncherAccessibility : AccessibilityService() {
 
         fun lock(): Boolean = instance?.performGlobalAction(GLOBAL_ACTION_LOCK_SCREEN) == true
 
+        /** Tira um print pelo sistema; false sem a acessibilidade ligada. */
+        fun screenshot(): Boolean = instance?.performGlobalAction(GLOBAL_ACTION_TAKE_SCREENSHOT) == true
+
         /** Pela acessibilidade; sem ela, a API escondida que os launchers usam (permissão EXPAND_STATUS_BAR). */
         @SuppressLint("WrongConstant")
         fun notifications(context: Context): Boolean =

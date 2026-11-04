@@ -40,6 +40,8 @@ import com.brendon978.menulauncher.apps.AppEntry
 import com.brendon978.menulauncher.apps.AppKey
 import com.brendon978.menulauncher.home.LocalBorderWidth
 import com.brendon978.menulauncher.settings.FavoritesOps
+import com.brendon978.menulauncher.settings.activeFavorites
+import com.brendon978.menulauncher.settings.editFavorites
 import com.brendon978.menulauncher.settings.HomeMode
 import com.brendon978.menulauncher.settings.LauncherSettings
 import com.brendon978.menulauncher.settings.Backup
@@ -119,18 +121,30 @@ fun SettingsScreen(
         ToggleRow("Linha de mais usados", "No modo uma mão, os apps que você mais abre, em cima dos favoritos.", settings.showMostUsed) { v -> onChange { it.copy(showMostUsed = v) } }
         ToggleRow("Atalhos rápidos", "Lanterna, Wi-Fi, internet e não perturbe embaixo da data.", settings.showQuickActions) { v -> onChange { it.copy(showQuickActions = v) } }
         NextEventToggle(settings.showNextEvent) { v -> onChange { it.copy(showNextEvent = v) } }
+        ContactsToggle(settings.searchContacts) { v -> onChange { it.copy(searchContacts = v) } }
 
         Section("Favoritos")
-        if (settings.favorites.isEmpty()) {
+        ToggleRow("Favoritos por horário", "Listas diferentes de dia, no trabalho (seg. a sex., 8h às 18h) e à noite (19h às 7h).", settings.timeProfiles) { v -> onChange { it.copy(timeProfiles = v) } }
+        var editing by rememberSaveable { mutableStateOf(com.brendon978.menulauncher.settings.currentProfile()) }
+        if (settings.timeProfiles) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(vertical = 6.dp)) {
+                com.brendon978.menulauncher.settings.TimeProfile.entries.forEach { p -> Chip(p.label, editing == p) { editing = p } }
+            }
+        }
+        val shownFavorites = settings.activeFavorites(editing)
+        if (shownFavorites.isEmpty()) {
             Text("Nenhum. Segure um app na tela inicial para favoritar.", color = Color.White.copy(alpha = 0.6f), fontSize = 13.sp)
         }
-        settings.favorites.forEachIndexed { i, key ->
+        shownFavorites.forEachIndexed { i, key ->
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().height(48.dp)) {
                 Text(apps[key]?.label ?: key.packageName, color = Color.White, modifier = Modifier.weight(1f))
-                SmallButton("↑", enabled = i > 0) { onChange { it.copy(favorites = FavoritesOps.move(it.favorites, i, i - 1)) } }
-                SmallButton("↓", enabled = i < settings.favorites.lastIndex) { onChange { it.copy(favorites = FavoritesOps.move(it.favorites, i, i + 1)) } }
-                SmallButton("✕", enabled = true) { onChange { it.copy(favorites = FavoritesOps.toggle(it.favorites, key)) } }
+                SmallButton("↑", enabled = i > 0) { onChange { s -> s.editFavorites(editing) { FavoritesOps.move(it, i, i - 1) } } }
+                SmallButton("↓", enabled = i < shownFavorites.lastIndex) { onChange { s -> s.editFavorites(editing) { FavoritesOps.move(it, i, i + 1) } } }
+                SmallButton("✕", enabled = true) { onChange { s -> s.editFavorites(editing) { FavoritesOps.toggle(it, key) } } }
             }
+        }
+        if (settings.timeProfiles) {
+            Text("Para adicionar a outro horário, segure um app enquanto estiver nele; aqui dá para ordenar e tirar.", color = Color.White.copy(alpha = 0.5f), fontSize = 12.sp)
         }
 
         AddFavorite(settings, apps, onChange)
@@ -150,6 +164,29 @@ fun SettingsScreen(
                 }
             }
             GlitchPanel()
+            ToggleRow("Comentários", "Ele comenta o app de onde você voltou, de vez em quando.", settings.glitchComments) { v -> onChange { it.copy(glitchComments = v) } }
+            ToggleRow("Travessuras", "Ele entorta o relógio e empurra um favorito; cutucar faz ele arrumar.", settings.glitchMischief) { v -> onChange { it.copy(glitchMischief = v) } }
+            var birthdayText by rememberSaveable { mutableStateOf(settings.birthday) }
+            OutlinedTextField(
+                value = birthdayText,
+                onValueChange = { v ->
+                    birthdayText = v
+                    if (v.isBlank() || com.brendon978.menulauncher.pet.parseBirthday(v) != null) onChange { it.copy(birthday = v.trim()) }
+                },
+                singleLine = true,
+                label = { Text("Seu aniversário (dia/mês)") },
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+            )
+            var cityText by rememberSaveable { mutableStateOf(settings.weatherCity) }
+            OutlinedTextField(
+                value = cityText,
+                onValueChange = { v -> cityText = v; onChange { it.copy(weatherCity = v) } },
+                singleLine = true,
+                label = { Text("Sua cidade, para o clima (opcional)") },
+                supportingText = { Text("Só o nome da cidade vai para o Open-Meteo. Vazio, ele não consulta nada.") },
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+            )
+            GlitchReset()
         }
 
         Section("IA")
@@ -162,6 +199,7 @@ fun SettingsScreen(
         BackupSection(settings, onChange)
 
         Section("Sistema")
+        // Sem UpdateRow neste fork: o atualizador baixa o APK do Brendon, sem as alterações daqui.
         Text(
             "Definir como tela inicial padrão",
             color = Color.White,
@@ -236,6 +274,74 @@ private fun Bar(label: String, value: Float) {
     }
 }
 
+/** Procura versão nova no GitHub; instalar sempre passa pela confirmação do Android. */
+@Composable
+private fun UpdateRow() {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    var status by androidx.compose.runtime.remember { mutableStateOf("Versão ${com.brendon978.menulauncher.BuildConfig.VERSION_NAME}") }
+    var busy by androidx.compose.runtime.remember { mutableStateOf(false) }
+    Text(
+        "Procurar atualização",
+        color = Color.White,
+        modifier = Modifier.fillMaxWidth().clickable(enabled = !busy) {
+            busy = true
+            scope.launch {
+                val r = com.brendon978.menulauncher.update.Updater.latest()
+                when {
+                    r == null -> status = "Não consegui ver agora"
+                    !com.brendon978.menulauncher.update.isNewer(r, com.brendon978.menulauncher.BuildConfig.VERSION_CODE) -> status = "Já está na versão mais nova"
+                    !context.packageManager.canRequestPackageInstalls() -> {
+                        status = "Libere instalar apps do menu-launcher e toque de novo"
+                        context.startActivity(android.content.Intent(android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, android.net.Uri.parse("package:" + context.packageName)).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
+                    }
+                    else -> {
+                        status = "Baixando…"
+                        runCatching { com.brendon978.menulauncher.update.Updater.install(context, com.brendon978.menulauncher.update.Updater.download(context, r)) }
+                            .onSuccess { status = r.notes.ifBlank { "Pronto para instalar" } }
+                            .onFailure { status = "O download falhou" }
+                    }
+                }
+                busy = false
+            }
+        }.padding(top = 8.dp, bottom = 2.dp),
+    )
+    Text(status, color = Color.White.copy(alpha = 0.5f), fontSize = 12.sp, modifier = Modifier.padding(bottom = 8.dp))
+}
+
+/** Volta o Glitch ao zero: vontades, vínculo, diário, aprendizado, rancor e protestos. Acessório e ajustes ficam. */
+@Composable
+private fun GlitchReset() {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    var asking by androidx.compose.runtime.remember { mutableStateOf(false) }
+    Text(
+        "Zerar o Glitch",
+        color = Color.White,
+        modifier = Modifier.fillMaxWidth().clickable { asking = true }.padding(vertical = 12.dp),
+    )
+    if (asking) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { asking = false },
+            title = { Text("Zerar o Glitch?") },
+            text = { Text("Ele esquece tudo: vínculo, vontades, diário, o que aprendeu e o que você aprontou. Não dá para desfazer.") },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = {
+                    asking = false
+                    scope.launch {
+                        val live = com.brendon978.menulauncher.pet.GlitchLive
+                        live.importing = true // o Glitch da tela não pode salvar por cima
+                        com.brendon978.menulauncher.pet.GlitchStore(context.applicationContext)
+                            .save(com.brendon978.menulauncher.pet.GlitchMemory(lastSeen = System.currentTimeMillis()))
+                        (context as? android.app.Activity)?.recreate()
+                    }
+                }) { Text("Zerar") }
+            },
+            dismissButton = { androidx.compose.material3.TextButton(onClick = { asking = false }) { Text("Cancelar") } },
+        )
+    }
+}
+
 /** Exportar e importar ajustes (e a memória do Glitch) num arquivo de texto. */
 @Composable
 private fun BackupSection(settings: LauncherSettings, onChange: ((LauncherSettings) -> LauncherSettings) -> Unit) {
@@ -296,6 +402,19 @@ private fun ToggleRow(title: String, hint: String, value: Boolean, onToggle: (Bo
 }
 
 /** Ligar o próximo compromisso pede acesso à agenda na hora. */
+@Composable
+private fun ContactsToggle(value: Boolean, onToggle: (Boolean) -> Unit) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val ask = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.RequestPermission()) { granted ->
+        onToggle(granted)
+    }
+    ToggleRow("Contatos na busca", "Encontra pessoas ao buscar (pede acesso aos contatos).", value) { v ->
+        if (!v) onToggle(false)
+        else if (context.checkSelfPermission(android.Manifest.permission.READ_CONTACTS) == android.content.pm.PackageManager.PERMISSION_GRANTED) onToggle(true)
+        else ask.launch(android.Manifest.permission.READ_CONTACTS)
+    }
+}
+
 @Composable
 private fun NextEventToggle(value: Boolean, onToggle: (Boolean) -> Unit) {
     val context = androidx.compose.ui.platform.LocalContext.current

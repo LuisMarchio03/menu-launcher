@@ -62,7 +62,7 @@ class PetBrainTest {
     }
 
     @Test fun felizSoQuandoNotificacoesZeram() {
-        assertEquals(61_000L, happyUntil(prev = 3, new = 0, now = 1_000, current = 0))
+        assertEquals(6_000L, happyUntil(prev = 3, new = 0, now = 1_000, current = 0))
         assertEquals(0L, happyUntil(prev = 0, new = 0, now = 1_000, current = 0))
         assertEquals(0L, happyUntil(prev = null, new = 0, now = 1_000, current = 0))
         assertEquals(500L, happyUntil(prev = 2, new = 1, now = 1_000, current = 500))

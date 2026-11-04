@@ -12,11 +12,21 @@ enum class Reaction { GIGGLE, SERIOUS, ANGRY, MENACE, FLEE }
 const val SLEEP_FROM_HOUR = 23
 const val SLEEP_UNTIL_HOUR = 7
 const val TIRED_BATTERY = 15
-const val HAPPY_MS = 60_000L
+const val HAPPY_MS = 5_000L
 
 /** Prioridade da spec: dormindo > cansado > música > feliz > normal (o "bravo" vem do toque, por cima). */
+fun isNightHour(hour: Int): Boolean = hour >= SLEEP_FROM_HOUR || hour < SLEEP_UNTIL_HOUR
+
+/** O que ele usa dormindo: gorro e tapa-olho de noite, tapa-olho no não perturbe; acordado, o que você escolheu. */
+fun sleepAccessory(face: Face, hour: Int, dnd: Boolean, chosen: Accessory): Accessory = when {
+    face != Face.SLEEP -> chosen
+    isNightHour(hour) -> Accessory.NIGHT_GEAR
+    dnd -> Accessory.SLEEP_MASK
+    else -> chosen
+}
+
 fun baseMood(hour: Int, battery: Int?, charging: Boolean, musicPlaying: Boolean, happyUntil: Long, now: Long): Mood = when {
-    hour >= SLEEP_FROM_HOUR || hour < SLEEP_UNTIL_HOUR -> Mood.SLEEPING
+    isNightHour(hour) -> Mood.SLEEPING
     battery != null && battery <= TIRED_BATTERY && !charging -> Mood.TIRED
     musicPlaying -> Mood.DANCING
     now < happyUntil -> Mood.HAPPY

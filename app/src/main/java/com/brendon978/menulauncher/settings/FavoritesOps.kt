@@ -24,8 +24,9 @@ object FavoritesOps {
         val hidden = s.hiddenApps.filter { it in installed }.toSet()
         val folders = s.folders.mapValues { (_, v) -> v.filter { it in installed } }.filterValues { it.isNotEmpty() }
         val usage = s.usage.filterKeys { it in installed }
-        return if (favs == s.favorites && overrides == s.iconOverrides && labels == s.customLabels && hidden == s.hiddenApps && folders == s.folders && usage == s.usage) s
-        else s.copy(favorites = favs, iconOverrides = overrides, customLabels = labels, hiddenApps = hidden, folders = folders, usage = usage)
+        val profiles = s.profileFavorites.mapValues { (_, v) -> v.filter { it in installed } }
+        return if (favs == s.favorites && overrides == s.iconOverrides && labels == s.customLabels && hidden == s.hiddenApps && folders == s.folders && usage == s.usage && profiles == s.profileFavorites) s
+        else s.copy(favorites = favs, iconOverrides = overrides, customLabels = labels, hiddenApps = hidden, folders = folders, usage = usage, profileFavorites = profiles)
     }
 
     /** Apps que ainda dá para favoritar (nem favoritos, nem escondidos): em ordem alfabética, ou os que a [query] achar. */

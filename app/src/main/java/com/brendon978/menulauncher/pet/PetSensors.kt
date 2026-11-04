@@ -80,3 +80,38 @@ fun rememberDoNotDisturb(): Boolean {
     }
     return on
 }
+
+/** Acelerômetro só enquanto a tela inicial está à vista. Filtra a gravidade para a inclinação não tremer. */
+@Composable
+fun MotionEffect(active: Boolean, onTilt: (Tilt) -> Unit, onShake: () -> Unit) {
+    val context = LocalContext.current
+    val tilt = androidx.compose.runtime.rememberUpdatedState(onTilt)
+    val shake = androidx.compose.runtime.rememberUpdatedState(onShake)
+    DisposableEffect(active) {
+        val sm = context.getSystemService(android.hardware.SensorManager::class.java)
+        val sensor = sm?.getDefaultSensor(android.hardware.Sensor.TYPE_ACCELEROMETER)
+        if (!active || sensor == null) return@DisposableEffect onDispose { }
+        var meter = ShakeMeter()
+        val g = FloatArray(3)
+        var last = Tilt.LEVEL
+        var first = true
+        val l = object : android.hardware.SensorEventListener {
+            override fun onAccuracyChanged(s: android.hardware.Sensor?, a: Int) = Unit
+            override fun onSensorChanged(e: android.hardware.SensorEvent) {
+                val (x, y, z) = e.values
+                for (i in 0..2) g[i] = if (first) e.values[i] else g[i] * .88f + e.values[i] * .12f
+                first = false
+                val (m, shaken) = meter.sample(kotlin.math.sqrt(x * x + y * y + z * z), System.currentTimeMillis())
+                meter = m
+                if (shaken) shake.value()
+                val now = tiltOf(g[0], g[1], g[2])
+                if (now != last) { last = now; tilt.value(now) }
+            }
+        }
+        sm.registerListener(l, sensor, android.hardware.SensorManager.SENSOR_DELAY_UI)
+        onDispose {
+            sm.unregisterListener(l)
+            tilt.value(Tilt.LEVEL) // desligou o sensor: não pode ficar preso de lado
+        }
+    }
+}

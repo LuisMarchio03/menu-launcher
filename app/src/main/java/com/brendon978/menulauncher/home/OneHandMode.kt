@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -30,6 +31,7 @@ import com.brendon978.menulauncher.pet.petObstacle
 import com.brendon978.menulauncher.icons.IconRenderer
 import com.brendon978.menulauncher.settings.BarSide
 import com.brendon978.menulauncher.settings.LauncherSettings
+import com.brendon978.menulauncher.settings.activeFavorites
 
 /**
  * Metade de baixo: favoritos (ou os apps da letra escolhida) + controles de música; barra de letras na borda
@@ -53,7 +55,20 @@ fun OneHandMode(
 
     val groups = remember(apps) { LetterIndex.group(apps) }
     val byKey = remember(apps) { apps.associateBy { it.key } }
-    val favorites = remember(settings.favorites, byKey) { settings.favorites.mapNotNull { byKey[it] } }
+    // favoritos por horário: relê a cada minuto, enquanto a opção estiver ligada
+    val profile by androidx.compose.runtime.produceState(com.brendon978.menulauncher.settings.currentProfile()) {
+        while (true) {
+            kotlinx.coroutines.delay(60_000)
+            value = com.brendon978.menulauncher.settings.currentProfile()
+        }
+    }
+    val activeFavorites = settings.activeFavorites(profile)
+    val favorites = remember(activeFavorites, byKey) { activeFavorites.mapNotNull { byKey[it] } }
+    // travessura do Glitch: empurra o primeiro favorito até você cutucar ele
+    val pushed by androidx.compose.animation.core.animateDpAsState(
+        if (com.brendon978.menulauncher.pet.GlitchMischief.current.value == com.brendon978.menulauncher.pet.Mischief.ICON) 46.dp else 0.dp,
+        label = "empurrao",
+    )
     val color = Color(settings.strokeColor)
 
     val shown = if (selected == LetterIndex.STAR) favorites else groups[selected].orEmpty()
@@ -78,8 +93,8 @@ fun OneHandMode(
                 .petObstacle("list"),
         ) {
             if (settings.showMostUsed && selected == LetterIndex.STAR) {
-                val most = remember(settings.usage, settings.favorites, settings.hiddenApps, byKey) {
-                    com.brendon978.menulauncher.settings.Usage.top(settings.usage, 5, settings.favorites.toSet() + settings.hiddenApps).mapNotNull { byKey[it] }
+                val most = remember(settings.usage, activeFavorites, settings.hiddenApps, byKey) {
+                    com.brendon978.menulauncher.settings.Usage.top(settings.usage, 5, activeFavorites.toSet() + settings.hiddenApps).mapNotNull { byKey[it] }
                 }
                 if (most.isNotEmpty()) {
                     Text("Mais usados", color = color.copy(alpha = 0.6f), fontSize = settings.smallTextSize, modifier = Modifier.padding(bottom = 6.dp))
@@ -101,14 +116,18 @@ fun OneHandMode(
                 modifier = Modifier.weight(1f, fill = false),
             ) {
                 items(shown, key = { it.key.encode() }) { entry ->
-                    AppRow(
-                        entry = entry,
-                        override = settings.iconOverrides[entry.key],
-                        look = look,
-                        renderer = renderer,
-                        onClick = { onLaunch(entry) },
-                        onLongClick = { onAppLongPress(entry) },
-                    )
+                    val first = selected == LetterIndex.STAR && entry === shown.first()
+                    Box(Modifier.then(if (first) Modifier.offset(x = pushed) else Modifier)) {
+                        AppRow(
+                            entry = entry,
+                            override = settings.iconOverrides[entry.key],
+                            look = look,
+                            renderer = renderer,
+                            onClick = { onLaunch(entry) },
+                            onLongClick = { onAppLongPress(entry) },
+                            tracksBadge = true,
+                        )
+                    }
                 }
             }
             musicSlotBottom()

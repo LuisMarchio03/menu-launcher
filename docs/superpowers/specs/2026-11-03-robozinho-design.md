@@ -37,7 +37,7 @@ Quando mais de um vale ao mesmo tempo, vence o primeiro desta lista:
 2. **Dormindo**: das 23h às 7h. Fica parado, com os olhos em tracinho e o "Zzz" subindo.
 3. **Cansado**: bateria em 15% ou menos, sem estar carregando. Fica parado, com os olhos caídos e uma bateriazinha na telinha.
 4. **Música**: tem música tocando (a mesma informação do cartão de música). Para e dança no lugar, e a telinha vira um **equalizador**, só dentro dela.
-5. **Feliz**: por 1 minuto depois que as notificações chegam a zero (havia alguma e agora não há). Mostra um coração na telinha e pula.
+5. **Feliz**: por 5 segundos depois que as notificações chegam a zero (havia alguma e agora não há). Mostra um coração na telinha e pula.
 6. **Normal**: anda e para, pisca.
    - De vez em quando, numa média de uma vez a cada poucos minutos, ele **escaneia**: uma linha corre na telinha e a antena pisca.
    - Mais raramente, dá um **glitch**: some e reaparece em outro lugar livre.
@@ -78,7 +78,7 @@ As notificações e a música usam o acesso às notificações que o launcher j�
 ## Decisões minhas
 - Ele é desenhado em código (Canvas do Compose), a partir dos caminhos do esboço, para seguir a cor do traço e animar sem imagens.
 - A lógica de humor, irritação e escolha de destino é pura (sem Android) e testada na JVM. O desenho e as animações são conferidos por print no aparelho.
-- Os horários (23h–7h), o limite de bateria (15%), o tempo do "feliz" (1 min) e o ritmo da irritação são palpites meus, fáceis de ajustar.
+- Os horários (23h–7h), o limite de bateria (15%), o tempo do "feliz" (5 s, pedido do Brendon) e o ritmo da irritação são palpites meus, fáceis de ajustar.
 - Música: ele dança só quando a música está **tocando de fato** (pausada não conta, mesmo com o cartão ainda na tela). Isso vale mesmo com o cartão de música desligado nos Ajustes.
 - Toque durante qualquer humor (dormindo, cansado, dançando): a reação (risadinha, sério ou bravo) aparece por cima por um instante, e depois ele volta ao humor do momento. Tocar não acorda o robô de vez.
 - Contagem de notificações: o serviço de notificações que o launcher já tem passa a informar quantas notificações "de verdade" existem, sem contar as persistentes nem as de mídia.
@@ -134,3 +134,31 @@ Nada aqui bloqueia app: é só reação visual na tela inicial (decisão do Bren
 - **Dramático**: com vínculo abaixo de 70%, a raiva às vezes (12%) vira um desmaio fingido, deitado com tontura por 2,8 s.
 - **Bilhete triste**: quando fica triste, deixa um post-it perto do canto, um por vez. A tristeza não passa sozinha: dura até a carência baixar com atenção (toque gentil ou carinho).
 - **Olhos que seguem**: por 2,5 s depois de um toque em qualquer ponto da tela inicial, os olhos olham para lá. O toque é só observado, nunca consumido.
+
+## Tela de bloqueio (2026-11-04)
+
+Testado no S25 FE (Android 17, One UI 9): uma tela nossa por cima do bloqueio desliga a digital com a tela acesa e vira duas telas de bloqueio. Por isso o Glitch mora no papel de parede do bloqueio: a tela continua sendo a da Samsung, com digital direta, notificações e atalhos, e o papel de parede da tela inicial não muda (a prévia do sistema oferece aplicar só no bloqueio).
+
+- Pequeno e quieto, no canto de baixo, em cima de uma imagem de fundo escolhida nos Ajustes. Não recebe toque.
+- O bloqueio fica à vista por poucos segundos: em cerca de 40% das vezes que a tela acende ele faz uma coisa curta (acenar, olhar em volta, escanear, se espreguiçar, pular); depois, só de 20 a 45 s adiante.
+- Dorme de noite e no não perturbe, fica cansado com bateria baixa e dança de leve com música.
+- Só desenha à vista, e parado redesenha poucas vezes por segundo.
+
+## Sono com gorro (2026-11-04)
+
+Dormindo das 23h às 7h, na tela inicial e no bloqueio, ele usa gorrinho com pompom e tapa-olho, por cima de qualquer acessório escolhido, e o Zzz sobe bem acima da cabeça. No não perturbe de dia, só o tapa-olho. O notebook do trabalho passou a ter tela acesa e teclado, com as mãos nas laterais.
+
+## Vida no aparelho (2026-11-04)
+
+- **Sente o celular**: três trancos em 1 s deixam tonto; inclinado mais de cerca de 40°, escorrega para o lado de baixo; de cabeça para baixo, reclama e fica em pé em relação ao mundo. Acelerômetro só com a tela inicial à vista.
+- **Comenta**: ao voltar de um app, no máximo a cada 10 min e em 40% das vezes. Pode desligar.
+- **Travessuras**: entorta o relógio ou empurra o primeiro favorito por até 3 min; cutucar ele desfaz. Pode desligar.
+- **Print**: faz pose ao detectar captura da tela inicial.
+- **Datas**: Natal (20 a 25/12), Ano-Novo, Halloween e aniversário (campo nos Ajustes), com chapéu e fala do bom-dia.
+- **Comer notificações**: vai até a bolinha e come; a barriga enche e esvazia em cerca de 3 min. A notificação não é tocada, e a bolinha volta em 1 min.
+- **Poleiro**: senta em cima da lista ou se pendura embaixo do relógio, lugares sem nada tocável.
+- **Caça aos bugs** (25 s) e **Duelo** (5 rodadas de reflexo, com recorde salvo) no menu de brincadeiras.
+- **Clima**: só com a cidade escrita nos Ajustes (Open-Meteo, sem chave). Guarda-chuva, óculos ou cachecol, e o acessório escolhido vence.
+- **Falar com a IA**: pelo menu do Glitch; ele mostra "Ouvindo..." e "Pensando...", e a resposta volta no balão.
+- **Bloqueio**: cabinho carregando e cartinha quando chega notificação.
+

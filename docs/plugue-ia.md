@@ -128,3 +128,8 @@ adb shell am broadcast -a com.brendon978.menulauncher.action.COMMAND \
 ## Estabilidade
 
 Os nomes `com.brendon978.menulauncher.action.ASSISTANT`, `com.brendon978.menulauncher.action.COMMAND` e `com.brendon978.menulauncher.symbol` são o contrato. Mudar qualquer um deles quebra a IRIS e a Eloy, então só muda com aviso aos dois. Uma ideia para o futuro, ainda fora do contrato: a IA informar o próprio estado (pronta, ouvindo, pensando) para o símbolo animar.
+
+## Resposta do receiver de comandos
+
+O launcher entrega o comando por broadcast ordenado. Quem resolve sem abrir nada responde `setResultCode(Activity.RESULT_OK)`. Quem não responder, e tiver a Activity de comando (forma 3b), é aberto por ela. Assim a IA pode trabalhar em silêncio quando já está rodando, e abrir só quando estiver fechada.
+

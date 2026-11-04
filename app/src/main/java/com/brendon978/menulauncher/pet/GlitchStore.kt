@@ -22,6 +22,8 @@ data class GlitchMemory(
     val diary: Diary = Diary(0),
     val lastMorning: Int = 0,
     val lastNightNag: Long = 0L,
+    /** Melhor tempo no duelo, em ms; 0 = nenhum ainda. */
+    val duelBest: Long = 0L,
 )
 
 class GlitchStore(private val context: Context) {
@@ -41,6 +43,7 @@ class GlitchStore(private val context: Context) {
         val fled = intPreferencesKey("diary_fled")
         val lastMorning = intPreferencesKey("last_morning")
         val lastNightNag = longPreferencesKey("last_night_nag")
+        val duelBest = longPreferencesKey("duel_best")
     }
 
     suspend fun load(): GlitchMemory {
@@ -54,6 +57,7 @@ class GlitchStore(private val context: Context) {
             diary = Diary(p[K.diaryDay] ?: 0, p[K.thrown] ?: 0, p[K.petted] ?: 0, p[K.poked] ?: 0, p[K.games] ?: 0, p[K.fled] ?: 0),
             lastMorning = p[K.lastMorning] ?: 0,
             lastNightNag = p[K.lastNightNag] ?: 0L,
+            duelBest = p[K.duelBest] ?: 0L,
         )
     }
 
@@ -74,6 +78,7 @@ class GlitchStore(private val context: Context) {
             it[K.fled] = m.diary.fled
             it[K.lastMorning] = m.lastMorning
             it[K.lastNightNag] = m.lastNightNag
+            it[K.duelBest] = m.duelBest
         }
     }
 }
@@ -87,6 +92,7 @@ object GlitchBackup {
         "glitch.energy" to m.drives.energy.toString(), "glitch.boredom" to m.drives.boredom.toString(),
         "glitch.longing" to m.drives.longing.toString(), "glitch.curiosity" to m.drives.curiosity.toString(),
         "glitch.bond" to m.bond.toString(), "glitch.pokeExpect" to m.pokeExpect.toString(),
+        "glitch.duelBest" to m.duelBest.toString(),
     )
 
     fun fromExtras(x: Map<String, String>): GlitchMemory? {
@@ -98,6 +104,7 @@ object GlitchBackup {
             bond = bond.coerceIn(0f, 1f),
             lastSeen = System.currentTimeMillis(),
             pokeExpect = f("glitch.pokeExpect", 0f),
+            duelBest = x["glitch.duelBest"]?.toLongOrNull() ?: 0L,
         )
     }
 }

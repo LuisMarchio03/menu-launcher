@@ -155,7 +155,7 @@ fun HomeScreen(
                 )
             }
         }
-        if (settings.mode == HomeMode.ONE_HAND && settings.showPet) PetLayer(color, musicPlaying, settings.glitchAccessory, homeOnTop)
+        if (settings.mode == HomeMode.ONE_HAND && settings.showPet) PetLayer(color, musicPlaying, settings, homeOnTop)
         overlay()
     }
     }
@@ -163,7 +163,7 @@ fun HomeScreen(
 
 /** Camada do robozinho: a tela inteira, menos o que está marcado como obstáculo (com folga). */
 @Composable
-private fun PetLayer(color: Color, musicPlaying: Boolean, accessory: String, homeOnTop: Boolean) {
+private fun PetLayer(color: Color, musicPlaying: Boolean, settings: LauncherSettings, homeOnTop: Boolean) {
     val reg = LocalPetObstacles.current ?: return
     val density = LocalDensity.current
     var origin by remember { mutableStateOf(Offset.Zero) }
@@ -183,9 +183,15 @@ private fun PetLayer(color: Color, musicPlaying: Boolean, accessory: String, hom
             color = color,
             musicPlaying = musicPlaying,
             homeOnTop = homeOnTop,
+            comments = settings.glitchComments,
+            mischief = settings.glitchMischief,
+            birthday = settings.birthday,
+            city = settings.weatherCity,
+            aiPackage = settings.aiPackage,
             area = Area(margin, margin, size.width - margin, size.height - margin),
+            named = reg.rects.mapValues { (_, it) -> Area(it.left - origin.x, it.top - origin.y, it.right - origin.x, it.bottom - origin.y) },
             obstacles = obstacles,
-            accessory = runCatching { com.brendon978.menulauncher.pet.Accessory.valueOf(accessory) }.getOrDefault(com.brendon978.menulauncher.pet.Accessory.NONE),
+            accessory = runCatching { com.brendon978.menulauncher.pet.Accessory.valueOf(settings.glitchAccessory) }.getOrDefault(com.brendon978.menulauncher.pet.Accessory.NONE),
         )
     }
 }

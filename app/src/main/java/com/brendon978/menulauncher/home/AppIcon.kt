@@ -17,8 +17,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.brendon978.menulauncher.pet.GlitchSignals
 import com.brendon978.menulauncher.apps.AppEntry
 import com.brendon978.menulauncher.icons.IconRenderer
 import kotlinx.coroutines.Dispatchers
@@ -37,6 +41,7 @@ fun AppIcon(
     renderer: IconRenderer,
     stroke: Float = 1f,
     shadow: Boolean = false,
+    tracksBadge: Boolean = false,
 ) {
     val px = with(LocalDensity.current) { size.roundToPx() }
     val bmp by produceState<ImageBitmap?>(null, entry.key, override, color, px, stroke) {
@@ -44,8 +49,12 @@ fun AppIcon(
     }
     // bolinha de notificação: só aparece se o app tem notificação "de verdade"
     val badges by MediaListener.badges.collectAsState()
-    val badged = entry.key.packageName in badges
-    Box(Modifier.size(size)) {
+    val pkg = entry.key.packageName
+    val badged = pkg in badges && pkg !in GlitchSignals.eaten
+    // só a lista da tela inicial marca onde a bolinha está: a busca abre por cima e tem outra posição
+    val tracked = badged && tracksBadge
+    if (tracked) DisposableEffect(pkg) { onDispose { GlitchSignals.badgeSpots.remove(pkg) } }
+    Box(Modifier.size(size).then(if (tracked) Modifier.onGloballyPositioned { GlitchSignals.badgeSpots[pkg] = it.boundsInRoot() } else Modifier)) {
         bmp?.let { b ->
             if (shadow) {
                 Image(
