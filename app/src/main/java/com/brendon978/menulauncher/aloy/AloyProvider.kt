@@ -17,6 +17,7 @@ import android.os.Bundle
 import androidx.core.app.NotificationManagerCompat
 import com.brendon978.menulauncher.MainActivity
 import com.brendon978.menulauncher.apps.AppRepository
+import com.brendon978.menulauncher.apps.withLabel
 import com.brendon978.menulauncher.gestures.LauncherAccessibility
 import com.brendon978.menulauncher.music.MediaListener
 import com.brendon978.menulauncher.settings.HomeMode
@@ -48,8 +49,10 @@ class AloyProvider : ContentProvider() {
         val repo = AppRepository(context)
         val apps = repo.apps.value
         repo.close()
-        val hidden = currentSettings(context).hiddenApps
-        return MatrixCursor(APP_COLUMNS).apply { appRows(apps, hidden).forEach { addRow(it) } }
+        val settings = currentSettings(context)
+        // Com os nomes que o usuário deu aos apps.
+        val named = apps.map { withLabel(it, settings.customLabels) }
+        return MatrixCursor(APP_COLUMNS).apply { appRows(named, settings.hiddenApps).forEach { addRow(it) } }
     }
 
     override fun call(method: String, arg: String?, extras: Bundle?): Bundle {

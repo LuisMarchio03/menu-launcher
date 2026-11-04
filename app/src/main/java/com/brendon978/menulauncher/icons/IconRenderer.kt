@@ -47,7 +47,9 @@ class IconRenderer(
         val key = CacheKey(source, sizePx, color, stroke)
         cache.get(key)?.let { return it }
         val bmp = when (source) {
-            is IconSource.Lawnicon -> renderSvg(source.name, sizePx, color, stroke)
+            is IconSource.Lawnicon -> renderSvg("lawnicons/svgs/${source.name}.svg", sizePx, color, stroke)
+                ?: renderInitial('?', sizePx, color, stroke)
+            is IconSource.Own -> renderSvg("proprios/${source.name}.svg", sizePx, color, stroke)
                 ?: renderInitial('?', sizePx, color, stroke)
             is IconSource.Monochrome -> monochromeOf(source.key)?.let { renderMonochrome(it, sizePx, color, stroke) }
                 ?: renderInitial('?', sizePx, color, stroke)
@@ -63,8 +65,7 @@ class IconRenderer(
 
     private fun monochromeOf(key: AppKey): Drawable? = monoCache.get(key)
 
-    private fun renderSvg(name: String, sizePx: Int, color: Int, stroke: Float): Bitmap? {
-        val path = "lawnicons/svgs/$name.svg"
+    private fun renderSvg(path: String, sizePx: Int, color: Int, stroke: Float): Bitmap? {
         val svg = runCatching {
             if (stroke == 1f) SVG.getFromAsset(context.assets, path)
             else SVG.getFromString(scaleStrokeWidths(context.assets.open(path).bufferedReader().use { it.readText() }, stroke))

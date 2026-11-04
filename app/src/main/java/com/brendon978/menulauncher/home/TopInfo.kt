@@ -94,6 +94,19 @@ fun TopInfo(settings: LauncherSettings, color: Color, modifier: Modifier = Modif
         val small = 13.sp * settings.textScale
         if (date != null) Text(date, color = color.copy(alpha = 0.7f), fontSize = small)
         if (second != null) Text(second, color = color.copy(alpha = 0.7f), fontSize = small, modifier = Modifier.padding(top = 2.dp))
+        if (settings.showNextEvent) {
+            // próximo compromisso, relido a cada minuto (fora da thread principal)
+            val event by androidx.compose.runtime.produceState<String?>(null, now / 60_000) {
+                value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { queryNextEvent(context) }
+            }
+            event?.let {
+                Text(
+                    it, color = color.copy(alpha = 0.85f), fontSize = small, maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                    modifier = Modifier.widthIn(max = 200.dp),
+                )
+            }
+        }
     }
 }
 

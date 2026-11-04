@@ -32,6 +32,15 @@ class SettingsRepository(private val context: Context) {
         val aiX = floatPreferencesKey("ai_x")
         val aiY = floatPreferencesKey("ai_y")
         val showPet = booleanPreferencesKey("show_pet")
+        val glitchAccessory = stringPreferencesKey("glitch_accessory")
+        val labels = stringSetPreferencesKey("custom_labels")
+        val hidden = stringSetPreferencesKey("hidden_apps")
+        val oldHidden = stringPreferencesKey("look_hidden_apps")
+        val folders = stringSetPreferencesKey("folders")
+        val usage = stringSetPreferencesKey("usage")
+        val showMostUsed = booleanPreferencesKey("show_most_used")
+        val showQuickActions = booleanPreferencesKey("show_quick_actions")
+        val showNextEvent = booleanPreferencesKey("show_next_event")
     }
 
     val settings: Flow<LauncherSettings> = context.dataStore.data.map { it.toSettings() }
@@ -56,6 +65,14 @@ class SettingsRepository(private val context: Context) {
             prefs[K.aiY] = next.aiY
             prefs[K.showPet] = next.showPet
             for ((f, key) in LOOK_KEYS) prefs[key] = f.write(next)
+            prefs[K.glitchAccessory] = next.glitchAccessory
+            prefs[K.labels] = next.customLabels.map { (k, v) -> "${k.encode()}$SEP$v" }.toSet()
+            prefs[K.hidden] = next.hiddenApps.map { it.encode() }.toSet()
+            prefs[K.folders] = next.folders.map { (name, keys) -> name + SEP + keys.joinToString("\n") { it.encode() } }.toSet()
+            prefs[K.usage] = next.usage.map { (k, v) -> "${k.encode()}$SEP$v" }.toSet()
+            prefs[K.showMostUsed] = next.showMostUsed
+            prefs[K.showQuickActions] = next.showQuickActions
+            prefs[K.showNextEvent] = next.showNextEvent
         }
     }
 
@@ -91,6 +108,26 @@ class SettingsRepository(private val context: Context) {
             aiX = this[K.aiX] ?: d.aiX,
             aiY = this[K.aiY] ?: d.aiY,
             showPet = this[K.showPet] ?: d.showPet,
+            glitchAccessory = this[K.glitchAccessory] ?: d.glitchAccessory,
+            customLabels = this[K.labels]?.mapNotNull { entry ->
+                val i = entry.indexOf(SEP)
+                if (i < 0) null else AppKey.decode(entry.substring(0, i))?.let { it to entry.substring(i + 1) }
+            }?.toMap() ?: d.customLabels,
+            // Sem a chave nova: quem escondeu apps numa versão anterior do fork tem a lista em look_hidden_apps.
+            hiddenApps = this[K.hidden]?.mapNotNull { AppKey.decode(it) }?.toSet()
+                ?: this[K.oldHidden]?.split(',')?.mapNotNull { AppKey.decode(it) }?.toSet()
+                ?: d.hiddenApps,
+            folders = this[K.folders]?.mapNotNull { entry ->
+                val i = entry.indexOf(SEP)
+                if (i <= 0) null else entry.substring(0, i) to entry.substring(i + 1).split("\n").mapNotNull { AppKey.decode(it) }
+            }?.toMap()?.toSortedMap() ?: d.folders,
+            usage = this[K.usage]?.mapNotNull { entry ->
+                val i = entry.indexOf(SEP)
+                if (i < 0) null else AppKey.decode(entry.substring(0, i))?.let { k -> entry.substring(i + 1).toFloatOrNull()?.let { k to it } }
+            }?.toMap() ?: d.usage,
+            showMostUsed = this[K.showMostUsed] ?: d.showMostUsed,
+            showQuickActions = this[K.showQuickActions] ?: d.showQuickActions,
+            showNextEvent = this[K.showNextEvent] ?: d.showNextEvent,
         )
         // Personalização: uma chave de texto por campo, no mesmo formato do arquivo de exportação.
         return LOOK_KEYS.entries.fold(base) { s, (f, key) -> this[key]?.let { f.read(s, it) } ?: s }
@@ -98,6 +135,6 @@ class SettingsRepository(private val context: Context) {
 
     private companion object {
         const val SEP = '\t'
-        val LOOK_KEYS = SettingsCodec.FIELDS.filterNot { it.legacy }.associateWith { stringPreferencesKey("look_${it.name}") }
+        val LOOK_KEYS = SettingsCodec.FIELDS.associateWith { stringPreferencesKey("look_${it.name}") }
     }
 }

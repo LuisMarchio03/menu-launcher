@@ -93,3 +93,44 @@ Nome escolhido pelo Brendon: **Glitch**. Inspirado nas ideias do projeto Pestinh
 - **Volta depois de sumir** (mais de 2 h sem ver a tela inicial): ele cumprimenta com saudade ou emburrado, conforme o vínculo.
 - **Ajustes → Glitch**: liga e desliga, e mostra ao vivo o que ele está fazendo e as barras das vontades e do vínculo.
 - Noite e bateria baixa continuam mandando (dorme ou fica cansado); a raiva, a AK e a marcha passam por cima de tudo.
+
+## Brincadeiras (2026-11-03, ideias inspiradas no Pestinha)
+
+- **Carinho**: passar o dedo indo e voltando em cima dele. Fecha os olhinhos, perdoa tudo (raiva, AK, marcha, protesto, castigo), aumenta o vínculo.
+- **Colo e arremesso**: segurar parado pega no colo; soltar arrastando joga, com gravidade, quique e pouso em cima da lista, do cartão da música ou da IA. Jogado forte fica tonto.
+- **Cantinho do castigo**: a placa aparece num canto quando você pega ele no colo; soltar ele em cima dela deixa ele 25 s de costas, levantando cartazes ("INJUSTIÇA!", "TÔ DE MAL"). Cutucar muito faz ele fugir; carinho perdoa.
+- **Tristeza**: carente e entediado há muito tempo, vai para um canto, cara triste com lágrima e "Ninguém liga pra mim...".
+- **Bolinha**: entediado e com energia, solta uma bola do alto e corre atrás chutando; você pode pegar e jogar a bola também ("Ei, devolve a bola!").
+- **Protesto**: três raivas em 10 minutos e ele marcha 30 s com um cartaz ("ABAIXO O DEDO!", "GREVE!").
+- **Fogos**: quando o vínculo chega a 85%, comemora com fogos e "Melhor humano!".
+
+## Brincadeiras que você começa e mais ideias do Pestinha (2026-11-03)
+
+- **Toque duplo no Glitch** abre o menu "Bora brincar de quê?": Bola, Esconde-esconde, Pega-pega, Jokenpô, Bolhas.
+  - **Bola (passe)**: ele chuta de volta para você; você joga a bola com o dedo. Acaba depois de 40 s sem você tocar na bola.
+  - **Esconde-esconde**: ele some atrás de algo da tela (só a antena espia); você toca onde acha. Errou: "tá quente" / "tá frio"; 5 erros e ele aparece.
+  - **Pega-pega** (25 s): ele foge do seu dedo, encurralado dá glitch; encostou nele, pegou.
+  - **Jokenpô**: você escolhe pedra, papel ou tesoura; ele mostra a dele na telinha. Perdeu, fica bravo e pede revanche.
+  - **Bolhas** (30 s): cada toque na tela solta uma bolha; ele corre e estoura.
+- **Travessura**: entediado e sem carência, cola post-its na tela ("Vai beber água!", "Lembra de mim"); arrastar para longe joga fora (ele reclama).
+- **Trabalhar junto**: voltando de um app de trabalho aberto pelo launcher (GitHub, Notas, Obsidian, Office, Hangar...) depois de 2 min, ele aparece com um notebookzinho ("Commitou?").
+- **Pião**: girar com dois dedos; solto, continua girando e, se girou muito, fica tonto.
+- **Aprender a se encolher**: cutucadas que irritam ensinam ele a esperar cutucada; com a expectativa alta ele se encolhe quando você encosta. Risadinha e carinho desensinam.
+
+## Vida do Glitch (2026-11-03)
+
+- **Acessórios** (todos liberados, sem XP): boné, óculos escuros, fone, capacete, cachecol, gravatinha. Ajustes → Glitch → Acessório.
+- **Reações ao celular**: carregando, aparece um cabinho saindo das costas até a base da tela, com faísca de energia, e ele recarrega energia ("Nham, energia!"); carga completa dá fogos. Fone conectado: ele põe fone sozinho. Sem internet: "?" na telinha de vez em quando e "Cadê a internet?".
+- **Rotina**: bom dia uma vez por dia entre 6h e 11h; de madrugada (0h–5h) manda você dormir, no máximo a cada 30 min.
+- **Diário de hoje** nos Ajustes, na voz dele: quantas vezes você fez carinho, jogou, cutucou, brincou e fez ele fugir.
+
+## Temperamento (2026-11-03, ideias do Pestinha)
+
+Nada aqui bloqueia app: é só reação visual na tela inicial (decisão do Brendon: nenhum modo foco nem disputa para abrir apps).
+
+- **Protesto em estágios**, contando os protestos da última hora: o primeiro é reclamação (30 s marchando com cartaz); o segundo é **greve** (60 s parado, de costas, com cartaz, recusando toque e menu); do terceiro em diante é **revolução** (30 s marchando e atirando bolinhas de papel, só visual). Carinho encerra qualquer um.
+- **Rancor**: depois de castigo ou fuga, por 3 min a risadinha vira cara séria com resmungo e não ganha vínculo. Carinho perdoa antes.
+- **Medo da placa**: levar ele no colo até a placa do castigo faz ele reclamar uma vez a cada aproximação.
+- **Dramático**: com vínculo abaixo de 70%, a raiva às vezes (12%) vira um desmaio fingido, deitado com tontura por 2,8 s.
+- **Bilhete triste**: quando fica triste, deixa um post-it perto do canto, um por vez. A tristeza não passa sozinha: dura até a carência baixar com atenção (toque gentil ou carinho).
+- **Olhos que seguem**: por 2,5 s depois de um toque em qualquer ponto da tela inicial, os olhos olham para lá. O toque é só observado, nunca consumido.

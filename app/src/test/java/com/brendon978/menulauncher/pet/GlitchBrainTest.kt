@@ -123,4 +123,66 @@ class GlitchBrainTest {
         assertEquals(Greeting.MISSED_YOU, good)
         assertEquals(Greeting.SULKY, onReturn(calm, 5 * 3_600_000L, bond = .15f).second)
     }
+
+    // ---- tristeza, brincar, fogos, protesto, castigo ----
+    @Test fun carenteEEntediadoHaMuitoTempoFicaTriste() {
+        val c = decideMany(calm.copy(longing = 1f, boredom = .9f), bond = .4f)
+        assertEquals(Activity.SAD, c.maxBy { it.value }.key)
+    }
+
+    @Test fun entediadoComEnergiaEPoucoCarenteBrinca() {
+        val c = decideMany(calm.copy(energy = .9f, boredom = .7f, longing = .1f))
+        assertEquals(Activity.PLAY, c.maxBy { it.value }.key)
+    }
+
+    @Test fun cansadoNaoBrinca() {
+        assertEquals(null, decideMany(calm.copy(energy = .35f, boredom = .7f, longing = .1f))[Activity.PLAY])
+    }
+
+    @Test fun fogosQuandoOVinculoChegaNoTopo() {
+        assertTrue(celebrates(prevBond = .84f, newBond = .86f))
+        assertEquals(false, celebrates(prevBond = .9f, newBond = .93f))
+        assertEquals(false, celebrates(prevBond = .5f, newBond = .53f))
+    }
+
+    @Test fun protestaDepoisDeTresRaivasEmPoucosMinutos() {
+        var m = ProtestMeter()
+        assertEquals(false, m.angry(0).second)
+        m = m.angry(0).first
+        assertEquals(false, m.angry(60_000).second)
+        m = m.angry(60_000).first
+        assertTrue(m.angry(120_000).second)
+        // raivas espalhadas (mais de 10 min) não somam
+        var spread = ProtestMeter()
+        var protested = false
+        for (i in 0 until 5) { val (n, p) = spread.angry(i * 11 * 60_000L); spread = n; protested = protested || p }
+        assertEquals(false, protested)
+    }
+
+    @Test fun castigoAcabaNoTempoOuNoCarinho() {
+        val start = Punishment.start(now = 0)
+        assertTrue(start.active(10_000))
+        assertEquals(false, start.active(PUNISH_MS + 1))
+        assertEquals(false, start.forgiven().active(10_000))
+    }
+
+    @Test fun importunarNoCastigoFazFugir() {
+        var p = Punishment.start(now = 0)
+        var fled = false
+        for (i in 1..6) { val (n, f) = p.poke(i * 300L); p = n; fled = fled || f }
+        assertTrue(fled)
+    }
+
+    @Test fun tristezaDuraAteReceberAtencao() {
+        val carente = Drives(energy = .6f, boredom = 1f, longing = 1f, curiosity = .2f)
+        repeat(50) { assertEquals(Activity.SAD, nextActivity(Activity.SAD, carente, .5f, false, Random(it))) }
+        val atendido = onEvent(carente, GlitchEvent.GENTLE_TAP).clamped()
+        assertTrue((0 until 50).any { nextActivity(Activity.SAD, atendido, .5f, false, Random(it)) != Activity.SAD })
+    }
+
+    @Test fun bemCarenteFicaTristeMaisDoQuePedeAtencao() {
+        val carente = Drives(energy = .6f, boredom = 1f, longing = 1f, curiosity = .2f)
+        val c = (0 until 300).map { decide(carente, .5f, false, Random(it)) }.groupingBy { it }.eachCount()
+        assertTrue((c[Activity.SAD] ?: 0) > (c[Activity.SEEK_ATTENTION] ?: 0))
+    }
 }

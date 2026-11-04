@@ -1,5 +1,6 @@
 package com.brendon978.menulauncher.home
 
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -76,6 +77,24 @@ fun OneHandMode(
                 .padding(start = if (left) barRoom else 22.dp, end = if (left) 22.dp else barRoom)
                 .petObstacle("list"),
         ) {
+            if (settings.showMostUsed && selected == LetterIndex.STAR) {
+                val most = remember(settings.usage, settings.favorites, byKey) {
+                    com.brendon978.menulauncher.settings.Usage.top(settings.usage, 5, settings.favorites.toSet()).mapNotNull { byKey[it] }
+                }
+                if (most.isNotEmpty()) {
+                    Text("Mais usados", color = color.copy(alpha = 0.6f), fontSize = settings.smallTextSize, modifier = Modifier.padding(bottom = 6.dp))
+                    androidx.compose.foundation.layout.Row(
+                        horizontalArrangement = Arrangement.spacedBy(18.dp),
+                        modifier = Modifier.padding(bottom = 14.dp),
+                    ) {
+                        most.forEach { entry ->
+                            androidx.compose.foundation.layout.Box(
+                                Modifier.combinedClickableCompat(onClick = { onLaunch(entry) }, onLongClick = { onAppLongPress(entry) }),
+                            ) { AppIcon(entry, settings.iconOverrides[entry.key], settings.strokeColor, settings.gridIconSize, renderer, stroke = settings.strokeScale, shadow = settings.textShadow) }
+                        }
+                    }
+                }
+            }
             Text(header, color = color.copy(alpha = 0.6f), fontSize = settings.smallTextSize, modifier = Modifier.padding(bottom = 4.dp))
             LazyColumn(
                 verticalArrangement = Arrangement.Bottom,
@@ -111,3 +130,7 @@ fun OneHandMode(
         )
     }
 }
+
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+private fun Modifier.combinedClickableCompat(onClick: () -> Unit, onLongClick: () -> Unit): Modifier =
+    this.then(Modifier.combinedClickable(onClick = onClick, onLongClick = onLongClick))

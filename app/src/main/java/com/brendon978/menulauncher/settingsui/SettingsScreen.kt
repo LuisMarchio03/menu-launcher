@@ -40,6 +40,8 @@ import com.brendon978.menulauncher.apps.AppKey
 import com.brendon978.menulauncher.settings.FavoritesOps
 import com.brendon978.menulauncher.settings.HomeMode
 import com.brendon978.menulauncher.settings.LauncherSettings
+import com.brendon978.menulauncher.settings.Backup
+import kotlinx.coroutines.launch
 
 /** Toque longo numa área vazia abre aqui. Tudo se ajusta no celular. */
 @Composable
@@ -111,6 +113,11 @@ fun SettingsScreen(
             Switch(settings.showMusic, onCheckedChange = { v -> onChange { it.copy(showMusic = v) } })
         }
 
+        Section("Tela inicial")
+        ToggleRow("Linha de mais usados", "No modo uma mão, os apps que você mais abre, em cima dos favoritos.", settings.showMostUsed) { v -> onChange { it.copy(showMostUsed = v) } }
+        ToggleRow("Atalhos rápidos", "Lanterna, Wi-Fi, internet e não perturbe embaixo da data.", settings.showQuickActions) { v -> onChange { it.copy(showQuickActions = v) } }
+        NextEventToggle(settings.showNextEvent) { v -> onChange { it.copy(showNextEvent = v) } }
+
         Section("Favoritos")
         if (settings.favorites.isEmpty()) {
             Text("Nenhum. Segure um app na tela inicial para favoritar.", color = Color.White.copy(alpha = 0.6f), fontSize = 13.sp)
@@ -131,7 +138,15 @@ fun SettingsScreen(
             Text("Glitch na tela inicial", color = Color.White, modifier = Modifier.weight(1f))
             Switch(settings.showPet, onCheckedChange = { v -> onChange { it.copy(showPet = v) } })
         }
-        if (settings.showPet) GlitchPanel()
+        if (settings.showPet) {
+            Text("Acessório", color = Color.White.copy(alpha = .75f), fontSize = 13.sp, modifier = Modifier.padding(top = 4.dp, bottom = 6.dp))
+            androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                com.brendon978.menulauncher.pet.Accessory.entries.filter { it.choosable }.forEach { a ->
+                    Chip(a.label, settings.glitchAccessory == a.name) { onChange { it.copy(glitchAccessory = a.name) } }
+                }
+            }
+            GlitchPanel()
+        }
 
         Section("IA")
         aiSection()
@@ -139,6 +154,7 @@ fun SettingsScreen(
         Section("Papel de parede")
         WallpaperSection()
 
+        Section("Backup")
         BackupSection(settings, onChange)
 
         Section("Sistema")
@@ -197,6 +213,10 @@ private fun GlitchPanel() {
     Bar("Curiosidade", s.drives.curiosity)
     Bar("Irritação", s.irritation.coerceIn(0f, 1f))
     Bar("Vínculo com você", s.bond)
+    if (s.diary.isNotBlank()) {
+        Text("Diário de hoje", color = Color.White.copy(alpha = .55f), fontSize = 13.sp, modifier = Modifier.padding(top = 14.dp, bottom = 4.dp))
+        Text("“${s.diary}”", color = Color.White, fontSize = 14.sp)
+    }
 }
 
 @Composable
@@ -207,5 +227,79 @@ private fun Bar(label: String, value: Float) {
             Box(Modifier.fillMaxWidth(value.coerceIn(0f, 1f)).height(8.dp).background(Color.White.copy(alpha = .85f), RoundedCornerShape(4.dp)))
         }
         Text("${(value * 100).toInt()}%", color = Color.White.copy(alpha = .6f), fontSize = 12.sp, modifier = Modifier.width(44.dp).padding(start = 8.dp))
+    }
+}
+
+/** Exportar e importar ajustes (e a memória do Glitch) num arquivo de texto. */
+@Composable
+private fun BackupSection(settings: LauncherSettings, onChange: ((LauncherSettings) -> LauncherSettings) -> Unit) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    val store = androidx.compose.runtime.remember { com.brendon978.menulauncher.pet.GlitchStore(context.applicationContext) }
+    fun toast(m: String) = android.widget.Toast.makeText(context, m, android.widget.Toast.LENGTH_SHORT).show()
+    val export = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.CreateDocument("text/plain")) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        scope.launch {
+            val text = Backup.encode(settings, com.brendon978.menulauncher.pet.GlitchBackup.toExtras(store.load()))
+            runCatching { context.contentResolver.openOutputStream(uri)!!.use { it.write(text.toByteArray()) } }
+                .onSuccess { toast("Backup salvo") }.onFailure { toast("Não consegui salvar") }
+        }
+    }
+    val import = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        scope.launch {
+            val text = runCatching { context.contentResolver.openInputStream(uri)!!.use { it.readBytes().decodeToString() } }.getOrNull()
+            val restored = text?.let { Backup.decode(it) }
+            if (restored == null) { toast("Esse arquivo não é um backup do launcher"); return@launch }
+            com.brendon978.menulauncher.pet.GlitchBackup.fromExtras(Backup.extras(text, "glitch."))?.let { mem ->
+                com.brendon978.menulauncher.pet.GlitchLive.importing = true
+                store.save(mem)
+            }
+            // não traz a primeira abertura de volta
+            onChange { restored.copy(firstRunDone = true) }
+            toast("Backup restaurado")
+            (context as? android.app.Activity)?.recreate()
+        }
+    }
+    Text(
+        "Exportar ajustes e o Glitch",
+        color = Color.White,
+        modifier = Modifier.fillMaxWidth().clickable { export.launch("menu-launcher-backup.txt") }.padding(vertical = 12.dp),
+    )
+    Text(
+        "Importar de um arquivo",
+        color = Color.White,
+        modifier = Modifier.fillMaxWidth().clickable { import.launch(arrayOf("text/plain", "application/octet-stream", "*/*")) }.padding(vertical = 12.dp),
+    )
+    Text(
+        "Favoritos, cores, nomes, apps escondidos, IA, acessório e a memória do Glitch (vínculo e vontades).",
+        color = Color.White.copy(alpha = .5f),
+        fontSize = 12.sp,
+    )
+}
+
+@Composable
+private fun ToggleRow(title: String, hint: String, value: Boolean, onToggle: (Boolean) -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 4.dp)) {
+        Column(Modifier.weight(1f)) {
+            Text(title, color = Color.White)
+            Text(hint, color = Color.White.copy(alpha = .5f), fontSize = 12.sp)
+        }
+        Switch(value, onCheckedChange = onToggle)
+    }
+}
+
+/** Ligar o próximo compromisso pede acesso à agenda na hora. */
+@Composable
+private fun NextEventToggle(value: Boolean, onToggle: (Boolean) -> Unit) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val ask = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.RequestPermission()) { granted ->
+        onToggle(granted)
+        if (!granted) android.widget.Toast.makeText(context, "Sem acesso à agenda não dá pra mostrar o compromisso", android.widget.Toast.LENGTH_SHORT).show()
+    }
+    ToggleRow("Próximo compromisso", "Da sua agenda, embaixo da data (pede acesso à agenda).", value) { v ->
+        if (!v) onToggle(false)
+        else if (context.checkSelfPermission(android.Manifest.permission.READ_CALENDAR) == android.content.pm.PackageManager.PERMISSION_GRANTED) onToggle(true)
+        else ask.launch(android.Manifest.permission.READ_CALENDAR)
     }
 }

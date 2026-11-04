@@ -7,6 +7,8 @@ object AiContract {
     const val ACTION_ASSISTANT = "com.brendon978.menulauncher.action.ASSISTANT"
     const val ACTION_COMMAND = "com.brendon978.menulauncher.action.COMMAND"
     const val META_SYMBOL = "com.brendon978.menulauncher.symbol"
+    const val ACTION_SAY = "com.brendon978.menulauncher.action.SAY"
+    const val EXTRA_FROM = "com.brendon978.menulauncher.extra.FROM"
 }
 
 enum class HoldAction { LISTEN, OPEN }

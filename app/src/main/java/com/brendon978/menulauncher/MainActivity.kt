@@ -53,6 +53,9 @@ import com.brendon978.menulauncher.home.SearchScreen
 import com.brendon978.menulauncher.icons.AppFilter
 import com.brendon978.menulauncher.icons.IconRenderer
 import com.brendon978.menulauncher.menu.AppActionsSheet
+import com.brendon978.menulauncher.menu.RenameDialog
+import com.brendon978.menulauncher.apps.organize
+import com.brendon978.menulauncher.apps.withLabel
 import com.brendon978.menulauncher.menu.IconPickerScreen
 import com.brendon978.menulauncher.music.MusicCard
 import com.brendon978.menulauncher.music.MusicControls
@@ -100,6 +103,8 @@ class MainActivity : ComponentActivity() {
     private val resetSignal = mutableIntStateOf(0)
     private val screen = mutableStateOf<Screen>(Screen.Home)
     private val sheetFor = mutableStateOf<AppEntry?>(null)
+    private val renaming = mutableStateOf<AppEntry?>(null)
+    private val foldering = mutableStateOf<AppEntry?>(null)
     private val isDefaultHome = mutableStateOf(false)
     private val hasMusicAccess = mutableStateOf(false)
 
@@ -144,7 +149,10 @@ class MainActivity : ComponentActivity() {
             val loaded by settingsRepo.settings.collectAsState(initial = null)
             val settings = loaded ?: LauncherSettings(firstRunDone = true)
             val music by musicRepo.state.collectAsState()
-            val byKey = remember(apps) { apps.associateBy { it.key } }
+            // nomes próprios e apps escondidos (a busca ainda acha os escondidos)
+            val visibleApps = remember(apps, settings.customLabels, settings.hiddenApps) { organize(apps, settings.customLabels, settings.hiddenApps) }
+            val labeledApps = remember(apps, settings.customLabels) { apps.map { withLabel(it, settings.customLabels) } }
+            val byKey = remember(labeledApps) { labeledApps.associateBy { it.key } }
             // O que a tela inicial desenha: com a cor do papel de parede, se escolhida. Os ajustes gravam o original.
             // A fonte da cor só existe (e só escuta o sistema) enquanto essa opção está ligada.
             val wallpaperColor = if (settings.colorSource == ColorSource.WALLPAPER) {
@@ -155,7 +163,6 @@ class MainActivity : ComponentActivity() {
             val shown = remember(settings, wallpaperColor) {
                 if (wallpaperColor != null) settings.copy(strokeColor = wallpaperColor) else settings
             }
-            val visibleApps = remember(apps, settings.hiddenApps) { apps.filter { it.key !in settings.hiddenApps } }
             val color = Color(shown.strokeColor)
             val current = music.takeIf { settings.showMusic }
 
@@ -203,11 +210,14 @@ class MainActivity : ComponentActivity() {
             // enquanto a busca ou os Ajustes estão abertos por cima.
             Box(Modifier.fillMaxSize()) {
             HomeScreen(
+                    homeOnTop = screen.value == Screen.Home,
                     apps = visibleApps,
                     settings = shown,
                     renderer = renderer,
                     resetSignal = resetSignal.intValue,
-                    onLaunch = { appRepo.launch(it.key) },
+                    onLaunch = {
+                        launchCounted(it.key)
+                    },
                     onAppLongPress = { sheetFor.value = it },
                     onEmptyLongPress = { screen.value = Screen.Settings },
                     onSearch = { screen.value = Screen.Search },
@@ -234,11 +244,11 @@ class MainActivity : ComponentActivity() {
             when (val s = screen.value) {
                 Screen.Home -> Unit
                 Screen.Search -> SearchScreen(
-                    apps = visibleApps,
+                    apps = labeledApps,
                     settings = shown,
                     renderer = renderer,
                     onLaunch = {
-                        appRepo.launch(it.key)
+                        launchCounted(it.key)
                         screen.value = Screen.Home
                     },
                     onAppLongPress = { sheetFor.value = it },
@@ -292,8 +302,35 @@ class MainActivity : ComponentActivity() {
                     onChangeIcon = { screen.value = Screen.IconPicker(entry) },
                     onAppInfo = { openAppInfo(entry.key) },
                     onUninstall = { uninstall(entry.key) },
-                    onHide = { updateSettings { FavoritesOps.setHidden(it, entry.key, hidden = true) } },
                     onDismiss = { sheetFor.value = null },
+                    isHidden = entry.key in settings.hiddenApps,
+                    folderName = settings.folders.entries.firstOrNull { entry.key in it.value }?.key,
+                    onFolder = { foldering.value = entry },
+                    onLeaveFolder = { updateSettings { it.copy(folders = com.brendon978.menulauncher.settings.FolderOps.remove(it.folders, entry.key)) } },
+                    onRename = { renaming.value = entry },
+                    onToggleHidden = {
+                        updateSettings { FavoritesOps.setHidden(it, entry.key, hidden = entry.key !in it.hiddenApps) }
+                    },
+                )
+            }
+            foldering.value?.let { entry ->
+                com.brendon978.menulauncher.menu.FolderDialog(
+                    existing = settings.folders.keys.toList(),
+                    onPick = { name -> updateSettings { it.copy(folders = com.brendon978.menulauncher.settings.FolderOps.put(it.folders, name, entry.key)) } },
+                    onDismiss = { foldering.value = null },
+                )
+            }
+            renaming.value?.let { entry ->
+                val original = apps.firstOrNull { it.key == entry.key }?.label ?: entry.label
+                RenameDialog(
+                    original = original,
+                    current = settings.customLabels[entry.key] ?: "",
+                    onSave = { name ->
+                        updateSettings { st ->
+                            st.copy(customLabels = if (name.isBlank()) st.customLabels - entry.key else st.customLabels + (entry.key to name.trim()))
+                        }
+                    },
+                    onDismiss = { renaming.value = null },
                 )
             }
         }
@@ -316,6 +353,13 @@ class MainActivity : ComponentActivity() {
 
     private fun wallpaperColorSource(): WallpaperColorSource =
         wallpaperColors ?: WallpaperColorSource(this).also { wallpaperColors = it }
+
+    /** Abre o app e registra: conta para "mais usados" e para o Glitch notar trabalho. */
+    private fun launchCounted(key: com.brendon978.menulauncher.apps.AppKey) {
+        com.brendon978.menulauncher.pet.GlitchSignals.lastLaunch = key.packageName to System.currentTimeMillis()
+        appRepo.launch(key)
+        updateSettings { st -> st.copy(usage = com.brendon978.menulauncher.settings.Usage.bump(st.usage, key)) }
+    }
 
     private fun updateSettings(f: (LauncherSettings) -> LauncherSettings) {
         lifecycleScope.launch { settingsRepo.update(f) }

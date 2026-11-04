@@ -42,6 +42,7 @@ import com.brendon978.menulauncher.settings.LauncherSettings
 
 @Composable
 fun HomeScreen(
+    homeOnTop: Boolean,
     apps: List<AppEntry>,
     settings: LauncherSettings,
     renderer: IconRenderer,
@@ -85,6 +86,17 @@ fun HomeScreen(
     Box(
         Modifier
             .fillMaxSize()
+            // só observa os toques (não consome): os olhos do Glitch seguem o seu dedo
+            .pointerInput(Unit) {
+                awaitPointerEventScope {
+                    while (true) {
+                        val ev = awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Initial)
+                        ev.changes.firstOrNull()?.let {
+                            com.brendon978.menulauncher.pet.GlitchSignals.lastTouch = Triple(it.position.x, it.position.y, System.currentTimeMillis())
+                        }
+                    }
+                }
+            }
             .pointerInput(settings.doubleTap == GestureAction.NONE) {
                 detectTapGestures(
                     onLongPress = { onEmptyLongPress() },
@@ -108,6 +120,7 @@ fun HomeScreen(
             HomeMode.ONE_HAND -> {
                 Column(Modifier.padding(start = 22.dp, end = 22.dp, top = 24.dp).petObstacle("top")) {
                     TopInfo(settings, color)
+                    if (settings.showQuickActions) QuickActions(color)
                     musicSlotTop()
                 }
                 OneHandMode(
@@ -124,7 +137,10 @@ fun HomeScreen(
             // Grade: player ao lado do relógio; a grade começa logo abaixo do que for mais alto.
             HomeMode.GRID -> Column(Modifier.fillMaxSize()) {
                 Row(Modifier.padding(start = 22.dp, end = 22.dp, top = 24.dp, bottom = 12.dp)) {
-                    TopInfo(settings, color)
+                    Column {
+                        TopInfo(settings, color)
+                        if (settings.showQuickActions) QuickActions(color)
+                    }
                     Box(Modifier.weight(1f).padding(start = 16.dp)) { musicSlotTop() }
                 }
                 GridMode(
@@ -139,7 +155,7 @@ fun HomeScreen(
                 )
             }
         }
-        if (settings.mode == HomeMode.ONE_HAND && settings.showPet) PetLayer(color, musicPlaying)
+        if (settings.mode == HomeMode.ONE_HAND && settings.showPet) PetLayer(color, musicPlaying, settings.glitchAccessory, homeOnTop)
         overlay()
     }
     }
@@ -147,7 +163,7 @@ fun HomeScreen(
 
 /** Camada do robozinho: a tela inteira, menos o que está marcado como obstáculo (com folga). */
 @Composable
-private fun PetLayer(color: Color, musicPlaying: Boolean) {
+private fun PetLayer(color: Color, musicPlaying: Boolean, accessory: String, homeOnTop: Boolean) {
     val reg = LocalPetObstacles.current ?: return
     val density = LocalDensity.current
     var origin by remember { mutableStateOf(Offset.Zero) }
@@ -166,8 +182,10 @@ private fun PetLayer(color: Color, musicPlaying: Boolean) {
         RobotPet(
             color = color,
             musicPlaying = musicPlaying,
+            homeOnTop = homeOnTop,
             area = Area(margin, margin, size.width - margin, size.height - margin),
             obstacles = obstacles,
+            accessory = runCatching { com.brendon978.menulauncher.pet.Accessory.valueOf(accessory) }.getOrDefault(com.brendon978.menulauncher.pet.Accessory.NONE),
         )
     }
 }

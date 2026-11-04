@@ -1,6 +1,10 @@
 package com.brendon978.menulauncher.home
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
+import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.geometry.Offset
+import com.brendon978.menulauncher.music.MediaListener
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
@@ -38,16 +42,28 @@ fun AppIcon(
     val bmp by produceState<ImageBitmap?>(null, entry.key, override, color, px, stroke) {
         value = withContext(Dispatchers.Default) { renderer.iconFor(entry, override, px, color, stroke) }
     }
+    // bolinha de notificação: só aparece se o app tem notificação "de verdade"
+    val badges by MediaListener.badges.collectAsState()
+    val badged = entry.key.packageName in badges
     Box(Modifier.size(size)) {
-        val b = bmp ?: return@Box
-        if (shadow) {
-            Image(
-                b,
-                contentDescription = null,
-                colorFilter = ColorFilter.tint(Color.Black.copy(alpha = 0.6f)),
-                modifier = Modifier.size(size).offset(y = 1.dp).blur(2.dp),
-            )
+        bmp?.let { b ->
+            if (shadow) {
+                Image(
+                    b,
+                    contentDescription = null,
+                    colorFilter = ColorFilter.tint(Color.Black.copy(alpha = 0.6f)),
+                    modifier = Modifier.size(size).offset(y = 1.dp).blur(2.dp),
+                )
+            }
+            Image(b, contentDescription = null, modifier = Modifier.size(size))
         }
-        Image(b, contentDescription = null, modifier = Modifier.size(size))
+        if (badged) {
+            Canvas(Modifier.size(size)) {
+                val r = this.size.minDimension * .17f
+                val c = Offset(this.size.width - r * .6f, r * .6f)
+                drawCircle(Color(0xFF0C0C0E), r + 1.6f, c)
+                drawCircle(Color(color), r, c)
+            }
+        }
     }
 }

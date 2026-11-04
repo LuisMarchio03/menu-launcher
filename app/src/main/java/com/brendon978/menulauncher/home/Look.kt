@@ -25,6 +25,8 @@ val LauncherSettings.rowTextSize: TextUnit get() = 15.sp * textScale
 /** A linha nunca fica mais baixa que o ícone com folga. */
 val LauncherSettings.rowHeight: Dp get() = max(42.dp * rowScale, rowIconSize + 12.dp)
 val LauncherSettings.gridIconSize: Dp get() = 28.dp * iconScale
+/** Espaço do ícone na célula da grade (também a moldura da pasta). */
+val LauncherSettings.gridCellSize: Dp get() = gridIconSize + 4.dp
 val LauncherSettings.gridTextSize: TextUnit get() = 11.sp * textScale
 val LauncherSettings.smallTextSize: TextUnit get() = 12.sp * textScale
 

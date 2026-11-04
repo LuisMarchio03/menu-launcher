@@ -2,9 +2,6 @@ package com.brendon978.menulauncher.settingsui
 
 import android.content.Intent
 import android.provider.Settings
-import android.widget.Toast
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.FlowRow
@@ -41,7 +38,6 @@ import com.brendon978.menulauncher.settings.FavoritesOps
 import com.brendon978.menulauncher.settings.FontChoice
 import com.brendon978.menulauncher.settings.GestureAction
 import com.brendon978.menulauncher.settings.LauncherSettings
-import com.brendon978.menulauncher.settings.SettingsCodec
 import com.brendon978.menulauncher.settings.withBarSide
 import kotlin.math.roundToInt
 
@@ -244,41 +240,4 @@ fun HiddenAppsSection(settings: LauncherSettings, apps: Map<AppKey, AppEntry>, o
             )
         }
     }
-}
-
-/** Exporta os ajustes num arquivo de texto e importa no outro celular (IA conectada fica de fora). */
-@Composable
-fun BackupSection(settings: LauncherSettings, onChange: OnChange) {
-    val context = LocalContext.current
-    fun toast(msg: String) = Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
-    val exporter = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/plain")) { uri ->
-        if (uri == null) return@rememberLauncherForActivityResult
-        runCatching {
-            context.contentResolver.openOutputStream(uri, "wt")!!.bufferedWriter().use { it.write(SettingsCodec.encode(settings)) }
-        }.onSuccess { toast("Ajustes exportados") }.onFailure { toast("Não consegui salvar o arquivo") }
-    }
-    val importer = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri == null) return@rememberLauncherForActivityResult
-        val text = runCatching {
-            context.contentResolver.openInputStream(uri)!!.bufferedReader().use { it.readText() }
-        }.getOrNull()
-        if (text == null || SettingsCodec.decode(text, settings) == null) {
-            toast("Esse arquivo não é de ajustes do menu-launcher")
-        } else {
-            onChange { SettingsCodec.decode(text, it) ?: it }
-            toast("Ajustes importados")
-        }
-    }
-    Section("Backup")
-    Text(
-        "Exportar ajustes",
-        color = WHITE,
-        modifier = Modifier.fillMaxWidth().clickable { exporter.launch("menu-launcher-ajustes.txt") }.padding(vertical = 12.dp),
-    )
-    Text(
-        "Importar ajustes",
-        color = WHITE,
-        modifier = Modifier.fillMaxWidth().clickable { importer.launch(arrayOf("text/*")) }.padding(vertical = 12.dp),
-    )
-    Hint("Leva tamanho, relógio, cores, gestos, favoritos e ícones trocados. A IA conectada fica de fora.")
 }

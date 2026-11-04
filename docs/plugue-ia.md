@@ -31,6 +31,26 @@ Detalhes:
 - **Comando:** chega como broadcast **explícito**, direto para o componente do receiver, então não sofre o limite de broadcasts implícitos. O `onReceive` tem poucos segundos para rodar. Para trabalho longo (chamar LLM, falar), inicie um serviço em primeiro plano ou use `goAsync()`. O launcher não espera resposta: a IA responde do jeito dela, falando, notificando ou agindo.
 - **Abrir tela a partir do receiver:** o Android bloqueia apps em segundo plano de abrir Activity. Se a IA precisar mostrar algo, use uma notificação.
 
+## Falar pelo Glitch (opcional)
+
+A IA também pode falar pelo Glitch, o robozinho da tela inicial. Basta mandar um broadcast para o launcher:
+
+- `action`: `com.brendon978.menulauncher.action.SAY`
+- pacote: `com.brendon978.menulauncher` (use `setPackage`)
+- `android.intent.extra.TEXT`: o que falar (o balão corta em 140 caracteres; marcações como `[OK]` e links são tirados)
+- `com.brendon978.menulauncher.extra.FROM`: quem fala, por exemplo `IRIS` (aparece antes do texto)
+
+Se a tela inicial não estiver aberta, a fala fica guardada e sai quando o usuário voltar (até 10 minutos depois). Só a última fica guardada.
+
+```kotlin
+context.sendBroadcast(
+    Intent("com.brendon978.menulauncher.action.SAY")
+        .setPackage("com.brendon978.menulauncher")
+        .putExtra(Intent.EXTRA_TEXT, "Lembrete: dentista às 16h")
+        .putExtra("com.brendon978.menulauncher.extra.FROM", "IRIS"),
+)
+```
+
 ## Android nativo (Kotlin)
 
 O módulo `ia-exemplo/` deste repositório é um app completo e mínimo com as três peças. Veja `ia-exemplo/src/main/AndroidManifest.xml` e `CommandReceiver.kt`.

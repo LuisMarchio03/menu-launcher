@@ -49,6 +49,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.brendon978.menulauncher.apps.AppEntry
+import com.brendon978.menulauncher.apps.calc
 import com.brendon978.menulauncher.apps.searchApps
 import com.brendon978.menulauncher.icons.IconRenderer
 import com.brendon978.menulauncher.settings.LauncherSettings
@@ -67,6 +68,8 @@ fun SearchScreen(
 ) {
     var query by rememberSaveable { mutableStateOf("") }
     val results = remember(apps, query) { searchApps(apps, query) }
+    val math = remember(query) { calc(query) }
+    val context = androidx.compose.ui.platform.LocalContext.current
     val focus = remember { FocusRequester() }
     val look = settings.rowLook
     LaunchedEffect(Unit) { focus.requestFocus() }
@@ -96,8 +99,39 @@ fun SearchScreen(
                 )
             }
         }
-        if (query.isNotBlank() && results.isEmpty()) {
+        val strokeColor = Color(settings.strokeColor)
+        if (query.isNotBlank() && results.isEmpty() && math == null) {
             Text("Nenhum app com “$query”", color = Color.White.copy(alpha = 0.6f), fontSize = 13.sp, modifier = Modifier.padding(vertical = 8.dp))
+        }
+        // conta: mostra o resultado; tocar copia
+        math?.let { r ->
+            Text(
+                "= $r",
+                color = strokeColor,
+                fontSize = 30.sp,
+                fontWeight = androidx.compose.ui.text.font.FontWeight.Light,
+                modifier = Modifier
+                    .clickable {
+                        context.getSystemService(android.content.ClipboardManager::class.java)
+                            .setPrimaryClip(android.content.ClipData.newPlainText("conta", r))
+                        android.widget.Toast.makeText(context, "Copiado", android.widget.Toast.LENGTH_SHORT).show()
+                    }
+                    .padding(vertical = 8.dp),
+            )
+        }
+        // buscar na web com o que foi digitado
+        if (query.isNotBlank() && math == null) {
+            Text(
+                "Buscar “${query.trim()}” na web",
+                color = strokeColor.copy(alpha = .8f),
+                fontSize = 14.sp,
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { searchWeb(context, query.trim()) }
+                    .padding(vertical = 10.dp),
+            )
         }
         SearchField(
             value = query,
@@ -201,5 +235,16 @@ private fun SearchPillFrame(
                 }
             }
         }
+    }
+}
+
+/** Abre a busca do Google no navegador padrão. */
+private fun searchWeb(context: android.content.Context, q: String) {
+    // link direto: vai para o navegador padrão, sem o seletor de apps do Android
+    runCatching {
+        context.startActivity(
+            android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://www.google.com/search?q=" + android.net.Uri.encode(q)))
+                .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK),
+        )
     }
 }

@@ -99,9 +99,11 @@ fun AiSymbol(
                             while (true) {
                                 val ev = awaitPointerEvent(PointerEventPass.Main)
                                 val ch = ev.changes.first()
+                                // lê antes de consumir: depois de consumido o movimento vem zerado
+                                val moved = ch.positionChange()
                                 ch.consume()
                                 if (!ch.pressed) return@withTimeoutOrNull "tap"
-                                travelled += ch.positionChange()
+                                travelled += moved
                                 if (travelled.getDistance() > slop) return@withTimeoutOrNull "drag"
                             }
                             @Suppress("UNREACHABLE_CODE") ""
@@ -114,11 +116,12 @@ fun AiSymbol(
                                 while (true) {
                                     val ev = awaitPointerEvent(PointerEventPass.Main)
                                     val ch = ev.changes.first()
+                                    val moved = ch.positionChange()
                                     ch.consume()
                                     if (!ch.pressed) break
                                     p = Offset(
-                                        (p.x + ch.positionChange().x).coerceIn(0f, maxX),
-                                        (p.y + ch.positionChange().y).coerceIn(0f, maxY),
+                                        (p.x + moved.x).coerceIn(0f, maxX),
+                                        (p.y + moved.y).coerceIn(0f, maxY),
                                     )
                                     drag = p
                                 }

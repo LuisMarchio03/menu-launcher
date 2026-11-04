@@ -55,10 +55,25 @@ data class LauncherSettings(
     /** Colunas da grade; 0 = automático pela largura da tela. */
     val gridColumns: Int = 0,
     val gridLabels: Boolean = true,
-    val hiddenApps: Set<AppKey> = emptySet(),
     val swipeDown: GestureAction = GestureAction.NOTIFICATIONS,
     val swipeUp: GestureAction = GestureAction.SEARCH,
     val doubleTap: GestureAction = GestureAction.NONE,
+    /** Nome do acessório do Glitch (enum Accessory). */
+    val glitchAccessory: String = "NONE",
+    /** Nomes que você deu aos apps ("Samsung Shop" -> "Shop"). */
+    val customLabels: Map<AppKey, String> = emptyMap(),
+    /** Apps escondidos da lista e da grade (a busca ainda acha). */
+    val hiddenApps: Set<AppKey> = emptySet(),
+    /** Pastas do modo grade: nome -> apps (na ordem em que entraram). */
+    val folders: Map<String, List<AppKey>> = emptyMap(),
+    /** Quanto você usa cada app (para a linha de mais usados). */
+    val usage: Map<AppKey, Float> = emptyMap(),
+    /** Linha com os apps mais usados em cima dos favoritos. */
+    val showMostUsed: Boolean = false,
+    /** Atalhos rápidos (lanterna, Wi-Fi, internet, não perturbe) embaixo da data. */
+    val showQuickActions: Boolean = false,
+    /** Próximo compromisso da agenda embaixo da data (pede acesso à agenda). */
+    val showNextEvent: Boolean = false,
 )
 
 /** O símbolo da IA fica ao lado da barra de letras: troca de lado junto, para não cair em cima da lista. */

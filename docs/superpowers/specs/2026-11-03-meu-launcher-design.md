@@ -99,3 +99,14 @@ Desenho (minha decisão; quem constrói pode ajustar os nomes, mas não a forma)
 - O mecanismo do papel de parede animado (serviço de papel de parede com decodificação de vídeo e GIF).
 - Gestos e animações, desde que fiquem leves e fiéis ao esboço.
 - Um app de teste mínimo, ou um modo de depuração, que implemente o plugue de IA para validar o contrato antes de a IRIS implementá-lo.
+
+## Depois da primeira versão (2026-11-03)
+
+- **Busca**: lupa na curva da barra (uma mão) e barra fixa embaixo (grade); deslizar para cima na tela inicial também abre.
+- **Deslizar para baixo** na tela inicial abre a cortina de notificações.
+- **Renomear e esconder apps** pelo toque longo no app. Escondidos somem da lista e da grade, mas a busca ainda acha; voltam em Ajustes → Apps escondidos.
+- **Backup**: Ajustes → Backup exporta e importa um arquivo de texto com os ajustes e a memória do Glitch.
+- **Contorno de progresso** na caixa da música.
+- **Ícones próprios** (assets/proprios) para os apps que o Lawnicons não tem: IRIS, Glitch (este launcher), Build Garage, Apenas Mais Um Nerd, Patronus, barbearia, Sicredi, SouGov, HDQWalls, jogo da Netflix, Promedico, Tofu Drifter, Hangar. Entram depois do Lawnicons e antes do monocromático.
+- **Pastas** no modo grade: segurar um app → Colocar em pasta (nova ou existente); a pasta mostra até 4 mini ícones e abre numa folha; "Tirar da pasta" desfaz; pasta vazia some.
+- **Dois toques no fundo apagam a tela**: opcional (Ajustes → Sistema), desligado por padrão; usa um serviço de acessibilidade que só apaga a tela e não lê nada. Se o serviço não estiver ligado, o toque duplo abre as configurações de acessibilidade.

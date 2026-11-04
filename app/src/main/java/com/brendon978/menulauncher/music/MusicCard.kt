@@ -1,6 +1,19 @@
 package com.brendon978.menulauncher.music
 
 import androidx.compose.foundation.Image
+import android.os.SystemClock
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameMillis
+import androidx.compose.ui.composed
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathMeasure
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -34,6 +47,7 @@ fun MusicCard(state: MusicState, color: Color, modifier: Modifier = Modifier, te
             .padding(top = 16.dp)
             .fillMaxWidth()
             .border(1.dp, color.copy(alpha = 0.35f), RoundedCornerShape(14.dp))
+            .songProgressOutline(state, color)
             .padding(10.dp),
     ) {
         val art = remember(state.art) { state.art?.asImageBitmap() }
@@ -53,5 +67,45 @@ fun MusicCard(state: MusicState, color: Color, modifier: Modifier = Modifier, te
                 overflow = TextOverflow.Ellipsis,
             )
         }
+    }
+}
+
+/**
+ * Contorno de progresso: uma linha vai sendo desenhada em volta da caixa conforme a música passa,
+ * começando no meio do topo e andando no sentido do relógio. Fechou a volta, acabou a música.
+ */
+private fun Modifier.songProgressOutline(state: MusicState, color: Color): Modifier = composed {
+    var now by remember { mutableLongStateOf(SystemClock.elapsedRealtime()) }
+    // só anda quadro a quadro enquanto toca (e a tela está visível)
+    LaunchedEffect(state.playing, state.updatedAt) {
+        now = SystemClock.elapsedRealtime()
+        while (state.playing) withFrameMillis { now = SystemClock.elapsedRealtime() }
+    }
+    val progress = songProgress(state.positionMs, state.durationMs, state.updatedAt, now, state.speed, state.playing)
+    drawWithContent {
+        drawContent()
+        if (progress == null || progress <= 0f) return@drawWithContent
+        val stroke = 2.dp.toPx()
+        val r = 14.dp.toPx()
+        val inset = stroke / 2
+        val w = size.width - stroke
+        val h = size.height - stroke
+        // caminho da caixa arredondada começando no meio do topo
+        val path = Path().apply {
+            moveTo(inset + w / 2, inset)
+            lineTo(inset + w - r, inset)
+            arcTo(Rect(inset + w - 2 * r, inset, inset + w, inset + 2 * r), -90f, 90f, false)
+            lineTo(inset + w, inset + h - r)
+            arcTo(Rect(inset + w - 2 * r, inset + h - 2 * r, inset + w, inset + h), 0f, 90f, false)
+            lineTo(inset + r, inset + h)
+            arcTo(Rect(inset, inset + h - 2 * r, inset + 2 * r, inset + h), 90f, 90f, false)
+            lineTo(inset, inset + r)
+            arcTo(Rect(inset, inset, inset + 2 * r, inset + 2 * r), 180f, 90f, false)
+            lineTo(inset + w / 2, inset)
+        }
+        val measure = PathMeasure().apply { setPath(path, false) }
+        val done = Path()
+        measure.getSegment(0f, measure.length * progress, done, true)
+        drawPath(done, color, style = Stroke(stroke, cap = StrokeCap.Round))
     }
 }

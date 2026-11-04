@@ -109,6 +109,10 @@ class MusicRepository(private val context: Context) {
             appLabel = appLabel,
             art = meta.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART) ?: meta.getBitmap(MediaMetadata.METADATA_KEY_ART),
             playing = playing,
+            positionMs = c.playbackState?.position ?: -1,
+            durationMs = meta.getLong(MediaMetadata.METADATA_KEY_DURATION),
+            updatedAt = c.playbackState?.lastPositionUpdateTime ?: 0,
+            speed = c.playbackState?.playbackSpeed?.takeIf { it > 0f } ?: 1f,
         )
     }
 

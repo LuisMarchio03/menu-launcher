@@ -7,11 +7,13 @@
         android:protectionLevel="signature" />
 
     <uses-permission android:name="android.permission.SET_WALLPAPER" />
+    <uses-permission android:name="android.permission.READ_CALENDAR" />
+    <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
+    <uses-permission android:name="android.permission.EXPAND_STATUS_BAR" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
-    <!-- Gesto de arrastar para baixo: abre as notificações. -->
-    <uses-permission android:name="android.permission.EXPAND_STATUS_BAR" />
 
     <queries>
         <intent>
@@ -100,5 +102,13 @@
                 android:name="android.service.wallpaper"
                 android:resource="@xml/animated_wallpaper" />
         </service>
+
+
+        <!-- Uma IA (IRIS, Eloy...) pode falar pelo Glitch: ver docs/plugue-ia.md -->
+        <receiver android:name=".ai.SayReceiver" android:exported="true">
+            <intent-filter>
+                <action android:name="com.brendon978.menulauncher.action.SAY" />
+            </intent-filter>
+        </receiver>
     </application>
 </manifest>

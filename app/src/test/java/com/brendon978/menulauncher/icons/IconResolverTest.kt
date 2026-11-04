@@ -26,4 +26,13 @@ class IconResolverTest {
         assertEquals(IconSource.Initial('9'), resolveIcon(outro, "9GAG", null, filter) { false })
         assertEquals(IconSource.Initial('I'), resolveIcon(outro, "ícone", null, filter) { false })
     }
+
+    @Test fun iconeProprioAntesDoMonocromatico() {
+        val iris = AppKey("com.brendon.iris", "Main", 0)
+        assertEquals(IconSource.Own("iris"), resolveIcon(iris, "IRIS", null, filter, ownIcons = mapOf("com.brendon.iris" to "iris")) { true })
+    }
+
+    @Test fun lawniconsContinuaVencendoOProprio() {
+        assertEquals(IconSource.Lawnicon("spotify"), resolveIcon(spotify, "Spotify", null, filter, ownIcons = mapOf("com.spotify.music" to "x")) { true })
+    }
 }
