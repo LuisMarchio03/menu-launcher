@@ -81,3 +81,9 @@ data class LauncherSettings(
 /** O símbolo da IA fica ao lado da barra de letras: troca de lado junto, para não cair em cima da lista. */
 fun LauncherSettings.withBarSide(to: BarSide): LauncherSettings =
     if (barSide == to) this else copy(barSide = to, aiX = 1f - aiX)
+
+/**
+ * Quanto engrossa o traço dos desenhos (Glitch, brinquedos, botões) para a espessura de borda escolhida.
+ * Cresce menos que a borda: traço muito grosso fecha os olhos e as sanfonas do Glitch.
+ */
+fun lineScale(borderScale: Float): Float = 1f + (borderScale - 1f) * .6f

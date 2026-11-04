@@ -169,6 +169,7 @@ private fun curveOf(i: Int, count: Int) = (sin(i / (count - 1).toFloat() * PI) *
 /** Alvo de toque estreito (cabe no vão da curva) e alto, para o polegar acertar sem pegar as letras. */
 @Composable
 private fun SearchGlyph(color: Color, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val lw = LocalLineScale.current
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier
@@ -182,7 +183,7 @@ private fun SearchGlyph(color: Color, onClick: () -> Unit, modifier: Modifier = 
     ) {
         Canvas(Modifier.size(16.dp)) {
             val w = size.width
-            val stroke = w * 0.12f
+            val stroke = w * 0.12f * lw
             drawCircle(color, radius = w * 0.32f, center = Offset(w * 0.42f, w * 0.42f), style = Stroke(stroke))
             drawLine(color, Offset(w * 0.66f, w * 0.66f), Offset(w * 0.92f, w * 0.92f), stroke, StrokeCap.Round)
         }

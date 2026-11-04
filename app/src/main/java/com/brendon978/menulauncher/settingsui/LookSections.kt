@@ -30,6 +30,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import com.brendon978.menulauncher.ai.positionFraction
+import com.brendon978.menulauncher.home.LocalBorderWidth
 import com.brendon978.menulauncher.settings.HomeMode
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -187,7 +188,7 @@ fun ColorSourceChoice(settings: LauncherSettings, onChange: OnChange) {
 fun IconLookSection(settings: LauncherSettings, onChange: OnChange) {
     Section("Ícones e texto")
     ScaleSlider("Espessura do traço dos ícones", settings.strokeScale, 0.5f..3f) { v -> onChange { it.copy(strokeScale = v) } }
-    ScaleSlider("Espessura das bordas", settings.borderScale, 0.5f..3f) { v -> onChange { it.copy(borderScale = v) } }
+    ScaleSlider("Espessura das bordas e do Glitch", settings.borderScale, 0.5f..3f) { v -> onChange { it.copy(borderScale = v) } }
     SwitchRow("Sombra (para papel de parede claro)", settings.textShadow) { v -> onChange { it.copy(textShadow = v) } }
 }
 
@@ -335,7 +336,7 @@ fun AiPositionPicker(settings: LauncherSettings, onChange: OnChange) {
         Modifier
             .height(240.dp)
             .aspectRatio(ratio)
-            .border(1.dp, Color.White.copy(alpha = 0.3f), RoundedCornerShape(14.dp))
+            .border(LocalBorderWidth.current, Color.White.copy(alpha = 0.3f), RoundedCornerShape(14.dp))
             .pointerInput(Unit) {
                 val dotPx = dot.toPx()
                 fun place(p: Offset) {

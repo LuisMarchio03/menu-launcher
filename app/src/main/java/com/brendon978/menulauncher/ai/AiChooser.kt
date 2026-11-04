@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.brendon978.menulauncher.apps.AppEntry
 import com.brendon978.menulauncher.apps.LetterIndex
+import com.brendon978.menulauncher.home.LocalBorderWidth
 
 /**
  * IAs compatíveis (declaram o contrato) primeiro; "Outro app" conecta qualquer app só com o toque de abrir.
@@ -76,7 +77,7 @@ private fun Option(text: String, selected: Boolean, onClick: () -> Unit) {
         modifier = Modifier
             .padding(vertical = 4.dp)
             .fillMaxWidth()
-            .border(if (selected) 2.dp else 1.dp, Color.White.copy(alpha = if (selected) 1f else 0.25f), RoundedCornerShape(12.dp))
+            .border(if (selected) LocalBorderWidth.current * 2 else LocalBorderWidth.current, Color.White.copy(alpha = if (selected) 1f else 0.25f), RoundedCornerShape(12.dp))
             .clickable(onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 14.dp),
     )

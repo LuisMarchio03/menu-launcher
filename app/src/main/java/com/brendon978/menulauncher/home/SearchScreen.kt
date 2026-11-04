@@ -196,6 +196,7 @@ private fun SearchPillFrame(
     inner: @Composable () -> Unit,
 ) {
     val shape = RoundedCornerShape(28.dp)
+    val lw = LocalLineScale.current
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier
@@ -209,7 +210,7 @@ private fun SearchPillFrame(
     ) {
         Canvas(Modifier.size(18.dp)) {
             val w = size.width
-            val stroke = w * 0.1f
+            val stroke = w * 0.1f * lw
             val c = color.copy(alpha = 0.7f)
             drawCircle(c, radius = w * 0.33f, center = Offset(w * 0.42f, w * 0.42f), style = Stroke(stroke))
             drawLine(c, Offset(w * 0.67f, w * 0.67f), Offset(w * 0.92f, w * 0.92f), stroke, StrokeCap.Round)
@@ -230,8 +231,8 @@ private fun SearchPillFrame(
                 Canvas(Modifier.size(12.dp)) {
                     val w = size.width
                     val c = color.copy(alpha = 0.7f)
-                    drawLine(c, Offset(0f, 0f), Offset(w, w), w * 0.14f, StrokeCap.Round)
-                    drawLine(c, Offset(w, 0f), Offset(0f, w), w * 0.14f, StrokeCap.Round)
+                    drawLine(c, Offset(0f, 0f), Offset(w, w), w * 0.14f * lw, StrokeCap.Round)
+                    drawLine(c, Offset(w, 0f), Offset(0f, w), w * 0.14f * lw, StrokeCap.Round)
                 }
             }
         }

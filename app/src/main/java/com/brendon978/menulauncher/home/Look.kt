@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.max
 import androidx.compose.ui.unit.sp
 import com.brendon978.menulauncher.settings.FontChoice
 import com.brendon978.menulauncher.settings.LauncherSettings
+import com.brendon978.menulauncher.settings.lineScale
 
 /** Medidas da tela inicial já com os multiplicadores dos ajustes (1 = o original). */
 val LauncherSettings.rowIconSize: Dp get() = 24.dp * iconScale
@@ -52,6 +53,9 @@ val FontChoice.family: FontFamily
 /** Borda fina dos contornos (1 dp no original), com a espessura dos ajustes. */
 val LocalBorderWidth = compositionLocalOf { 1.dp }
 
+/** Multiplicador do traço dos desenhos, com a espessura dos ajustes. */
+val LocalLineScale = compositionLocalOf { 1f }
+
 /** Sombra escura atrás do texto, para ler sobre papel de parede claro. */
 private val TEXT_SHADOW = Shadow(Color.Black.copy(alpha = 0.65f), Offset(0f, 2f), blurRadius = 6f)
 
@@ -62,5 +66,8 @@ fun ProvideLauncherText(settings: LauncherSettings, content: @Composable () -> U
     val style = remember(base, settings.font, settings.textShadow) {
         base.merge(TextStyle(fontFamily = settings.font.family, shadow = if (settings.textShadow) TEXT_SHADOW else null))
     }
-    CompositionLocalProvider(LocalBorderWidth provides 1.dp * settings.borderScale) { ProvideTextStyle(style, content) }
+    CompositionLocalProvider(
+        LocalBorderWidth provides 1.dp * settings.borderScale,
+        LocalLineScale provides lineScale(settings.borderScale),
+    ) { ProvideTextStyle(style, content) }
 }

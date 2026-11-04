@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.brendon978.menulauncher.apps.AppEntry
 import com.brendon978.menulauncher.apps.AppKey
+import com.brendon978.menulauncher.home.LocalBorderWidth
 import com.brendon978.menulauncher.settings.FavoritesOps
 import com.brendon978.menulauncher.settings.HomeMode
 import com.brendon978.menulauncher.settings.LauncherSettings
@@ -85,7 +86,7 @@ fun SettingsScreen(
                     Modifier
                         .size(36.dp)
                         .background(Color(c), CircleShape)
-                        .border(if (c == settings.strokeColor) 3.dp else 1.dp, Color.White.copy(alpha = if (c == settings.strokeColor) 1f else 0.3f), CircleShape)
+                        .border(if (c == settings.strokeColor) LocalBorderWidth.current * 3 else LocalBorderWidth.current, Color.White.copy(alpha = if (c == settings.strokeColor) 1f else 0.3f), CircleShape)
                         .clickable { onChange { it.copy(strokeColor = c) } },
                 )
             }
@@ -185,7 +186,7 @@ internal fun Chip(text: String, selected: Boolean, fontFamily: FontFamily? = nul
         style = LocalTextStyle.current.copy(shadow = null),
         modifier = Modifier
             .background(if (selected) Color.White else Color.Transparent, RoundedCornerShape(10.dp))
-            .border(1.dp, Color.White.copy(alpha = 0.3f), RoundedCornerShape(10.dp))
+            .border(LocalBorderWidth.current, Color.White.copy(alpha = 0.3f), RoundedCornerShape(10.dp))
             .clickable(onClick = onClick)
             .padding(horizontal = 14.dp, vertical = 10.dp),
     )

@@ -115,10 +115,11 @@ fun TopInfo(settings: LauncherSettings, color: Color, modifier: Modifier = Modif
 private fun AnalogClock(cal: Calendar, color: Color, modifier: Modifier) {
     val minutes = cal.get(Calendar.MINUTE)
     val hours = cal.get(Calendar.HOUR) + minutes / 60f
+    val lw = LocalLineScale.current
     Canvas(modifier) {
         val r = size.minDimension / 2
         val c = Offset(size.width / 2, size.height / 2)
-        val stroke = r * 0.05f
+        val stroke = r * 0.05f * lw
         // Ponto a [length] do centro na direção da fração do mostrador (0 = 12h, sentido horário).
         fun polar(fraction: Float, length: Float): Offset {
             val a = fraction * 2 * PI

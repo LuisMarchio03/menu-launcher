@@ -1,5 +1,7 @@
 package com.brendon978.menulauncher.pet
 
+import com.brendon978.menulauncher.home.LocalBorderWidth
+import com.brendon978.menulauncher.home.LocalLineScale
 import kotlinx.coroutines.withTimeoutOrNull
 import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.layout.onPlaced
@@ -88,6 +90,7 @@ fun RobotPet(
     accessory: Accessory = Accessory.NONE,
 ) {
     val density = LocalDensity.current
+    val lw = LocalLineScale.current
     val heightPx = with(density) { ROBOT_HEIGHT.toPx() }
     val widthPx = heightPx * ROBOT_ASPECT
     val ballPx = with(density) { 22.dp.toPx() }
@@ -1194,8 +1197,8 @@ fun RobotPet(
                 moveTo(from.x, from.y)
                 cubicTo(from.x + widthPx * .9f, from.y, to.x - widthPx * .3f, to.y - heightPx * .6f, to.x, to.y - 14f)
             }
-            drawPath(cable, color.copy(alpha = .8f), style = androidx.compose.ui.graphics.drawscope.Stroke(2.2f, cap = androidx.compose.ui.graphics.StrokeCap.Round))
-            drawRect(color, Offset(to.x - 6f, to.y - 16f), androidx.compose.ui.geometry.Size(12f, 16f), style = androidx.compose.ui.graphics.drawscope.Stroke(2f))
+            drawPath(cable, color.copy(alpha = .8f), style = androidx.compose.ui.graphics.drawscope.Stroke(2.2f * lw, cap = androidx.compose.ui.graphics.StrokeCap.Round))
+            drawRect(color, Offset(to.x - 6f, to.y - 16f), androidx.compose.ui.geometry.Size(12f, 16f), style = androidx.compose.ui.graphics.drawscope.Stroke(2f * lw))
             // faiscazinha de energia correndo pelo cabo
             val k = (t % 1f)
             val spark = Offset(from.x + (to.x - from.x) * (1 - k), from.y + (to.y - from.y) * (1 - k) * (1 - k))
@@ -1263,8 +1266,8 @@ fun RobotPet(
 
     if (bubbles.isNotEmpty() || pops.isNotEmpty()) {
         Canvas(Modifier.fillMaxSize()) {
-            bubbles.forEach { drawBubble(color, Offset(it.x, it.y), it.r) }
-            pops.forEach { (c, at) -> drawPop(color, c, with(density) { 18.dp.toPx() }, ((now - at) / 400f).coerceIn(0f, 1f)) }
+            bubbles.forEach { drawBubble(color, Offset(it.x, it.y), it.r, lw) }
+            pops.forEach { (c, at) -> drawPop(color, c, with(density) { 18.dp.toPx() }, ((now - at) / 400f).coerceIn(0f, 1f), lw) }
         }
     }
 
@@ -1276,7 +1279,7 @@ fun RobotPet(
             Modifier
                 .offset { IntOffset((hideAntennaX - cw / 2).roundToInt(), (h.t + gap - chh).roundToInt()) }
                 .size(with(density) { cw.toDp() }, with(density) { chh.toDp() }),
-        ) { drawPeekingAntenna(color, Offset(size.width / 2, size.height), density.density / 2.6f * 1.4f, t) }
+        ) { drawPeekingAntenna(color, Offset(size.width / 2, size.height), density.density / 2.6f * 1.4f, t, lw) }
     }
 
     // placa do castigo (aparece com ele no colo e fica durante o castigo); vem antes dele para não cobri-lo
@@ -1422,7 +1425,7 @@ fun RobotPet(
             headset -> Accessory.HEADPHONES
             else -> accessory
         })
-        Canvas(Modifier.size(with(density) { widthPx.toDp() }, ROBOT_HEIGHT)) { drawRobot(color, dressed) }
+        Canvas(Modifier.size(with(density) { widthPx.toDp() }, ROBOT_HEIGHT)) { drawRobot(color, dressed, lw) }
     }
 
     // bola: dá para pegar e jogar também
@@ -1456,7 +1459,7 @@ fun RobotPet(
                     }
                 },
         ) {
-            Canvas(Modifier.size(with(density) { ballPx.toDp() })) { drawBall(color, ballSpin) }
+            Canvas(Modifier.size(with(density) { ballPx.toDp() })) { drawBall(color, ballSpin, lw) }
         }
     }
 
@@ -1481,10 +1484,10 @@ fun RobotPet(
                     close()
                 }
                 drawPath(ball, Color(0xE60C0C0E))
-                drawPath(ball, color, style = androidx.compose.ui.graphics.drawscope.Stroke(1.6.dp.toPx()))
-                drawLine(color, at(200f, .7f), at(20f, .3f), 1.1.dp.toPx())
-                drawLine(color, at(20f, .3f), at(95f, .75f), 1.1.dp.toPx())
-                drawLine(color, at(20f, .3f), at(300f, .7f), 1.1.dp.toPx())
+                drawPath(ball, color, style = androidx.compose.ui.graphics.drawscope.Stroke(1.6.dp.toPx() * lw))
+                drawLine(color, at(200f, .7f), at(20f, .3f), 1.1.dp.toPx() * lw)
+                drawLine(color, at(20f, .3f), at(95f, .75f), 1.1.dp.toPx() * lw)
+                drawLine(color, at(20f, .3f), at(300f, .7f), 1.1.dp.toPx() * lw)
             }
         }
     }
@@ -1498,7 +1501,7 @@ fun RobotPet(
             Modifier
                 .offset { IntOffset((pos.value.x + widthPx / 2 - fw / 2).roundToInt(), (pos.value.y - fh * .8f).roundToInt()) }
                 .size(with(density) { fw.toDp() }, with(density) { fh.toDp() }),
-        ) { drawFireworks(color, p) }
+        ) { drawFireworks(color, p, lw) }
     }
 
     // cartaz: protesto (sempre) e castigo (de vez em quando)
@@ -1597,6 +1600,7 @@ fun RobotPet(
 /** Balãozinho com rabinho apontando para a cabeça dele; na cor do traço, fundo escuro para dar leitura. */
 @Composable
 private fun SpeechBubble(text: String, color: Color, modifier: Modifier = Modifier) {
+    val border = LocalBorderWidth.current
     androidx.compose.foundation.layout.Column(modifier, horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally) {
         androidx.compose.material3.Text(
             text,
@@ -1607,7 +1611,7 @@ private fun SpeechBubble(text: String, color: Color, modifier: Modifier = Modifi
             modifier = Modifier
                 .widthIn(max = 240.dp)
                 .background(Color(0xE60C0C0E), RoundedCornerShape(12.dp))
-                .border(1.dp, color.copy(alpha = .6f), RoundedCornerShape(12.dp))
+                .border(border, color.copy(alpha = .6f), RoundedCornerShape(12.dp))
                 .padding(horizontal = 10.dp, vertical = 5.dp),
         )
         Canvas(Modifier.size(12.dp, 6.dp)) {
@@ -1615,8 +1619,8 @@ private fun SpeechBubble(text: String, color: Color, modifier: Modifier = Modifi
                 moveTo(0f, 0f); lineTo(size.width, 0f); lineTo(size.width / 2, size.height); close()
             }
             drawPath(tail, Color(0xE60C0C0E))
-            drawLine(color.copy(alpha = .6f), Offset(0f, 0f), Offset(size.width / 2, size.height), 1.dp.toPx())
-            drawLine(color.copy(alpha = .6f), Offset(size.width, 0f), Offset(size.width / 2, size.height), 1.dp.toPx())
+            drawLine(color.copy(alpha = .6f), Offset(0f, 0f), Offset(size.width / 2, size.height), border.toPx())
+            drawLine(color.copy(alpha = .6f), Offset(size.width, 0f), Offset(size.width / 2, size.height), border.toPx())
         }
     }
 }
