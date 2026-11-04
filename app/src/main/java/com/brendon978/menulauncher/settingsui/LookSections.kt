@@ -174,17 +174,6 @@ fun ClockSection(settings: LauncherSettings, onChange: OnChange) {
 }
 
 @Composable
-fun ColorSourceChoice(settings: LauncherSettings, onChange: OnChange) {
-    OptionChips(listOf("Fixa" to ColorSource.FIXED, "Do papel de parede" to ColorSource.WALLPAPER), settings.colorSource) { v ->
-        onChange { it.copy(colorSource = v) }
-    }
-    if (settings.colorSource == ColorSource.WALLPAPER) {
-        Hint("A cor acompanha o papel de parede e muda quando ele muda. A cor fixa abaixo volta a valer em \"Fixa\".")
-    }
-    Spacer(Modifier.height(12.dp))
-}
-
-@Composable
 fun IconLookSection(settings: LauncherSettings, onChange: OnChange) {
     Section("Ícones e texto")
     ScaleSlider("Espessura do traço dos ícones", settings.strokeScale, 0.5f..3f) { v -> onChange { it.copy(strokeScale = v) } }
@@ -224,25 +213,9 @@ fun GridSection(settings: LauncherSettings, onChange: OnChange) {
     SwitchRow("Mostrar o nome dos apps", settings.gridLabels) { v -> onChange { it.copy(gridLabels = v) } }
 }
 
-private val GESTURE_ACTIONS = listOf(
-    "Nada" to GestureAction.NONE,
-    "Notificações" to GestureAction.NOTIFICATIONS,
-    "Buscar app" to GestureAction.SEARCH,
-    "Bloquear" to GestureAction.LOCK,
-    "Ajustes" to GestureAction.SETTINGS,
-)
-
 @Composable
-fun GestureSection(settings: LauncherSettings, onChange: OnChange) {
+fun AccessibilityRow() {
     val context = LocalContext.current
-    Section("Gestos na tela inicial")
-    SubLabel("Arrastar para baixo")
-    OptionChips(GESTURE_ACTIONS, settings.swipeDown) { v -> onChange { it.copy(swipeDown = v) } }
-    SubLabel("Arrastar para cima")
-    OptionChips(GESTURE_ACTIONS, settings.swipeUp) { v -> onChange { it.copy(swipeUp = v) } }
-    SubLabel("Toque duplo")
-    OptionChips(GESTURE_ACTIONS, settings.doubleTap) { v -> onChange { it.copy(doubleTap = v) } }
-
     val on by LauncherAccessibility.isOn.collectAsState()
     Text(
         if (on) "Acessibilidade ligada: bloquear e notificações funcionam" else "Ligar a acessibilidade (para bloquear a tela e abrir as notificações)",

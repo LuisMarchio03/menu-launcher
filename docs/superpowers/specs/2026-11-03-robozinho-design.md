@@ -162,3 +162,17 @@ Dormindo das 23h às 7h, na tela inicial e no bloqueio, ele usa gorrinho com pom
 - **Falar com a IA**: pelo menu do Glitch; ele mostra "Ouvindo..." e "Pensando...", e a resposta volta no balão.
 - **Bloqueio**: cabinho carregando e cartinha quando chega notificação.
 
+## Shows (2026-11-04)
+
+Números curtos que ele faz sozinho, sorteados sem repetir o último. Ficam em `pet/GlitchShows.kt`.
+
+- **Clones**: 3 Glitches confusos. Em cerca de 70% das vezes um vira do mal (contorno vermelho, única cor fora do traço), os clones do bem ajudam e ele finaliza com golpe sorteado: espada, pistola de raios, varinha, AK (aqui ela atira, pedido do Brendon, só contra o clone), marreta ou foguete. O clone vira pixels e todos somem.
+- **Entrada** ao voltar depois de 1 min fora: paraquedas, queda ou caixa.
+- **Veículos**: jetpack, skate, patinete.
+- **Rotina**: café de manhã, flexões, regar a plantinha (uma vez por dia, 6 estágios, murcha com 3 dias sem água).
+- **Torrinha**: um bloco por show; passou de 6, desaba.
+- **Mágica**: tira algo da cartola; às vezes falha e ele some.
+- **Grafite**: rabisca um desenho e fica até você esfregar o dedo por cima.
+- **Bichinho**: mini drone ou gato-robô, nos Ajustes; às vezes escapa.
+- **Bloqueio**: também olha para a câmera e cochila em pé.
+

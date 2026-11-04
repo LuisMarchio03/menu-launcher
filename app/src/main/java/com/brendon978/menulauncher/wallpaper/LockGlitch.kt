@@ -9,7 +9,7 @@ import kotlin.math.sin
 import kotlin.random.Random
 
 /** O que o Glitch faz de vez em quando na tela de bloqueio: quietinho, uma coisa curta por vez. */
-enum class LockAct(val durationMs: Long) { WAVE(1_800), LOOK(2_400), SCAN(2_200), STRETCH(2_000), HOP(1_200) }
+enum class LockAct(val durationMs: Long) { WAVE(1_800), LOOK(2_400), SCAN(2_200), STRETCH(2_000), HOP(1_200), PEEK(2_200), NOD(2_600) }
 
 private const val WAKE_ACT_CHANCE = .4f
 
@@ -47,6 +47,10 @@ fun lockPose(act: LockAct?, k: Float, mood: Mood, t: Float): RobotPose {
         act == LockAct.LOOK -> RobotPose(lookX = wave, phase = t)
         act == LockAct.SCAN -> RobotPose(Face.SCAN, antennaOn = (t * 6).toInt() % 2 == 0, phase = t)
         act == LockAct.STRETCH -> RobotPose(armL = 122f * abs(wave), armR = -122f * abs(wave), lift = 3f * abs(wave), phase = t) // positivo abre o braço esquerdo para fora
+        // olha para a câmera, lá em cima
+        act == LockAct.PEEK -> RobotPose(lookY = -1f, lookX = .5f, headTilt = -6f, phase = t)
+        // cochila em pé: a cabeça vai caindo e ele acorda de susto
+        act == LockAct.NOD -> RobotPose(if (k < .8f) Face.TIRED else Face.SURPRISED, headTilt = 14f * (k / .8f).coerceAtMost(1f) * (if (k < .8f) 1f else 0f), lift = if (k < .8f) 0f else 4f, phase = t)
         act == LockAct.HOP -> RobotPose(Face.GIGGLE, armL = -30f, armR = 30f, lift = 9f * abs(wave), phase = t)
         else -> RobotPose(blink = if (t % 4.5f < .28f) .1f else 1f, phase = t)
     }

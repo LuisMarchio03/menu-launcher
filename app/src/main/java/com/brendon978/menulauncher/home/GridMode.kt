@@ -44,6 +44,7 @@ import com.brendon978.menulauncher.settings.LauncherSettings
 fun GridMode(
     apps: List<AppEntry>,
     settings: LauncherSettings,
+    strokeColor: Int,
     renderer: IconRenderer,
     onLaunch: (AppEntry) -> Unit,
     onAppLongPress: (AppEntry) -> Unit,
@@ -53,7 +54,7 @@ fun GridMode(
 ) {
     val items = remember(apps, settings.folders) { FolderOps.gridItems(apps, settings.folders) }
     var openFolder by remember { mutableStateOf<String?>(null) }
-    val color = Color(settings.strokeColor)
+    val color = Color(strokeColor)
     Column(modifier.fillMaxSize()) {
         LazyVerticalGrid(
             columns = if (settings.gridColumns > 0) GridCells.Fixed(settings.gridColumns)
@@ -84,7 +85,7 @@ fun GridMode(
         musicSlotBottom()
         // Na grade não há barra de letras: a busca fica fixa embaixo, na zona do polegar.
         SearchPillButton(
-            color = Color(settings.strokeColor),
+            color = color,
             onClick = onSearch,
             modifier = Modifier.padding(horizontal = 22.dp).padding(top = 8.dp),
         )

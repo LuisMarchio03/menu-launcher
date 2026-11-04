@@ -1,6 +1,7 @@
 package com.brendon978.menulauncher.settings
 
 import com.brendon978.menulauncher.apps.AppKey
+import com.brendon978.menulauncher.wallpaper.WallpaperInterval
 
 enum class HomeMode { ONE_HAND, GRID }
 
@@ -18,12 +19,16 @@ enum class FontChoice { SYSTEM, CONDENSED, SERIF, MONO }
 
 enum class BarSide { RIGHT, LEFT }
 
-enum class GestureAction { NONE, NOTIFICATIONS, SEARCH, LOCK, SETTINGS }
-
 data class LauncherSettings(
     val mode: HomeMode = HomeMode.ONE_HAND,
     val favorites: List<AppKey> = emptyList(),
     val strokeColor: Int = 0xFFFFFFFF.toInt(),
+    /** Cor do traço automática; desligada vale [strokeColor]. */
+    val strokeAuto: StrokeAuto = StrokeAuto.OFF,
+    /** Cor de dia (7h às 19h) no modo por horário. */
+    val strokeDay: Int = 0xFFFFFFFF.toInt(),
+    /** Cor de noite no modo por horário. */
+    val strokeNight: Int = 0xFFE6E1D6.toInt(),
     /** valor = nome do drawable do Lawnicons */
     val iconOverrides: Map<AppKey, String> = emptyMap(),
     val showMusic: Boolean = true,
@@ -57,9 +62,6 @@ data class LauncherSettings(
     /** Colunas da grade; 0 = automático pela largura da tela. */
     val gridColumns: Int = 0,
     val gridLabels: Boolean = true,
-    val swipeDown: GestureAction = GestureAction.NOTIFICATIONS,
-    val swipeUp: GestureAction = GestureAction.SEARCH,
-    val doubleTap: GestureAction = GestureAction.NONE,
     /** Nome do acessório do Glitch (enum Accessory). */
     val glitchAccessory: String = "NONE",
     /** Nomes que você deu aos apps ("Samsung Shop" -> "Shop"). */
@@ -68,12 +70,32 @@ data class LauncherSettings(
     val hiddenApps: Set<AppKey> = emptySet(),
     /** Pastas do modo grade: nome -> apps (na ordem em que entraram). */
     val folders: Map<String, List<AppKey>> = emptyMap(),
+    /** Tocar duas vezes no fundo apaga a tela (precisa do serviço de acessibilidade ligado). */
+    val doubleTapLock: Boolean = false,
+    /** Deslizar para baixo no fundo. */
+    val gestureDown: GestureChoice = GestureChoice(GestureAction.NOTIFICATIONS),
+    /** Deslizar para cima no fundo. */
+    val gestureUp: GestureChoice = GestureChoice(GestureAction.SEARCH),
+    /** Dois toques no fundo; null = ainda não escolhido (vale [doubleTapLock], ver doubleTapChoice). */
+    val gestureDoubleTap: GestureChoice? = null,
     /** Quanto você usa cada app (para a linha de mais usados). */
     val usage: Map<AppKey, Float> = emptyMap(),
     /** Linha com os apps mais usados em cima dos favoritos. */
     val showMostUsed: Boolean = false,
+    /** Deslizar um app da lista para o lado abre as mesmas ações do toque longo. */
+    val swipeAppActions: Boolean = false,
     /** Atalhos rápidos (lanterna, Wi-Fi, internet, não perturbe) embaixo da data. */
     val showQuickActions: Boolean = false,
+    /** Bloco de notas rápido na tela inicial. */
+    val showNote: Boolean = false,
+    /** O texto da nota. */
+    val noteText: String = "",
+    /** Tempo de tela de hoje embaixo da data (pede o acesso a uso de apps). */
+    val showScreenTime: Boolean = false,
+    /** Atalhos de contatos na tela inicial. */
+    val showContacts: Boolean = false,
+    /** Os contatos escolhidos, na ordem em que entraram. */
+    val contactShortcuts: List<ContactShortcut> = emptyList(),
     /** Próximo compromisso da agenda embaixo da data (pede acesso à agenda). */
     val showNextEvent: Boolean = false,
     /** Favoritos diferentes de dia, no trabalho e à noite. */
@@ -90,6 +112,16 @@ data class LauncherSettings(
     val birthday: String = "",
     /** Cidade para o clima do Glitch (vazia = ele não consulta a internet). */
     val weatherCity: String = "",
+    /** Pasta do papel de parede que muda (URI da árvore; vazia = nenhuma). */
+    val wallpaperFolder: String = "",
+    /** Intervalo da troca; OFF não mexe no papel de parede. */
+    val wallpaperInterval: WallpaperInterval = WallpaperInterval.OFF,
+    /** Quando a última troca foi tentada, em milissegundos. */
+    val wallpaperLastChange: Long = 0,
+    /** Nome da última imagem aplicada (a próxima vem depois dela). */
+    val wallpaperLastImage: String = "",
+    /** Bichinho que segue o Glitch (enum Buddy). */
+    val glitchBuddy: String = "DRONE",
 )
 
 /** O símbolo da IA fica ao lado da barra de letras: troca de lado junto, para não cair em cima da lista. */

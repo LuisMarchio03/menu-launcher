@@ -97,8 +97,8 @@ private fun DrawScope.led(c: Color, r: Float, at: Offset) {
     drawCircle(c, r, at)
 }
 
-fun DrawScope.drawRobot(color: Color, pose: RobotPose, lw: Float) {
-    val u = size.height / 170f
+fun DrawScope.drawRobot(color: Color, pose: RobotPose, lw: Float, height: Float = size.height) {
+    val u = height / 170f
     val line = Stroke(width = 2.2f * lw, cap = StrokeCap.Round, join = StrokeJoin.Round)
     scale(u, u, pivot = Offset.Zero) {
         // de perfil no giro ele não some de vez: no mínimo 8% de largura

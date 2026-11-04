@@ -1,7 +1,5 @@
 package com.brendon978.menulauncher.home
 
-import com.brendon978.menulauncher.settings.GestureAction
-import com.brendon978.menulauncher.settings.LauncherSettings
 import kotlin.math.abs
 
 enum class Swipe { UP, DOWN }
@@ -11,11 +9,6 @@ fun swipeOf(totalDy: Float, thresholdPx: Float): Swipe? = when {
     abs(totalDy) < thresholdPx -> null
     totalDy > 0 -> Swipe.DOWN
     else -> Swipe.UP
-}
-
-fun LauncherSettings.actionFor(swipe: Swipe): GestureAction = when (swipe) {
-    Swipe.UP -> swipeUp
-    Swipe.DOWN -> swipeDown
 }
 
 /** Soma um arrasto vertical e, ao soltar, dispara [onSwipe] se passou do limite. */

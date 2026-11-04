@@ -12,12 +12,14 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntSize
@@ -39,12 +41,15 @@ import com.brendon978.menulauncher.icons.IconRenderer
 import com.brendon978.menulauncher.settings.GestureAction
 import com.brendon978.menulauncher.settings.HomeMode
 import com.brendon978.menulauncher.settings.LauncherSettings
+import com.brendon978.menulauncher.settings.listensDoubleTap
 
 @Composable
 fun HomeScreen(
     homeOnTop: Boolean,
     apps: List<AppEntry>,
     settings: LauncherSettings,
+    /** A cor efetiva do traço (ver rememberStrokeColor). */
+    strokeColor: Int,
     renderer: IconRenderer,
     resetSignal: Int,
     onLaunch: (AppEntry) -> Unit,
@@ -53,19 +58,29 @@ fun HomeScreen(
     musicSlotTop: @Composable () -> Unit = {},
     musicSlotBottom: @Composable () -> Unit = {},
     onSearch: () -> Unit = {},
+    onSwipeDown: () -> Unit = {},
+    onSwipeUp: () -> Unit = {},
+    onEmptyDoubleTap: () -> Unit = {},
+    onNoteChange: (String) -> Unit = {},
+    /** Texto do tempo de tela; null não mostra nada. */
+    screenTime: String? = null,
     musicPlaying: Boolean = false,
     /** Desenhado por cima de tudo (símbolo flutuante da IA). */
     overlay: @Composable () -> Unit = {},
     /** Gesto numa área vazia (arrastar para cima/baixo, toque duplo), com a ação escolhida nos ajustes. */
-    onGesture: (GestureAction) -> Unit = {},
 ) {
-    val color = Color(settings.strokeColor)
+    val color = Color(strokeColor)
     val obstacles = remember { PetObstacles() }
-    val current by rememberUpdatedState(settings)
-    val gesture by rememberUpdatedState(onGesture)
+    // os gestos ficam escutando por muito tempo: sem isto rodaria a ação escolhida antes da troca nos Ajustes
+    val swipeDown by rememberUpdatedState(onSwipeDown)
+    val swipeUp by rememberUpdatedState(onSwipeUp)
+    val doubleTap by rememberUpdatedState(onEmptyDoubleTap)
+    val listensDoubleTap = settings.listensDoubleTap()
+    val growsTop = settings.showNote || settings.showContacts || screenTime != null
+    var topHeight by remember { mutableIntStateOf(0) }
     val swipeThreshold = with(LocalDensity.current) { 72.dp.toPx() }
     val swipe = remember(swipeThreshold) {
-        SwipeTracker(swipeThreshold) { gesture(current.actionFor(it)) }
+        SwipeTracker(swipeThreshold) { if (it == Swipe.DOWN) swipeDown() else swipeUp() }
     }
     // Arrasto que começa numa lista (favoritos, grade): o que a lista não rolou (já no topo, ou sem
     // o que rolar) vale como gesto, decidido ao soltar o dedo.
@@ -97,11 +112,11 @@ fun HomeScreen(
                     }
                 }
             }
-            .pointerInput(settings.doubleTap == GestureAction.NONE) {
+            .pointerInput(listensDoubleTap) {
                 detectTapGestures(
                     onLongPress = { onEmptyLongPress() },
-                    // Sem ação no toque duplo, o detector nem espera o segundo toque.
-                    onDoubleTap = if (current.doubleTap == GestureAction.NONE) null else ({ gesture(current.doubleTap) }),
+                    // só escuta toque duplo com a opção ligada (senão o toque simples nem espera)
+                    onDoubleTap = if (listensDoubleTap) ({ doubleTap() }) else null,
                 )
             }
             .nestedScroll(listSwipe)
@@ -118,16 +133,25 @@ fun HomeScreen(
     ) {
         when (settings.mode) {
             HomeMode.ONE_HAND -> {
-                Column(Modifier.padding(start = 22.dp, end = 22.dp, top = 24.dp).petObstacle("top")) {
-                    TopInfo(settings, color)
+                Column(
+                    Modifier
+                        // com o que é novo ligado a coluna cresce: a lista respeita o que sobrar
+                        .then(if (growsTop) Modifier.onSizeChanged { topHeight = it.height } else Modifier)
+                        .padding(start = 22.dp, end = 22.dp, top = 24.dp)
+                        .petObstacle("top"),
+                ) {
+                    TopInfo(settings, color, screenTime = screenTime)
                     if (settings.showQuickActions) QuickActions(color)
+                    TopExtras(settings, color, onNoteChange)
                     musicSlotTop()
                 }
                 OneHandMode(
                     apps = apps,
                     settings = settings,
+                    strokeColor = strokeColor,
                     renderer = renderer,
                     resetSignal = resetSignal,
+                    reservedTop = if (growsTop) with(LocalDensity.current) { topHeight.toDp() } else 0.dp,
                     onLaunch = onLaunch,
                     onAppLongPress = onAppLongPress,
                     musicSlotBottom = musicSlotBottom,
@@ -138,14 +162,16 @@ fun HomeScreen(
             HomeMode.GRID -> Column(Modifier.fillMaxSize()) {
                 Row(Modifier.padding(start = 22.dp, end = 22.dp, top = 24.dp, bottom = 12.dp)) {
                     Column {
-                        TopInfo(settings, color)
+                        TopInfo(settings, color, screenTime = screenTime)
                         if (settings.showQuickActions) QuickActions(color)
+                        TopExtras(settings, color, onNoteChange)
                     }
                     Box(Modifier.weight(1f).padding(start = 16.dp)) { musicSlotTop() }
                 }
                 GridMode(
                     apps = apps,
                     settings = settings,
+                    strokeColor = strokeColor,
                     renderer = renderer,
                     onLaunch = onLaunch,
                     onAppLongPress = onAppLongPress,
@@ -159,6 +185,13 @@ fun HomeScreen(
         overlay()
     }
     }
+}
+
+/** O que entra no topo só quando ligado nos Ajustes. */
+@Composable
+private fun TopExtras(settings: LauncherSettings, color: Color, onNoteChange: (String) -> Unit) {
+    if (settings.showNote) QuickNote(settings.noteText, color, onNoteChange)
+    if (settings.showContacts && settings.contactShortcuts.isNotEmpty()) ContactShortcutsRow(settings.contactShortcuts, color)
 }
 
 /** Camada do robozinho: a tela inteira, menos o que está marcado como obstáculo (com folga). */
@@ -187,6 +220,7 @@ private fun PetLayer(color: Color, musicPlaying: Boolean, settings: LauncherSett
             mischief = settings.glitchMischief,
             birthday = settings.birthday,
             city = settings.weatherCity,
+            buddy = runCatching { com.brendon978.menulauncher.pet.Buddy.valueOf(settings.glitchBuddy) }.getOrDefault(com.brendon978.menulauncher.pet.Buddy.NONE),
             aiPackage = settings.aiPackage,
             area = Area(margin, margin, size.width - margin, size.height - margin),
             named = reg.rects.mapValues { (_, it) -> Area(it.left - origin.x, it.top - origin.y, it.right - origin.x, it.bottom - origin.y) },

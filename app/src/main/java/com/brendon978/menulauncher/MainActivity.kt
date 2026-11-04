@@ -28,7 +28,9 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.unit.dp
@@ -49,7 +51,11 @@ import com.brendon978.menulauncher.gestures.LauncherAccessibility
 import com.brendon978.menulauncher.home.HomeScreen
 import com.brendon978.menulauncher.home.ProvideLauncherText
 import com.brendon978.menulauncher.home.smallTextSize
+import com.brendon978.menulauncher.home.SCREEN_TIME_MIN_GAP
 import com.brendon978.menulauncher.home.SearchScreen
+import com.brendon978.menulauncher.home.hasUsageAccess
+import com.brendon978.menulauncher.home.queryScreenTime
+import com.brendon978.menulauncher.home.shouldRefreshScreenTime
 import com.brendon978.menulauncher.icons.AppFilter
 import com.brendon978.menulauncher.icons.IconRenderer
 import com.brendon978.menulauncher.menu.AppActionsSheet
@@ -64,16 +70,27 @@ import com.brendon978.menulauncher.onboarding.FirstRunScreen
 import com.brendon978.menulauncher.settings.ColorSource
 import com.brendon978.menulauncher.settings.FavoritesOps
 import com.brendon978.menulauncher.settings.GestureAction
+import com.brendon978.menulauncher.settings.GestureChoice
 import com.brendon978.menulauncher.settings.activeFavorites
 import com.brendon978.menulauncher.settings.currentProfile
+import com.brendon978.menulauncher.settings.doubleTapChoice
 import com.brendon978.menulauncher.settings.editFavorites
 import com.brendon978.menulauncher.settings.HomeMode
 import com.brendon978.menulauncher.settings.LauncherSettings
 import com.brendon978.menulauncher.settings.SettingsRepository
+import com.brendon978.menulauncher.settings.StrokeAuto
+import com.brendon978.menulauncher.settings.usesTorchGesture
 import com.brendon978.menulauncher.settingsui.AiPositionPicker
 import com.brendon978.menulauncher.settingsui.SettingsScreen
+import com.brendon978.menulauncher.wallpaper.WallpaperApplier
 import com.brendon978.menulauncher.wallpaper.WallpaperColorSource
+import com.brendon978.menulauncher.wallpaper.rotationDue
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /** Tema escuro neutro para as telas internas (ajustes, seletor): branco sobre quase preto. */
 private val LAUNCHER_COLORS = darkColorScheme(
@@ -111,6 +128,9 @@ class MainActivity : ComponentActivity() {
     private val foldering = mutableStateOf<AppEntry?>(null)
     private val isDefaultHome = mutableStateOf(false)
     private val hasMusicAccess = mutableStateOf(false)
+    private val hasUsageStats = mutableStateOf(false)
+    private val screenTime = mutableStateOf<String?>(null)
+    private var screenTimeQueried = 0L
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -135,6 +155,7 @@ class MainActivity : ComponentActivity() {
 
         lifecycleScope.launch { settingsRepo.settings.collect { settingsSnapshot = it } }
         lifecycleScope.launch { com.brendon978.menulauncher.pet.GlitchTalk.requests.collect { talkThroughGlitch() } }
+        watchScreenTime()
         setContent { MaterialTheme(colorScheme = LAUNCHER_COLORS) { Content() } }
         openRequestedScreen(intent)
     }
@@ -159,17 +180,22 @@ class MainActivity : ComponentActivity() {
             val visibleApps = remember(apps, settings.customLabels, settings.hiddenApps) { organize(apps, settings.customLabels, settings.hiddenApps) }
             val labeledApps = remember(apps, settings.customLabels) { apps.map { withLabel(it, settings.customLabels) } }
             val byKey = remember(labeledApps) { labeledApps.associateBy { it.key } }
-            // O que a tela inicial desenha: com a cor do papel de parede, se escolhida. Os ajustes gravam o original.
+            // A cor do papel de parede é a do WallpaperColorSource: também serve para papel claro.
             // A fonte da cor só existe (e só escuta o sistema) enquanto essa opção está ligada.
-            val wallpaperColor = if (settings.colorSource == ColorSource.WALLPAPER) {
+            val stroke = if (settings.strokeAuto == StrokeAuto.BY_WALLPAPER) {
                 remember { wallpaperColorSource() }.color.collectAsState().value
             } else {
-                null
+                com.brendon978.menulauncher.home.rememberStrokeColor(settings)
             }
-            val shown = remember(settings, wallpaperColor) {
-                if (wallpaperColor != null) settings.copy(strokeColor = wallpaperColor) else settings
+            // O que a tela inicial desenha. Os ajustes gravam o original.
+            val shown = remember(settings, stroke) { settings.copy(strokeColor = stroke) }
+            val color = Color(stroke)
+            // quem tinha a opção antiga de cor do papel de parede passa para a nova
+            LaunchedEffect(settings.colorSource) {
+                if (settings.colorSource == ColorSource.WALLPAPER) {
+                    updateSettings { it.copy(colorSource = ColorSource.FIXED, strokeAuto = StrokeAuto.BY_WALLPAPER) }
+                }
             }
-            val color = Color(shown.strokeColor)
             val current = music.takeIf { settings.showMusic }
 
             // App desinstalado sai dos favoritos e das trocas de ícone.
@@ -182,6 +208,11 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
+
+            // voltou para a tela inicial por dentro do app (fechou os Ajustes, botão home)
+            LaunchedEffect(screen.value) { rotateWallpaperIfDue() }
+
+            val torch = if (settings.usesTorchGesture()) com.brendon978.menulauncher.home.rememberTorch() else null
 
             if (loaded == null) return@run // evita piscar a primeira abertura antes de ler os ajustes
 
@@ -219,6 +250,7 @@ class MainActivity : ComponentActivity() {
                     homeOnTop = screen.value == Screen.Home,
                     apps = visibleApps,
                     settings = shown,
+                    strokeColor = stroke,
                     renderer = renderer,
                     resetSignal = resetSignal.intValue,
                     onLaunch = {
@@ -227,10 +259,14 @@ class MainActivity : ComponentActivity() {
                     onAppLongPress = { sheetFor.value = it },
                     onEmptyLongPress = { screen.value = Screen.Settings },
                     onSearch = { screen.value = Screen.Search },
+                    onSwipeDown = { runGesture(settings.gestureDown, torch) },
+                    onSwipeUp = { runGesture(settings.gestureUp, torch) },
+                    onEmptyDoubleTap = { runGesture(settings.doubleTapChoice(), torch) },
+                    screenTime = screenTime.value,
+                    onNoteChange = { text -> updateSettings { it.copy(noteText = text) } },
                     musicPlaying = music?.playing == true,
                     // Na grade o símbolo fica no meio dos ícones e parece parte do fundo: só no modo uma mão.
-                    overlay = { if (settings.mode == HomeMode.ONE_HAND) AiOverlay(shown, apps) },
-                    onGesture = ::performGesture,
+                    overlay = { if (settings.mode == HomeMode.ONE_HAND) AiOverlay(shown, apps, stroke) },
                     // Pedido do Brendon: controles logo abaixo do cartão, no topo (modo uma mão).
                     musicSlotTop = {
                         current?.let {
@@ -252,6 +288,7 @@ class MainActivity : ComponentActivity() {
                 Screen.Search -> SearchScreen(
                     apps = labeledApps,
                     settings = shown,
+                    strokeColor = stroke,
                     renderer = renderer,
                     onLaunch = {
                         launchCounted(it.key)
@@ -263,6 +300,7 @@ class MainActivity : ComponentActivity() {
                     settings = settings,
                     apps = byKey,
                     onChange = ::updateSettings,
+                    hasUsageAccess = hasUsageStats.value,
                     onSetDefaultLauncher = ::requestHomeRole,
                     aiSection = {
                         val candidates = remember { aiRepo.discover() }
@@ -354,21 +392,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun performGesture(action: GestureAction) {
-        when (action) {
-            GestureAction.NONE -> Unit
-            GestureAction.SEARCH -> screen.value = Screen.Search
-            GestureAction.SETTINGS -> screen.value = Screen.Settings
-            GestureAction.NOTIFICATIONS -> if (!LauncherAccessibility.notifications(this)) {
-                toast("Ligue a acessibilidade do menu-launcher para abrir as notificações")
-            }
-            GestureAction.LOCK -> if (!LauncherAccessibility.lock()) {
-                toast("Para bloquear com o gesto, ligue a acessibilidade do menu-launcher")
-                startActivity(Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS))
-            }
-        }
-    }
-
     private fun wallpaperColorSource(): WallpaperColorSource =
         wallpaperColors ?: WallpaperColorSource(this).also { wallpaperColors = it }
 
@@ -377,6 +400,33 @@ class MainActivity : ComponentActivity() {
         com.brendon978.menulauncher.pet.GlitchSignals.lastLaunch = key.packageName to System.currentTimeMillis()
         appRepo.launch(key)
         updateSettings { st -> st.copy(usage = com.brendon978.menulauncher.settings.Usage.bump(st.usage, key)) }
+    }
+
+    private fun runGesture(choice: GestureChoice, torch: com.brendon978.menulauncher.home.Torch?) {
+        when (choice.action) {
+            GestureAction.NOTIFICATIONS -> if (!LauncherAccessibility.notifications(this)) {
+                toast("Ligue a acessibilidade do menu-launcher para abrir as notificações")
+            }
+            GestureAction.SEARCH -> screen.value = Screen.Search
+            GestureAction.SETTINGS -> screen.value = Screen.Settings
+            GestureAction.LOCK -> lockScreen()
+            GestureAction.CAMERA -> runCatching {
+                startActivity(Intent(android.provider.MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            }.onFailure { toast("Não achei o app de câmera") }
+            GestureAction.TORCH -> torch?.toggle?.invoke()
+            GestureAction.APP -> choice.app?.let { key ->
+                if (appRepo.activityInfo(key) == null) toast("Esse app não está mais instalado")
+                else runCatching { launchCounted(key) }
+            }
+            GestureAction.NONE -> Unit
+        }
+    }
+
+    private fun lockScreen() {
+        if (!LauncherAccessibility.lock()) {
+            android.widget.Toast.makeText(this, "Ligue o menu-launcher em Acessibilidade para apagar a tela", android.widget.Toast.LENGTH_LONG).show()
+            startActivity(Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS))
+        }
     }
 
     private fun updateSettings(f: (LauncherSettings) -> LauncherSettings) {
@@ -431,22 +481,78 @@ class MainActivity : ComponentActivity() {
         musicRepo.refresh()
         isDefaultHome.value = getSystemService(RoleManager::class.java).isRoleHeld(RoleManager.ROLE_HOME)
         hasMusicAccess.value = musicRepo.hasAccess()
+        hasUsageStats.value = hasUsageAccess(this)
+        rotateWallpaperIfDue()
+    }
+
+    /** Tempo de tela: só com a opção ligada e o launcher visível, no máximo uma consulta por minuto. */
+    private fun watchScreenTime() {
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                settingsRepo.settings.map { it.showScreenTime }.distinctUntilChanged().collectLatest { on ->
+                    if (!on) {
+                        screenTime.value = null
+                        screenTimeQueried = 0
+                        return@collectLatest
+                    }
+                    while (true) {
+                        refreshScreenTime()
+                        kotlinx.coroutines.delay(SCREEN_TIME_MIN_GAP)
+                    }
+                }
+            }
+        }
+    }
+
+    private suspend fun refreshScreenTime() {
+        if (!hasUsageAccess(this)) {
+            screenTime.value = null
+            return
+        }
+        val now = System.currentTimeMillis()
+        if (!shouldRefreshScreenTime(now, screenTimeQueried)) return
+        screenTimeQueried = now
+        val text = withContext(kotlinx.coroutines.Dispatchers.IO) { runCatching { queryScreenTime(applicationContext, now) }.getOrNull() }
+        screenTime.value = text
+    }
+
+    private var rotating = false
+
+    /** Papel de parede que muda: sem serviço em segundo plano, só confere ao voltar para a tela inicial. */
+    private fun rotateWallpaperIfDue() {
+        if (rotating || screen.value != Screen.Home) return
+        rotating = true
+        lifecycleScope.launch {
+            try {
+                val s = settingsRepo.settings.first()
+                val now = System.currentTimeMillis()
+                if (!rotationDue(s.wallpaperInterval, s.wallpaperFolder, s.wallpaperLastChange, now)) return@launch
+                // marca antes: pasta com problema é tentada uma vez por intervalo, não a cada volta
+                settingsRepo.update { it.copy(wallpaperLastChange = now) }
+                val applied = runCatching {
+                    WallpaperApplier(applicationContext).applyNextFromFolder(s.wallpaperFolder, s.wallpaperLastImage)
+                }.getOrNull()
+                if (applied != null) settingsRepo.update { it.copy(wallpaperLastImage = applied) }
+            } finally {
+                rotating = false
+            }
+        }
     }
 
     @androidx.compose.runtime.Composable
-    private fun AiOverlay(settings: LauncherSettings, apps: List<AppEntry>) {
+    private fun AiOverlay(settings: LauncherSettings, apps: List<AppEntry>, stroke: Int) {
         val pkg = settings.aiPackage ?: return
         val activity = settings.aiActivity ?: return
         val px = with(androidx.compose.ui.platform.LocalDensity.current) { 34.dp.roundToPx() }
-        val symbol by androidx.compose.runtime.produceState<androidx.compose.ui.graphics.ImageBitmap?>(null, pkg, activity, settings.strokeColor, settings.strokeScale, apps) {
+        val symbol by androidx.compose.runtime.produceState<androidx.compose.ui.graphics.ImageBitmap?>(null, pkg, activity, stroke, settings.strokeScale, apps) {
             value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
-                aiRepo.symbol(pkg, activity, px, settings.strokeColor)?.asImageBitmap()
-                    ?: apps.firstOrNull { it.key.packageName == pkg }?.let { renderer.iconFor(it, null, px, settings.strokeColor, settings.strokeScale) }
+                aiRepo.symbol(pkg, activity, px, stroke)?.asImageBitmap()
+                    ?: apps.firstOrNull { it.key.packageName == pkg }?.let { renderer.iconFor(it, null, px, stroke, settings.strokeScale) }
             }
         }
         AiSymbol(
             symbol = symbol,
-            color = Color(settings.strokeColor),
+            color = Color(stroke),
             xFraction = settings.aiX,
             yFraction = settings.aiY,
             listening = listening.value,

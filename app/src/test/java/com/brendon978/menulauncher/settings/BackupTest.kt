@@ -1,6 +1,7 @@
 package com.brendon978.menulauncher.settings
 
 import com.brendon978.menulauncher.apps.AppKey
+import com.brendon978.menulauncher.wallpaper.WallpaperInterval
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -19,6 +20,28 @@ class BackupTest {
             showMostUsed = true, showQuickActions = true, showNextEvent = true,
         )
         assertEquals(s, Backup.decode(Backup.encode(s)))
+    }
+
+    @Test fun rodadaTresVaiNoBackup() {
+        val s = LauncherSettings(
+            wallpaperFolder = "content://x/tree/primary%3AFundos", wallpaperInterval = WallpaperInterval.SIX_HOURS,
+            wallpaperLastChange = 1_800_000_000_000L, wallpaperLastImage = "praia.jpg",
+            strokeAuto = StrokeAuto.BY_TIME, strokeDay = 0xFF7FB7A4.toInt(), strokeNight = 0xFFC9A27E.toInt(),
+            gestureDown = GestureChoice(GestureAction.TORCH), gestureUp = GestureChoice(GestureAction.APP, b),
+            gestureDoubleTap = GestureChoice(GestureAction.CAMERA),
+            swipeAppActions = true, showNote = true, noteText = "pão = 2\nleite #1 ✓", showScreenTime = true,
+            showContacts = true, contactShortcuts = listOf(ContactShortcut("content://com.android.contacts/contacts/lookup/ab/1", "Maria = Silva")),
+        )
+        assertEquals(s, Backup.decode(Backup.encode(s)))
+    }
+
+    @Test fun backupAntigoCaiNosPadroes() {
+        assertEquals(LauncherSettings(), Backup.decode("menu-launcher-backup=1"))
+    }
+
+    @Test fun backupAntigoComDoisToquesContinuaApagando() {
+        val s = Backup.decode("menu-launcher-backup=1\ndoubleTapLock=true")!!
+        assertEquals(GestureAction.LOCK, s.doubleTapChoice().action)
     }
 
     @Test fun arquivoEstranhoNaoQuebra() {
@@ -41,7 +64,6 @@ class BackupTest {
             clockStyle = ClockStyle.WORDS, dateStyle = DateStyle.NUMERIC, secondZone = "Europe/Lisbon",
             colorSource = ColorSource.WALLPAPER, strokeScale = 2.5f, borderScale = 2.5f, textShadow = true, font = FontChoice.SERIF,
             gridColumns = 5, gridLabels = false,
-            swipeDown = GestureAction.SETTINGS, swipeUp = GestureAction.NONE, doubleTap = GestureAction.LOCK,
         )
         assertEquals(s, Backup.decode(Backup.encode(s)))
     }

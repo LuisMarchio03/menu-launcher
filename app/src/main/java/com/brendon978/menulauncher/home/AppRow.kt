@@ -28,13 +28,16 @@ fun AppRow(
     onClick: () -> Unit,
     onLongClick: () -> Unit,
     tracksBadge: Boolean = false,
+    /** Deslizar para o lado; null deixa a linha como sempre foi. */
+    onSwipe: (() -> Unit)? = null,
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
             .height(look.height)
-            .combinedClickable(onClick = onClick, onLongClick = onLongClick),
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
+            .then(if (onSwipe != null) Modifier.swipeToActions(onSwipe) else Modifier),
     ) {
         AppIcon(entry, override, look.color, look.iconSize, renderer, stroke = look.stroke, shadow = look.shadow, tracksBadge = tracksBadge)
         Spacer(Modifier.width(14.dp))

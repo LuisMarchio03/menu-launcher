@@ -46,8 +46,5 @@ object SettingsCodec {
         enumField("bar_side", { it.barSide }) { s, v -> s.copy(barSide = v) },
         Field("grid_columns", { it.gridColumns.toString() }, { s, v -> v.toIntOrNull()?.takeIf { it == 0 || it in 3..7 }?.let { s.copy(gridColumns = it) } }),
         boolField("grid_labels", { it.gridLabels }) { s, v -> s.copy(gridLabels = v) },
-        enumField("swipe_down", { it.swipeDown }) { s, v -> s.copy(swipeDown = v) },
-        enumField("swipe_up", { it.swipeUp }) { s, v -> s.copy(swipeUp = v) },
-        enumField("double_tap", { it.doubleTap }) { s, v -> s.copy(doubleTap = v) },
     )
 }

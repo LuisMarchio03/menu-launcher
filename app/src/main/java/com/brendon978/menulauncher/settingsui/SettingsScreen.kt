@@ -53,6 +53,7 @@ fun SettingsScreen(
     settings: LauncherSettings,
     apps: Map<AppKey, AppEntry>,
     onChange: ((LauncherSettings) -> LauncherSettings) -> Unit,
+    hasUsageAccess: Boolean,
     onSetDefaultLauncher: () -> Unit,
     aiSection: @Composable () -> Unit,
     onClose: () -> Unit,
@@ -81,18 +82,7 @@ fun SettingsScreen(
         ClockSection(settings, onChange)
 
         Section("Cor do traço")
-        ColorSourceChoice(settings, onChange)
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            COLOR_CHOICES.forEach { c ->
-                Box(
-                    Modifier
-                        .size(36.dp)
-                        .background(Color(c), CircleShape)
-                        .border(if (c == settings.strokeColor) LocalBorderWidth.current * 3 else LocalBorderWidth.current, Color.White.copy(alpha = if (c == settings.strokeColor) 1f else 0.3f), CircleShape)
-                        .clickable { onChange { it.copy(strokeColor = c) } },
-                )
-            }
-        }
+        ColorRow(settings.strokeColor) { c -> onChange { it.copy(strokeColor = c) } }
         var hex by rememberSaveable { mutableStateOf("") }
         OutlinedTextField(
             value = hex,
@@ -104,12 +94,32 @@ fun SettingsScreen(
             placeholder = { Text("ou digite um hex, ex.: #A0C4FF") },
             modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
         )
+        Text("Cor automática", color = Color.White.copy(alpha = .75f), fontSize = 13.sp, modifier = Modifier.padding(top = 14.dp, bottom = 6.dp))
+        androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            com.brendon978.menulauncher.settings.StrokeAuto.entries.forEach { m ->
+                Chip(m.label, settings.strokeAuto == m) { onChange { it.copy(strokeAuto = m) } }
+            }
+        }
+        if (settings.strokeAuto == com.brendon978.menulauncher.settings.StrokeAuto.BY_TIME) {
+            Text("Dia (7h às 19h)", color = Color.White.copy(alpha = .75f), fontSize = 13.sp, modifier = Modifier.padding(top = 12.dp, bottom = 6.dp))
+            ColorRow(settings.strokeDay) { c -> onChange { it.copy(strokeDay = c) } }
+            Text("Noite", color = Color.White.copy(alpha = .75f), fontSize = 13.sp, modifier = Modifier.padding(top = 12.dp, bottom = 6.dp))
+            ColorRow(settings.strokeNight) { c -> onChange { it.copy(strokeNight = c) } }
+        }
+        if (settings.strokeAuto == com.brendon978.menulauncher.settings.StrokeAuto.BY_WALLPAPER) {
+            Text(
+                "Usa a cor principal do papel de parede, clareada para dar contraste. Se ele não informar cor, vale a cor escolhida acima.",
+                color = Color.White.copy(alpha = .5f),
+                fontSize = 12.sp,
+                modifier = Modifier.padding(top = 8.dp),
+            )
+        }
 
         IconLookSection(settings, onChange)
         FontSection(settings, onChange)
         BarSideSection(settings, onChange)
         GridSection(settings, onChange)
-        GestureSection(settings, onChange)
+        AccessibilityRow()
 
         Section("Música")
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -119,9 +129,16 @@ fun SettingsScreen(
 
         Section("Tela inicial")
         ToggleRow("Linha de mais usados", "No modo uma mão, os apps que você mais abre, em cima dos favoritos.", settings.showMostUsed) { v -> onChange { it.copy(showMostUsed = v) } }
+        ToggleRow("Deslizar um app para o lado", "Na lista da tela inicial, abre as mesmas opções de segurar o app.", settings.swipeAppActions) { v -> onChange { it.copy(swipeAppActions = v) } }
         ToggleRow("Atalhos rápidos", "Lanterna, Wi-Fi, internet e não perturbe embaixo da data.", settings.showQuickActions) { v -> onChange { it.copy(showQuickActions = v) } }
+        ToggleRow("Bloco de notas", "Uma nota curta na tela inicial; tocar edita.", settings.showNote) { v -> onChange { it.copy(showNote = v) } }
+        ScreenTimeToggle(settings.showScreenTime, hasUsageAccess) { v -> onChange { it.copy(showScreenTime = v) } }
+        ContactsSection(settings, onChange)
         NextEventToggle(settings.showNextEvent) { v -> onChange { it.copy(showNextEvent = v) } }
         ContactsToggle(settings.searchContacts) { v -> onChange { it.copy(searchContacts = v) } }
+
+        Section("Gestos no fundo")
+        GesturesSection(settings, apps, onChange)
 
         Section("Favoritos")
         ToggleRow("Favoritos por horário", "Listas diferentes de dia, no trabalho (seg. a sex., 8h às 18h) e à noite (19h às 7h).", settings.timeProfiles) { v -> onChange { it.copy(timeProfiles = v) } }
@@ -163,6 +180,12 @@ fun SettingsScreen(
                     Chip(a.label, settings.glitchAccessory == a.name) { onChange { it.copy(glitchAccessory = a.name) } }
                 }
             }
+            Text("Bichinho", color = Color.White.copy(alpha = .75f), fontSize = 13.sp, modifier = Modifier.padding(top = 10.dp, bottom = 6.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                com.brendon978.menulauncher.pet.Buddy.entries.forEach { p ->
+                    Chip(p.label, settings.glitchBuddy == p.name) { onChange { it.copy(glitchBuddy = p.name) } }
+                }
+            }
             GlitchPanel()
             ToggleRow("Comentários", "Ele comenta o app de onde você voltou, de vez em quando.", settings.glitchComments) { v -> onChange { it.copy(glitchComments = v) } }
             ToggleRow("Travessuras", "Ele entorta o relógio e empurra um favorito; cutucar faz ele arrumar.", settings.glitchMischief) { v -> onChange { it.copy(glitchMischief = v) } }
@@ -194,6 +217,7 @@ fun SettingsScreen(
 
         Section("Papel de parede")
         WallpaperSection()
+        WallpaperRotationSection(settings, onChange)
 
         Section("Backup")
         BackupSection(settings, onChange)
@@ -212,6 +236,21 @@ fun SettingsScreen(
 @Composable
 internal fun Section(title: String) {
     Text(title, color = Color.White.copy(alpha = 0.55f), fontSize = 13.sp, modifier = Modifier.padding(top = 24.dp, bottom = 10.dp))
+}
+
+@Composable
+private fun ColorRow(selected: Int, onPick: (Int) -> Unit) {
+    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        COLOR_CHOICES.forEach { c ->
+            Box(
+                Modifier
+                    .size(36.dp)
+                    .background(Color(c), CircleShape)
+                    .border(if (c == selected) LocalBorderWidth.current * 3 else LocalBorderWidth.current, Color.White.copy(alpha = if (c == selected) 1f else 0.3f), CircleShape)
+                    .clickable { onPick(c) },
+            )
+        }
+    }
 }
 
 @Composable
@@ -384,20 +423,33 @@ private fun BackupSection(settings: LauncherSettings, onChange: ((LauncherSettin
         modifier = Modifier.fillMaxWidth().clickable { import.launch(arrayOf("text/plain", "application/octet-stream", "*/*")) }.padding(vertical = 12.dp),
     )
     Text(
-        "Favoritos, cores, nomes, apps escondidos, IA, acessório e a memória do Glitch (vínculo e vontades).",
+        "Favoritos, cores, nomes, apps escondidos, gestos, nota, IA, acessório e a memória do Glitch (vínculo e vontades).",
         color = Color.White.copy(alpha = .5f),
         fontSize = 12.sp,
     )
 }
 
 @Composable
-private fun ToggleRow(title: String, hint: String, value: Boolean, onToggle: (Boolean) -> Unit) {
+internal fun ToggleRow(title: String, hint: String, value: Boolean, onToggle: (Boolean) -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 4.dp)) {
         Column(Modifier.weight(1f)) {
             Text(title, color = Color.White)
             Text(hint, color = Color.White.copy(alpha = .5f), fontSize = 12.sp)
         }
         Switch(value, onCheckedChange = onToggle)
+    }
+}
+
+/** Ligar sem o acesso leva à tela do sistema; enquanto ele não for liberado, a tela inicial não mostra nada. */
+@Composable
+private fun ScreenTimeToggle(value: Boolean, hasAccess: Boolean, onToggle: (Boolean) -> Unit) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val hint = if (value && !hasAccess) "Falta liberar o menu-launcher em Acesso a uso de apps." else "Discreto, embaixo da data (pede o acesso a uso de apps)."
+    ToggleRow("Tempo de tela", hint, value) { v ->
+        onToggle(v)
+        if (v && !hasAccess) runCatching {
+            context.startActivity(android.content.Intent(android.provider.Settings.ACTION_USAGE_ACCESS_SETTINGS).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
+        }
     }
 }
 

@@ -32,6 +32,7 @@ import com.brendon978.menulauncher.clock.timeInWords
 import com.brendon978.menulauncher.clock.zoneLabel
 import com.brendon978.menulauncher.settings.ClockStyle
 import com.brendon978.menulauncher.settings.LauncherSettings
+import com.brendon978.menulauncher.pet.petObstacle
 import kotlinx.coroutines.delay
 import java.util.Calendar
 import java.util.TimeZone
@@ -43,7 +44,7 @@ private fun calendarOf(millis: Long, zone: TimeZone): Calendar = Calendar.getIns
 
 /** Relógio e data no topo: só para olhar (tocar no relógio abre os alarmes). Estilo e tamanho vêm dos ajustes. */
 @Composable
-fun TopInfo(settings: LauncherSettings, color: Color, modifier: Modifier = Modifier) {
+fun TopInfo(settings: LauncherSettings, color: Color, modifier: Modifier = Modifier, screenTime: String? = null) {
     val context = LocalContext.current
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
     LaunchedEffect(Unit) {
@@ -100,6 +101,7 @@ fun TopInfo(settings: LauncherSettings, color: Color, modifier: Modifier = Modif
         val small = 13.sp * settings.textScale
         if (date != null) Text(date, color = color.copy(alpha = 0.7f), fontSize = small)
         if (second != null) Text(second, color = color.copy(alpha = 0.7f), fontSize = small, modifier = Modifier.padding(top = 2.dp))
+        screenTime?.let { Text(it, color = color.copy(alpha = 0.55f), fontSize = 12.sp, modifier = Modifier.petObstacle("tempo-tela")) }
         if (settings.showNextEvent) {
             // próximo compromisso, relido a cada minuto (fora da thread principal)
             val event by androidx.compose.runtime.produceState<String?>(null, now / 60_000) {

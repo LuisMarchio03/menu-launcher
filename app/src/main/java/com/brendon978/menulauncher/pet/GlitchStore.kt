@@ -24,6 +24,11 @@ data class GlitchMemory(
     val lastNightNag: Long = 0L,
     /** Melhor tempo no duelo, em ms; 0 = nenhum ainda. */
     val duelBest: Long = 0L,
+    /** Vezes que a plantinha foi regada e o dia da última rega. */
+    val plantWatered: Int = 0,
+    val lastWaterDay: Int = 0,
+    /** Andares da torrinha de blocos. */
+    val towerBlocks: Int = 0,
 )
 
 class GlitchStore(private val context: Context) {
@@ -44,6 +49,9 @@ class GlitchStore(private val context: Context) {
         val lastMorning = intPreferencesKey("last_morning")
         val lastNightNag = longPreferencesKey("last_night_nag")
         val duelBest = longPreferencesKey("duel_best")
+        val plantWatered = intPreferencesKey("plant_watered")
+        val lastWaterDay = intPreferencesKey("last_water_day")
+        val towerBlocks = intPreferencesKey("tower_blocks")
     }
 
     suspend fun load(): GlitchMemory {
@@ -58,6 +66,9 @@ class GlitchStore(private val context: Context) {
             lastMorning = p[K.lastMorning] ?: 0,
             lastNightNag = p[K.lastNightNag] ?: 0L,
             duelBest = p[K.duelBest] ?: 0L,
+            plantWatered = p[K.plantWatered] ?: 0,
+            lastWaterDay = p[K.lastWaterDay] ?: 0,
+            towerBlocks = p[K.towerBlocks] ?: 0,
         )
     }
 
@@ -79,6 +90,9 @@ class GlitchStore(private val context: Context) {
             it[K.lastMorning] = m.lastMorning
             it[K.lastNightNag] = m.lastNightNag
             it[K.duelBest] = m.duelBest
+            it[K.plantWatered] = m.plantWatered
+            it[K.lastWaterDay] = m.lastWaterDay
+            it[K.towerBlocks] = m.towerBlocks
         }
     }
 }
