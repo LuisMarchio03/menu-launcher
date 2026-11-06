@@ -125,9 +125,9 @@ fun flyStep(s: FlyState, dt: Float, world: FlyWorld, random: Random): FlyState {
     return FlyState(y.coerceIn(a.t, a.b - world.h), vy, walls, score, hit || bottom > a.b)
 }
 
-fun DrawScope.drawFlyWalls(color: Color, s: FlyState, world: FlyWorld) {
+fun DrawScope.drawFlyWalls(color: Color, s: FlyState, world: FlyWorld, lw: Float = 1f) {
     val a = world.area
-    val st = Stroke(2.4f)
+    val st = Stroke(2.4f * lw)
     val fill = Color(0xE60C0C0E)
     for (w in s.walls) {
         val top = w.gapY - world.gap / 2 - a.t

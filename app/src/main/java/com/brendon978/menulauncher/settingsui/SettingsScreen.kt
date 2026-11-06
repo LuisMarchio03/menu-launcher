@@ -1,11 +1,13 @@
 package com.brendon978.menulauncher.settingsui
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -27,24 +29,27 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.brendon978.menulauncher.apps.AppEntry
 import com.brendon978.menulauncher.apps.AppKey
 import com.brendon978.menulauncher.home.LocalBorderWidth
+import com.brendon978.menulauncher.settings.Backup
 import com.brendon978.menulauncher.settings.FavoritesOps
-import com.brendon978.menulauncher.settings.activeFavorites
-import com.brendon978.menulauncher.settings.editFavorites
 import com.brendon978.menulauncher.settings.HomeMode
 import com.brendon978.menulauncher.settings.LauncherSettings
-import com.brendon978.menulauncher.settings.Backup
+import com.brendon978.menulauncher.settings.activeFavorites
+import com.brendon978.menulauncher.settings.editFavorites
 import kotlinx.coroutines.launch
 
 /** Toque longo numa área vazia abre aqui. Tudo se ajusta no celular. */
@@ -58,29 +63,104 @@ fun SettingsScreen(
     aiSection: @Composable () -> Unit,
     onClose: () -> Unit,
 ) {
+    var page by rememberSaveable { mutableStateOf<SettingsPage?>(null) }
+    BackHandler(enabled = page != null) { page = null }
+    // Cada página começa do topo.
+    val scroll = key(page) { rememberScrollState() }
     Column(
         Modifier
             .fillMaxSize()
             .background(Color(0xFF0C0C0E))
             .statusBarsPadding()
             .navigationBarsPadding()
-            .verticalScroll(rememberScrollState())
-            .padding(20.dp),
+            .verticalScroll(scroll)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Ajustes", color = Color.White, fontSize = 24.sp, modifier = Modifier.weight(1f))
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 16.dp)) {
+            if (page != null) {
+                Text("‹", color = Color.White, fontSize = 30.sp, modifier = Modifier.clickable { page = null }.padding(end = 14.dp, bottom = 4.dp))
+            }
+            Text(page?.title ?: "Ajustes", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
             Text("Fechar", color = Color.White.copy(alpha = 0.7f), modifier = Modifier.clickable(onClick = onClose).padding(8.dp))
         }
+        when (page) {
+            null -> SettingsPage.entries.forEach { p -> PageRow(p) { page = p } }
+            SettingsPage.LOOK -> LookPage(settings, onChange)
+            SettingsPage.HOME -> HomePage(settings, apps, onChange, hasUsageAccess)
+            SettingsPage.APPS -> AppsPage(settings, apps, onChange)
+            SettingsPage.GLITCH -> GlitchPage(settings, onChange)
+            SettingsPage.AI -> SettingsCard { aiSection() }
+            SettingsPage.WALLPAPER -> {
+                SettingsCard { WallpaperSection() }
+                SettingsCard { WallpaperRotationSection(settings, onChange) }
+            }
+            SettingsPage.SYSTEM -> SystemPage(settings, onChange, onSetDefaultLauncher)
+        }
+        Spacer(Modifier.height(24.dp))
+    }
+}
 
+/** As páginas dos Ajustes, na ordem da tela principal. */
+private enum class SettingsPage(val title: String, val hint: String) {
+    LOOK("Aparência", "Modo, tamanhos, relógio, cor, ícones e fonte"),
+    HOME("Tela inicial", "O que aparece, música e gestos"),
+    APPS("Apps", "Favoritos e apps escondidos"),
+    GLITCH("Glitch", "Acessório, bichinho, estado e comportamento"),
+    AI("IA", "Assistente e posição do símbolo"),
+    WALLPAPER("Papel de parede", "Aplicar e trocar sozinho"),
+    SYSTEM("Backup e sistema", "Backup, acessibilidade e tela padrão"),
+}
+
+@Composable
+private fun PageRow(page: SettingsPage, onClick: () -> Unit) {
+    val shape = RoundedCornerShape(CARD_RADIUS)
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .padding(bottom = 8.dp)
+            .fillMaxWidth()
+            .clip(shape)
+            .background(CARD_FILL, shape)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(page.title, color = Color.White, fontSize = 16.sp)
+            Text(page.hint, color = Color.White.copy(alpha = 0.55f), fontSize = 12.sp, modifier = Modifier.padding(top = 2.dp))
+        }
+        Text("›", color = Color.White.copy(alpha = 0.5f), fontSize = 22.sp, modifier = Modifier.padding(start = 12.dp))
+    }
+}
+
+private val CARD_FILL = Color(0xFF17171C)
+private val CARD_RADIUS = 18.dp
+
+/** Bloco de uma página dos Ajustes. */
+@Composable
+private fun SettingsCard(content: @Composable ColumnScope.() -> Unit) {
+    Column(
+        Modifier
+            .padding(bottom = 12.dp)
+            .fillMaxWidth()
+            .background(CARD_FILL, RoundedCornerShape(CARD_RADIUS))
+            .padding(16.dp),
+        content = content,
+    )
+}
+
+@Composable
+private fun LookPage(settings: LauncherSettings, onChange: ((LauncherSettings) -> LauncherSettings) -> Unit) {
+    SettingsCard {
         Section("Modo")
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Chip("Uma mão", settings.mode == HomeMode.ONE_HAND) { onChange { it.copy(mode = HomeMode.ONE_HAND) } }
             Chip("Grade", settings.mode == HomeMode.GRID) { onChange { it.copy(mode = HomeMode.GRID) } }
         }
 
-        SizeSection(settings, onChange)
-        ClockSection(settings, onChange)
-
+    }
+    SettingsCard { SizeSection(settings, onChange) }
+    SettingsCard { ClockSection(settings, onChange) }
+    SettingsCard {
         Section("Cor do traço")
         ColorRow(settings.strokeColor) { c -> onChange { it.copy(strokeColor = c) } }
         var hex by rememberSaveable { mutableStateOf("") }
@@ -108,25 +188,29 @@ fun SettingsScreen(
         }
         if (settings.strokeAuto == com.brendon978.menulauncher.settings.StrokeAuto.BY_WALLPAPER) {
             Text(
-                "Usa a cor principal do papel de parede, clareada para dar contraste. Se ele não informar cor, vale a cor escolhida acima.",
+                "Usa a cor mais viva do papel de parede, ajustada para dar contraste, e liga a sombra no tom oposto para ler sobre qualquer parte dele. Se ele não informar cor, vale a cor escolhida acima.",
                 color = Color.White.copy(alpha = .5f),
                 fontSize = 12.sp,
                 modifier = Modifier.padding(top = 8.dp),
             )
         }
+        WallpaperPalette { c -> onChange { it.copy(strokeColor = c, strokeAuto = com.brendon978.menulauncher.settings.StrokeAuto.OFF) } }
 
-        IconLookSection(settings, onChange)
-        FontSection(settings, onChange)
-        BarSideSection(settings, onChange)
-        GridSection(settings, onChange)
-        AccessibilityRow()
+    }
+    SettingsCard { IconLookSection(settings, onChange) }
+    SettingsCard { FontSection(settings, onChange) }
+    SettingsCard { BarSideSection(settings, onChange) }
+    SettingsCard { GridSection(settings, onChange) }
+}
 
-        Section("Música")
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Mostrar o que está tocando", color = Color.White, modifier = Modifier.weight(1f))
-            Switch(settings.showMusic, onCheckedChange = { v -> onChange { it.copy(showMusic = v) } })
-        }
-
+@Composable
+private fun HomePage(
+    settings: LauncherSettings,
+    apps: Map<AppKey, AppEntry>,
+    onChange: ((LauncherSettings) -> LauncherSettings) -> Unit,
+    hasUsageAccess: Boolean,
+) {
+    SettingsCard {
         Section("Tela inicial")
         ToggleRow("Linha de mais usados", "No modo uma mão, os apps que você mais abre, em cima dos favoritos.", settings.showMostUsed) { v -> onChange { it.copy(showMostUsed = v) } }
         ToggleRow("Deslizar um app para o lado", "Na lista da tela inicial, abre as mesmas opções de segurar o app.", settings.swipeAppActions) { v -> onChange { it.copy(swipeAppActions = v) } }
@@ -137,9 +221,25 @@ fun SettingsScreen(
         NextEventToggle(settings.showNextEvent) { v -> onChange { it.copy(showNextEvent = v) } }
         ContactsToggle(settings.searchContacts) { v -> onChange { it.copy(searchContacts = v) } }
 
+    }
+    SettingsCard {
+        Section("Música")
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("Mostrar o que está tocando", color = Color.White, modifier = Modifier.weight(1f))
+            Switch(settings.showMusic, onCheckedChange = { v -> onChange { it.copy(showMusic = v) } })
+        }
+
+    }
+    SettingsCard {
         Section("Gestos no fundo")
         GesturesSection(settings, apps, onChange)
 
+    }
+}
+
+@Composable
+private fun AppsPage(settings: LauncherSettings, apps: Map<AppKey, AppEntry>, onChange: ((LauncherSettings) -> LauncherSettings) -> Unit) {
+    SettingsCard {
         Section("Favoritos")
         ToggleRow("Favoritos por horário", "Listas diferentes de dia, no trabalho (seg. a sex., 8h às 18h) e à noite (19h às 7h).", settings.timeProfiles) { v -> onChange { it.copy(timeProfiles = v) } }
         var editing by rememberSaveable { mutableStateOf(com.brendon978.menulauncher.settings.currentProfile()) }
@@ -166,9 +266,14 @@ fun SettingsScreen(
 
         AddFavorite(settings, apps, onChange)
 
-        HiddenAppsSection(settings, apps, onChange)
+    }
+    SettingsCard { HiddenAppsSection(settings, apps, onChange) }
+}
 
-        Section("Glitch")
+@Composable
+private fun GlitchPage(settings: LauncherSettings, onChange: ((LauncherSettings) -> LauncherSettings) -> Unit) {
+    SettingsCard {
+        Section("Na tela inicial")
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("Glitch na tela inicial", color = Color.White, modifier = Modifier.weight(1f))
             Switch(settings.showPet, onCheckedChange = { v -> onChange { it.copy(showPet = v) } })
@@ -186,7 +291,12 @@ fun SettingsScreen(
                     Chip(p.label, settings.glitchBuddy == p.name) { onChange { it.copy(glitchBuddy = p.name) } }
                 }
             }
-            GlitchPanel()
+        }
+    }
+    if (settings.showPet) {
+        SettingsCard { GlitchPanel() }
+        SettingsCard {
+            Section("Comportamento")
             ToggleRow("Comentários", "Ele comenta o app de onde você voltou, de vez em quando.", settings.glitchComments) { v -> onChange { it.copy(glitchComments = v) } }
             ToggleRow("Travessuras", "Ele entorta o relógio e empurra um favorito; cutucar faz ele arrumar.", settings.glitchMischief) { v -> onChange { it.copy(glitchMischief = v) } }
             var birthdayText by rememberSaveable { mutableStateOf(settings.birthday) }
@@ -209,33 +319,36 @@ fun SettingsScreen(
                 supportingText = { Text("Só o nome da cidade vai para o Open-Meteo. Vazio, ele não consulta nada.") },
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
             )
-            GlitchReset()
         }
+        SettingsCard { GlitchReset() }
+    }
+}
 
-        Section("IA")
-        aiSection()
-
-        Section("Papel de parede")
-        WallpaperSection()
-        WallpaperRotationSection(settings, onChange)
-
+@Composable
+private fun SystemPage(
+    settings: LauncherSettings,
+    onChange: ((LauncherSettings) -> LauncherSettings) -> Unit,
+    onSetDefaultLauncher: () -> Unit,
+) {
+    SettingsCard {
         Section("Backup")
         BackupSection(settings, onChange)
-
+    }
+    SettingsCard {
         Section("Sistema")
         // Sem UpdateRow neste fork: o atualizador baixa o APK do Brendon, sem as alterações daqui.
+        AccessibilityRow()
         Text(
             "Definir como tela inicial padrão",
             color = Color.White,
             modifier = Modifier.fillMaxWidth().clickable(onClick = onSetDefaultLauncher).padding(vertical = 12.dp),
         )
-        Spacer(Modifier.height(24.dp))
     }
 }
 
 @Composable
 internal fun Section(title: String) {
-    Text(title, color = Color.White.copy(alpha = 0.55f), fontSize = 13.sp, modifier = Modifier.padding(top = 24.dp, bottom = 10.dp))
+    Text(title, color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(bottom = 10.dp))
 }
 
 @Composable

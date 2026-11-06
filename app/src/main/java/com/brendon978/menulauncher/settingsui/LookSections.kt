@@ -63,7 +63,10 @@ import com.brendon978.menulauncher.clock.ZONE_CHOICES
 import com.brendon978.menulauncher.gestures.LauncherAccessibility
 import com.brendon978.menulauncher.home.family
 import com.brendon978.menulauncher.settings.BarSide
+import com.brendon978.menulauncher.settings.ClockAlign
 import com.brendon978.menulauncher.settings.ClockStyle
+import com.brendon978.menulauncher.settings.ClockTap
+import com.brendon978.menulauncher.settings.HourFormat
 import com.brendon978.menulauncher.settings.ColorSource
 import com.brendon978.menulauncher.settings.DateStyle
 import com.brendon978.menulauncher.settings.FavoritesOps
@@ -154,9 +157,30 @@ fun ClockSection(settings: LauncherSettings, onChange: OnChange) {
             "Negrito empilhado" to ClockStyle.STACKED,
             "Analógico" to ClockStyle.ANALOG,
             "Por extenso" to ClockStyle.WORDS,
+            "7 segmentos" to ClockStyle.SEGMENTS,
+            "Terminal" to ClockStyle.TERMINAL,
+            "Gigante" to ClockStyle.GIANT,
+            "Analógico mínimo" to ClockStyle.ANALOG_MINIMAL,
         ),
         settings.clockStyle,
     ) { v -> onChange { it.copy(clockStyle = v) } }
+    SubLabel("Formato")
+    OptionChips(
+        listOf("Do celular" to HourFormat.SYSTEM, "24h" to HourFormat.H24, "12h" to HourFormat.H12, "12h com AM/PM" to HourFormat.H12_AMPM),
+        settings.hourFormat,
+    ) { v -> onChange { it.copy(hourFormat = v) } }
+    SwitchRow("Segundos", settings.clockSeconds) { v -> onChange { it.copy(clockSeconds = v) } }
+    Hint("Nos relógios de dígitos. O relógio passa a atualizar a cada segundo.")
+    SubLabel("Alinhamento (no modo uma mão, junto com o que vem embaixo)")
+    OptionChips(
+        listOf("Esquerda" to ClockAlign.START, "Centro" to ClockAlign.CENTER, "Direita" to ClockAlign.END),
+        settings.clockAlign,
+    ) { v -> onChange { it.copy(clockAlign = v) } }
+    SubLabel("Tocar no relógio abre")
+    OptionChips(
+        listOf("Alarmes" to ClockTap.ALARMS, "Agenda" to ClockTap.CALENDAR, "Nada" to ClockTap.NONE),
+        settings.clockTap,
+    ) { v -> onChange { it.copy(clockTap = v) } }
     SubLabel("Data")
     OptionChips(
         listOf(

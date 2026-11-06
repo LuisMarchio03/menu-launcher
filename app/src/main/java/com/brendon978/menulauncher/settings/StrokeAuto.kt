@@ -48,3 +48,10 @@ private fun luminance(argb: Int): Double {
     }
     return .2126 * channel(16) + .7152 * channel(8) + .0722 * channel(0)
 }
+
+/**
+ * O que a tela inicial desenha: a cor que vale agora e, com a cor do papel de parede, a sombra sempre ligada
+ * (o traço segue o matiz do papel e se perderia nas partes dele com a mesma cor). Os ajustes gravam o original.
+ */
+fun LauncherSettings.forHome(stroke: Int): LauncherSettings =
+    copy(strokeColor = stroke, textShadow = textShadow || strokeAuto == StrokeAuto.BY_WALLPAPER)

@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.sp
 import com.brendon978.menulauncher.settings.FontChoice
 import com.brendon978.menulauncher.settings.LauncherSettings
 import com.brendon978.menulauncher.settings.lineScale
+import com.brendon978.menulauncher.wallpaper.haloFor
 
 /** Medidas da tela inicial já com os multiplicadores dos ajustes (1 = o original). */
 val LauncherSettings.rowIconSize: Dp get() = 24.dp * iconScale
@@ -56,15 +57,15 @@ val LocalBorderWidth = compositionLocalOf { 1.dp }
 /** Multiplicador do traço dos desenhos, com a espessura dos ajustes. */
 val LocalLineScale = compositionLocalOf { 1f }
 
-/** Sombra escura atrás do texto, para ler sobre papel de parede claro. */
-private val TEXT_SHADOW = Shadow(Color.Black.copy(alpha = 0.65f), Offset(0f, 2f), blurRadius = 6f)
+/** Sombra atrás do texto no tom oposto ao traço ([haloFor]), para ler sobre papel de parede claro ou com detalhe. */
+private fun textShadow(stroke: Int) = Shadow(Color(haloFor(stroke)).copy(alpha = 0.65f), Offset(0f, 2f), blurRadius = 6f)
 
 /** Fonte, sombra e espessura das bordas escolhidas, para tudo dentro de [content]. */
 @Composable
 fun ProvideLauncherText(settings: LauncherSettings, content: @Composable () -> Unit) {
     val base = LocalTextStyle.current
-    val style = remember(base, settings.font, settings.textShadow) {
-        base.merge(TextStyle(fontFamily = settings.font.family, shadow = if (settings.textShadow) TEXT_SHADOW else null))
+    val style = remember(base, settings.font, settings.textShadow, settings.strokeColor) {
+        base.merge(TextStyle(fontFamily = settings.font.family, shadow = if (settings.textShadow) textShadow(settings.strokeColor) else null))
     }
     CompositionLocalProvider(
         LocalBorderWidth provides 1.dp * settings.borderScale,

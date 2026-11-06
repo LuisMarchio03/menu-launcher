@@ -78,3 +78,9 @@ private fun fromHsl(h: Double, s: Double, l: Double): Int {
     fun ch(v: Double) = ((v + m) * 255).toInt().coerceIn(0, 255)
     return (0xFF shl 24) or (ch(r) shl 16) or (ch(g) shl 8) or ch(b)
 }
+
+/** Abaixo disso o preto contrasta menos com a cor que o branco (os dois empatam perto de 0,18). */
+private const val HALO_SWITCH = 0.179
+
+/** Contorno atrás do traço, no tom oposto (preto atrás de traço claro), para ler sobre papel com muito detalhe. */
+fun haloFor(stroke: Int): Int = if (luminance(stroke) > HALO_SWITCH) 0xFF000000.toInt() else 0xFFFFFFFF.toInt()

@@ -17,12 +17,18 @@ class PetBrainTest {
     }
 
     @Test fun emCimaDaListaSobeAteAcimaDela() {
-        assertEquals(20f to 100f, nearestFree(20f, 150f, 10f, 20f, tela, listOf(lista)))
+        assertEquals(20f to 99f, nearestFree(20f, 150f, 10f, 20f, tela, listOf(lista)))
     }
 
     @Test fun saidaBloqueadaProcuraOutroLado() {
         val barra = Area(0f, 80f, 60f, 120f)
-        assertEquals(60f to 100f, nearestFree(50f, 150f, 10f, 20f, tela, listOf(lista, barra)))
+        assertEquals(61f to 99f, nearestFree(50f, 150f, 10f, 20f, tela, listOf(lista, barra)))
+    }
+
+    @Test fun lugarLivreFicaComFolgaParaOArredondamento() {
+        // sem folga, parar encostado conta como pisar no item e o caminho seguinte nunca sai dali
+        val (x, y) = nearestFree(20f, 150f, 10.3f, 20.7f, tela, listOf(lista))!!
+        assertTrue(pathClear(x to y, 20f to 10f, 10.3f, 20.7f, listOf(lista)))
     }
 
     @Test fun telaTodaOcupadaNaoTemLugar() {

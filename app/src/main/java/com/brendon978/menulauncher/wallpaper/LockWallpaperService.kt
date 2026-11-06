@@ -164,7 +164,7 @@ class LockWallpaperService : WallpaperService() {
         private fun strokeNow(): Color {
             val s = settings ?: return stroke
             val wall = android.app.WallpaperManager.getInstance(this@LockWallpaperService)
-                .getWallpaperColors(android.app.WallpaperManager.FLAG_SYSTEM)?.primaryColor?.toArgb()
+                .getWallpaperColors(android.app.WallpaperManager.FLAG_SYSTEM)?.let(::wallpaperBase)
             return Color(com.brendon978.menulauncher.settings.effectiveStroke(s, Calendar.getInstance().get(Calendar.HOUR_OF_DAY), wall))
         }
 

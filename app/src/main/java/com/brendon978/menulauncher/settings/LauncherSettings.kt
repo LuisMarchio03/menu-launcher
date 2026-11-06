@@ -6,7 +6,16 @@ import com.brendon978.menulauncher.wallpaper.WallpaperInterval
 enum class HomeMode { ONE_HAND, GRID }
 
 /** Fino e grande (o original), negrito com horas sobre minutos, analógico de contorno, por extenso. */
-enum class ClockStyle { THIN, STACKED, ANALOG, WORDS }
+enum class ClockStyle { THIN, STACKED, ANALOG, WORDS, SEGMENTS, TERMINAL, GIANT, ANALOG_MINIMAL }
+
+/** Formato da hora: o do celular, 24 horas, 12 horas ou 12 horas com AM/PM. */
+enum class HourFormat { SYSTEM, H24, H12, H12_AMPM }
+
+/** Onde o relógio e a data ficam na largura da tela (modo uma mão). */
+enum class ClockAlign { START, CENTER, END }
+
+/** O que abre ao tocar no relógio. */
+enum class ClockTap { ALARMS, CALENDAR, NONE }
 
 /** "ter, 3 de novembro" (o original), "terça-feira, 3 de novembro", "03/11/2026", sem data. */
 enum class DateStyle { SHORT, LONG, NUMERIC, HIDDEN }
@@ -53,6 +62,11 @@ data class LauncherSettings(
     val dateStyle: DateStyle = DateStyle.SHORT,
     /** Segundo relógio, com o id do fuso (ex.: "Europe/Lisbon"); null = só o local. */
     val secondZone: String? = null,
+    /** Segundos nos relógios digitais (o relógio passa a atualizar a cada segundo). */
+    val clockSeconds: Boolean = false,
+    val clockAlign: ClockAlign = ClockAlign.START,
+    val hourFormat: HourFormat = HourFormat.SYSTEM,
+    val clockTap: ClockTap = ClockTap.ALARMS,
     val colorSource: ColorSource = ColorSource.FIXED,
     /** Multiplicador da espessura do traço dos ícones. */
     val strokeScale: Float = 1f,

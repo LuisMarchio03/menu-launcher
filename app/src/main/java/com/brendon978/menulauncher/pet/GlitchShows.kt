@@ -451,20 +451,20 @@ fun erased(rubbed: Float, areaWidth: Float): Boolean = rubbed > areaWidth * 1.5f
 
 enum class Buddy(val label: String) { NONE("Nenhum"), DRONE("Mini drone"), CAT("Gato-robô") }
 
-fun DrawScope.drawBuddy(color: Color, kind: Buddy, at: Offset, u: Float, t: Float, asleep: Boolean = false) {
-    val st = Stroke(1.8f * u, cap = StrokeCap.Round)
+fun DrawScope.drawBuddy(color: Color, kind: Buddy, at: Offset, u: Float, t: Float, asleep: Boolean = false, lw: Float = 1f) {
+    val st = Stroke(1.8f * u * lw, cap = StrokeCap.Round)
     if (asleep) {
         // dorme junto: o drone pousa de hélices paradas e o gato enrola
         if (kind == Buddy.DRONE) {
             drawRoundRect(color, at - Offset(12f * u, 7f * u), Size(24f * u, 14f * u), style = st)
-            for (s in listOf(-1f, 1f)) drawLine(color, at + Offset(s * 15f * u - 7f * u, -11f * u), at + Offset(s * 15f * u + 7f * u, -11f * u), 2f * u, StrokeCap.Round)
+            for (s in listOf(-1f, 1f)) drawLine(color, at + Offset(s * 15f * u - 7f * u, -11f * u), at + Offset(s * 15f * u + 7f * u, -11f * u), 2f * u * lw, StrokeCap.Round)
         } else if (kind == Buddy.CAT) {
             drawOval(color, at - Offset(16f * u, 8f * u), Size(32f * u, 18f * u), style = st)
-            drawArc(color, 200f, 150f, false, at - Offset(10f * u, 4f * u), Size(20f * u, 10f * u), style = Stroke(1.4f * u))
+            drawArc(color, 200f, 150f, false, at - Offset(10f * u, 4f * u), Size(20f * u, 10f * u), style = Stroke(1.4f * u * lw))
         }
         val z = (t * .5f) % 1f
         val p = at + Offset(10f * u, (-14f - z * 22f) * u)
-        drawPath(Path().apply { moveTo(p.x, p.y); lineTo(p.x + 7f * u, p.y); lineTo(p.x, p.y + 7f * u); lineTo(p.x + 7f * u, p.y + 7f * u) }, color.copy(alpha = color.alpha * (1f - z)), style = Stroke(1.4f * u))
+        drawPath(Path().apply { moveTo(p.x, p.y); lineTo(p.x + 7f * u, p.y); lineTo(p.x, p.y + 7f * u); lineTo(p.x + 7f * u, p.y + 7f * u) }, color.copy(alpha = color.alpha * (1f - z)), style = Stroke(1.4f * u * lw))
         return
     }
     when (kind) {
@@ -472,15 +472,15 @@ fun DrawScope.drawBuddy(color: Color, kind: Buddy, at: Offset, u: Float, t: Floa
             drawRoundRect(color, at - Offset(12f * u, 7f * u), Size(24f * u, 14f * u), style = st)
             drawCircle(color, 2f * u, at)
             val spin = 11f * u * abs(cos(t * 30f))
-            for (s in listOf(-1f, 1f)) drawLine(color, at + Offset(s * 15f * u - spin, -11f * u), at + Offset(s * 15f * u + spin, -11f * u), 2f * u, StrokeCap.Round)
+            for (s in listOf(-1f, 1f)) drawLine(color, at + Offset(s * 15f * u - spin, -11f * u), at + Offset(s * 15f * u + spin, -11f * u), 2f * u * lw, StrokeCap.Round)
         }
         Buddy.CAT -> {
             drawRoundRect(color, at - Offset(13f * u, 8f * u), Size(24f * u, 15f * u), style = st)
             drawCircle(color, 7f * u, at + Offset(14f * u, -8f * u), style = st)
-            drawLine(color, at + Offset(9f * u, -14f * u), at + Offset(9f * u, -19f * u), 1.8f * u, StrokeCap.Round)
-            drawLine(color, at + Offset(19f * u, -14f * u), at + Offset(19f * u, -19f * u), 1.8f * u, StrokeCap.Round)
-            drawLine(color, at + Offset(-13f * u, -2f * u), at + Offset(-23f * u, -12f * u + sin(t * 4f) * 4f * u), 1.8f * u, StrokeCap.Round)
-            for (x in listOf(-8f, 6f)) drawLine(color, at + Offset(x * u, 7f * u), at + Offset(x * u + sin(t * 8f + x) * 2f * u, 13f * u), 1.8f * u, StrokeCap.Round)
+            drawLine(color, at + Offset(9f * u, -14f * u), at + Offset(9f * u, -19f * u), 1.8f * u * lw, StrokeCap.Round)
+            drawLine(color, at + Offset(19f * u, -14f * u), at + Offset(19f * u, -19f * u), 1.8f * u * lw, StrokeCap.Round)
+            drawLine(color, at + Offset(-13f * u, -2f * u), at + Offset(-23f * u, -12f * u + sin(t * 4f) * 4f * u), 1.8f * u * lw, StrokeCap.Round)
+            for (x in listOf(-8f, 6f)) drawLine(color, at + Offset(x * u, 7f * u), at + Offset(x * u + sin(t * 8f + x) * 2f * u, 13f * u), 1.8f * u * lw, StrokeCap.Round)
         }
         Buddy.NONE -> Unit
     }

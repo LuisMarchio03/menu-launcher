@@ -53,4 +53,16 @@ class StrokeAutoTest {
     @Test fun transparenteViraOpaco() {
         assertEquals(0xFF, legibleOnDark(0x40FFFFFF) ushr 24)
     }
+
+    @Test fun corDoPapelLigaASombraSozinha() {
+        val s = LauncherSettings(strokeAuto = StrokeAuto.BY_WALLPAPER, textShadow = false)
+        val shown = s.forHome(noite)
+        assertEquals(noite, shown.strokeColor)
+        assertTrue(shown.textShadow)
+    }
+
+    @Test fun semCorDoPapelASombraSegueOAjuste() {
+        assertFalse(LauncherSettings(strokeAuto = StrokeAuto.OFF, textShadow = false).forHome(fixa).textShadow)
+        assertTrue(LauncherSettings(strokeAuto = StrokeAuto.BY_TIME, textShadow = true).forHome(fixa).textShadow)
+    }
 }

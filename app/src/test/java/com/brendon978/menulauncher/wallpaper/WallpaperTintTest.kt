@@ -61,4 +61,12 @@ class WallpaperTintTest {
     @Test fun saiOpaco() {
         assertEquals(0xFF, legibleStroke(0x400000FF, darkText = false) ushr 24)
     }
+
+    @Test fun tracoClaroGanhaContornoEscuro() {
+        assertEquals(0xFF000000.toInt(), haloFor(0xFFF2C6D0.toInt()))
+    }
+
+    @Test fun tracoEscuroGanhaContornoClaro() {
+        assertEquals(0xFFFFFFFF.toInt(), haloFor(0xFF1A2A4A.toInt()))
+    }
 }

@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -16,14 +18,17 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.brendon978.menulauncher.home.LocalBorderWidth
@@ -36,49 +41,69 @@ enum class GameKind(val label: String) {
     PASS("Bola"), HIDE("Esconde-esconde"), TAG("Pega-pega"), JOKENPO("Jokenpô"), BUBBLES("Bolhas"), BUGS("Caça aos bugs"), DUEL("Duelo"), MEMORY("Memória"), FLY("Voo"),
 }
 
+/** Fundo das caixinhas do Glitch: opaco o bastante para ler sobre qualquer papel de parede. */
+internal val BOX_FILL = Color(0xF214141A)
+private val BOX_SHAPE = RoundedCornerShape(16.dp)
+
+/** Fundo e contorno iguais em todas as caixinhas do Glitch. */
 @Composable
-private fun Pill(text: String, color: Color, onClick: () -> Unit) {
-    Text(
-        text,
-        color = color,
-        fontSize = 14.sp,
-        modifier = Modifier
-            .background(Color(0xE60C0C0E), RoundedCornerShape(16.dp))
-            .border(LocalBorderWidth.current, color.copy(alpha = .7f), RoundedCornerShape(16.dp))
+internal fun Modifier.glitchBox(color: Color, shape: Shape = BOX_SHAPE): Modifier =
+    background(BOX_FILL, shape).border(LocalBorderWidth.current, color.copy(alpha = .45f), shape)
+
+@Composable
+private fun Pill(text: String, color: Color, modifier: Modifier = Modifier, strong: Boolean = false, onClick: () -> Unit) {
+    val shape = RoundedCornerShape(12.dp)
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = modifier
+            .heightIn(min = 44.dp)
+            .clip(shape)
+            .background(color.copy(alpha = if (strong) .22f else .1f), shape)
             .clickable(onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 9.dp),
-    )
+            .padding(horizontal = 6.dp, vertical = 8.dp),
+    ) {
+        Text(text, color = color, fontSize = 13.sp, textAlign = TextAlign.Center, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    }
 }
 
 /** Menuzinho de brincadeiras (aparece em cima do Glitch). */
 @Composable
 fun PlayMenu(color: Color, onPick: (GameKind) -> Unit, onClose: () -> Unit, modifier: Modifier = Modifier, talkTo: String? = null, onTalk: () -> Unit = {}, onPhoto: () -> Unit = {}) {
-    Column(modifier, verticalArrangement = Arrangement.spacedBy(6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+    Column(
+        modifier.width(272.dp).glitchBox(color).padding(12.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text("Bora brincar de quê?", color = color, fontSize = 14.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 4.dp, bottom = 2.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            talkTo?.let { Pill("Falar com $it", color, Modifier.weight(1f), strong = true, onClick = onTalk) }
+            Pill("Tirar foto", color, Modifier.weight(1f), strong = true, onClick = onPhoto)
+        }
+        GameKind.entries.chunked(2).forEach { row ->
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                row.forEach { g -> Pill(g.label, color, Modifier.weight(1f)) { onPick(g) } }
+            }
+        }
         Text(
-            "Bora brincar de quê?",
-            color = color,
+            "Agora não",
+            color = color.copy(alpha = .7f),
             fontSize = 13.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.background(Color(0xE60C0C0E), RoundedCornerShape(8.dp)).padding(horizontal = 10.dp, vertical = 4.dp),
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth().clickable(onClick = onClose).padding(vertical = 8.dp),
         )
-        talkTo?.let { Pill("Falar com $it", color, onTalk) }
-        Pill("Tirar foto", color, onPhoto)
-        GameKind.entries.forEach { g -> Pill(g.label, color) { onPick(g) } }
-        Pill("Nada não", color.copy(alpha = .7f), onClose)
     }
 }
 
 /** Painel do jokenpô: escolher a mão, ou jogar de novo / parar. */
 @Composable
 fun JokenpoPanel(color: Color, choosing: Boolean, onHand: (Hand) -> Unit, onAgain: () -> Unit, onStop: () -> Unit, modifier: Modifier = Modifier) {
-    Row(modifier, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+    Row(modifier.width(272.dp).glitchBox(color).padding(8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         if (choosing) {
-            Pill("Pedra", color) { onHand(Hand.ROCK) }
-            Pill("Papel", color) { onHand(Hand.PAPER) }
-            Pill("Tesoura", color) { onHand(Hand.SCISSORS) }
+            Pill("Pedra", color, Modifier.weight(1f)) { onHand(Hand.ROCK) }
+            Pill("Papel", color, Modifier.weight(1f)) { onHand(Hand.PAPER) }
+            Pill("Tesoura", color, Modifier.weight(1f)) { onHand(Hand.SCISSORS) }
         } else {
-            Pill("De novo", color, onAgain)
-            Pill("Chega", color.copy(alpha = .7f), onStop)
+            Pill("De novo", color, Modifier.weight(1f), strong = true, onClick = onAgain)
+            Pill("Chega", color.copy(alpha = .7f), Modifier.weight(1f), onClick = onStop)
         }
     }
 }
@@ -89,7 +114,7 @@ fun PostIt(text: String, color: Color, modifier: Modifier = Modifier) {
     Box(
         modifier
             .width(110.dp)
-            .background(Color(0xEE15151A), RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp, bottomStart = 3.dp, bottomEnd = 14.dp))
+            .background(BOX_FILL, RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp, bottomStart = 3.dp, bottomEnd = 14.dp))
             .border(LocalBorderWidth.current * 1.4f, color, RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp, bottomStart = 3.dp, bottomEnd = 14.dp))
             .padding(horizontal = 8.dp, vertical = 10.dp),
     ) {
@@ -152,19 +177,13 @@ fun DrawScope.drawBug(color: Color, center: Offset, size: Float, t: Float, lw: F
 /** Placar do duelo, no meio da tela. */
 @Composable
 fun DuelPanel(color: Color, message: String, you: Int, him: Int, best: Long, modifier: Modifier = Modifier) {
-    Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(
-            message,
-            color = color,
-            fontSize = 44.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.background(Color(0xCC0C0C0E), RoundedCornerShape(14.dp)).padding(horizontal = 22.dp, vertical = 10.dp),
-        )
+    Column(modifier.glitchBox(color).padding(horizontal = 22.dp, vertical = 14.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(message, color = color, fontSize = 44.sp, fontWeight = FontWeight.Bold)
         Text(
             "Você $you x $him Glitch" + if (best > 0L) "  ·  recorde $best ms" else "",
             color = color.copy(alpha = .85f),
             fontSize = 14.sp,
-            modifier = Modifier.padding(top = 8.dp).background(Color(0xCC0C0C0E), RoundedCornerShape(8.dp)).padding(horizontal = 10.dp, vertical = 5.dp),
+            modifier = Modifier.padding(top = 6.dp),
         )
     }
 }

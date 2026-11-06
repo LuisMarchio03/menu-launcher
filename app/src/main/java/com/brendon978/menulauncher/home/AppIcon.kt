@@ -25,12 +25,13 @@ import androidx.compose.ui.unit.dp
 import com.brendon978.menulauncher.pet.GlitchSignals
 import com.brendon978.menulauncher.apps.AppEntry
 import com.brendon978.menulauncher.icons.IconRenderer
+import com.brendon978.menulauncher.wallpaper.haloFor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /**
  * Ícone de contorno desenhado fora da thread principal (a conversão do monocromático custa um pouco).
- * [stroke] multiplica a espessura do traço; [shadow] põe uma cópia escura e borrada atrás.
+ * [stroke] multiplica a espessura do traço; [shadow] põe atrás uma cópia borrada no tom oposto ([haloFor]).
  */
 @Composable
 fun AppIcon(
@@ -60,7 +61,7 @@ fun AppIcon(
                 Image(
                     b,
                     contentDescription = null,
-                    colorFilter = ColorFilter.tint(Color.Black.copy(alpha = 0.6f)),
+                    colorFilter = ColorFilter.tint(Color(haloFor(color)).copy(alpha = 0.6f)),
                     modifier = Modifier.size(size).offset(y = 1.dp).blur(2.dp),
                 )
             }

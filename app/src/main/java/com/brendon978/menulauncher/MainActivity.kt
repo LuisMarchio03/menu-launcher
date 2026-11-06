@@ -79,6 +79,7 @@ import com.brendon978.menulauncher.settings.HomeMode
 import com.brendon978.menulauncher.settings.LauncherSettings
 import com.brendon978.menulauncher.settings.SettingsRepository
 import com.brendon978.menulauncher.settings.StrokeAuto
+import com.brendon978.menulauncher.settings.forHome
 import com.brendon978.menulauncher.settings.usesTorchGesture
 import com.brendon978.menulauncher.settingsui.AiPositionPicker
 import com.brendon978.menulauncher.settingsui.SettingsScreen
@@ -89,6 +90,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -187,8 +189,7 @@ class MainActivity : ComponentActivity() {
             } else {
                 com.brendon978.menulauncher.home.rememberStrokeColor(settings)
             }
-            // O que a tela inicial desenha. Os ajustes gravam o original.
-            val shown = remember(settings, stroke) { settings.copy(strokeColor = stroke) }
+            val shown = remember(settings, stroke) { settings.forHome(stroke) }
             val color = Color(stroke)
             // quem tinha a opção antiga de cor do papel de parede passa para a nova
             LaunchedEffect(settings.colorSource) {
@@ -210,7 +211,10 @@ class MainActivity : ComponentActivity() {
             }
 
             // voltou para a tela inicial por dentro do app (fechou os Ajustes, botão home)
-            LaunchedEffect(screen.value) { rotateWallpaperIfDue() }
+            LaunchedEffect(screen.value) {
+                rotateWallpaperIfDue()
+                refreshWallpaperColor()
+            }
 
             val torch = if (settings.usesTorchGesture()) com.brendon978.menulauncher.home.rememberTorch() else null
 
@@ -483,6 +487,11 @@ class MainActivity : ComponentActivity() {
         hasMusicAccess.value = musicRepo.hasAccess()
         hasUsageStats.value = hasUsageAccess(this)
         rotateWallpaperIfDue()
+        refreshWallpaperColor()
+    }
+
+    private fun refreshWallpaperColor() {
+        wallpaperColors?.let { source -> lifecycleScope.launch(Dispatchers.IO) { source.refresh() } }
     }
 
     /** Tempo de tela: só com a opção ligada e o launcher visível, no máximo uma consulta por minuto. */

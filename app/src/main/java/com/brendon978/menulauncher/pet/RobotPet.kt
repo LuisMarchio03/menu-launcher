@@ -62,6 +62,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.layout.layout
 import com.brendon978.menulauncher.music.MediaListener
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import java.util.Calendar
 import kotlin.math.abs
@@ -490,7 +491,12 @@ fun RobotPet(
         freeSpot(random, currentArea, widthPx, heightPx, currentObstacles, from?.let { it.x to it.y }, minDistance)
             ?.let { Offset(it.first, it.second) }
 
+    // vários lugares pedem glitch: dois ao mesmo tempo fariam ele piscar duas vezes e ir para outro destino
+    var teleporting by remember { mutableStateOf(false) }
+
     suspend fun glitchTo(target: Offset) {
+        if (teleporting) return
+        teleporting = true
         // pisca, some, reaparece no outro lugar. Se for cancelado no meio (a tela mudou), ele não pode ficar invisível.
         try {
             repeat(3) { visible = .3f; delay(50); visible = 1f; delay(60) }
@@ -500,6 +506,7 @@ fun RobotPet(
             visible = .5f; delay(60)
         } finally {
             visible = 1f
+            teleporting = false
         }
     }
 
@@ -539,6 +546,17 @@ fun RobotPet(
     fun freeNear(target: Offset): Offset? =
         nearestFree(target.x, target.y, widthPx, heightPx, currentArea, currentObstacles)?.let { Offset(it.first, it.second) }
 
+    // um glitch no meio toma a posição e cancela a animação: isso não pode encerrar quem estava andando
+    suspend fun glide(target: Offset, ms: Int) {
+        try {
+            pos.animateTo(target, tween(ms, easing = LinearEasing))
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            kotlinx.coroutines.currentCoroutineContext().ensureActive()
+        } finally {
+            walking = false
+        }
+    }
+
     // anda até lá sem atravessar o que é tocável; sem caminho livre, vai num glitch
     suspend fun dash(target: Offset, speed: Float, maxMs: Int = Int.MAX_VALUE) {
         val here = pos.value
@@ -546,7 +564,24 @@ fun RobotPet(
         facingLeft = target.x < here.x
         walking = true
         val ms = ((target - here).getDistance() / speed * 1000).roundToInt().coerceIn(1, maxMs)
-        try { pos.animateTo(target, tween(ms, easing = LinearEasing)) } finally { walking = false }
+        glide(target, ms)
+    }
+
+    // pisou em algo tocável: se foi pouco, dá um passo para o lado; se foi muito, vai num glitch até o lugar livre
+    suspend fun stepOff() {
+        val here = pos.value
+        val free = freeNear(here) ?: return
+        if ((free - here).getDistance() < widthPx) {
+            walking = true
+            glide(free, 260)
+        } else {
+            glitchTo(free)
+        }
+    }
+
+    fun onSomething(): Boolean {
+        val p = pos.value
+        return p.isSpecified && currentObstacles.any { it.intersects(Area(p.x, p.y, p.x + widthPx, p.y + heightPx)) }
     }
 
     suspend fun walkTo(target: Offset) = dash(target, with(density) { 38.dp.toPx() })
@@ -556,10 +591,7 @@ fun RobotPet(
     LaunchedEffect(Unit) {
         while (true) {
             delay(1_000)
-            val p = pos.value
-            if (!placed || held || flying || walking || !mayLeave || !p.isSpecified) continue
-            val me = Area(p.x, p.y, p.x + widthPx, p.y + heightPx)
-            if (currentObstacles.any { it.intersects(me) }) spot(null, 0f)?.let { glitchTo(it) }
+            if (placed && !held && !flying && !walking && !teleporting && mayLeave && onSomething()) stepOff()
         }
     }
 
@@ -952,8 +984,8 @@ fun RobotPet(
         while (true) {
             val target = spot(pos.value, minDistance = widthPx * 1.5f)
             if (target == null) {
-                // preso onde não dá para sair andando (em cima da lista, depois de comer): glitch para um lugar livre
-                spot(null, 0f)?.let { glitchTo(it) }
+                // preso onde não dá para sair andando (em cima da lista, depois de comer)
+                if (onSomething()) stepOff() else spot(null, 0f)?.let { glitchTo(it) }
                 delay(1_500)
                 continue
             }
@@ -961,8 +993,7 @@ fun RobotPet(
             walking = true
             val speed = with(density) { (if (marching || protesting) 48.dp else 38.dp).toPx() } // px por segundo
             val ms = ((target - pos.value).getDistance() / speed * 1000).roundToInt().coerceAtLeast(1)
-            pos.animateTo(target, tween(ms, easing = LinearEasing))
-            walking = false
+            glide(target, ms)
             delay(if (marching || protesting) random.nextLong(300, 700) else random.nextLong(1_500, 4_000))
             when (random.nextInt(100)) {
                 in 0..11 -> { scanning = true; delay(2_500); scanning = false }
@@ -2040,7 +2071,7 @@ fun RobotPet(
     }
     fly?.let { s -> flyWorld?.let { w ->
         Canvas(Modifier.fillMaxSize()) {
-            drawFlyWalls(color, s, w)
+            drawFlyWalls(color, s, w, lw)
             drawShowProps(color, ShowRun(Show.JETPACK, 0L), 0f, t, pos.value, widthPx, heightPx, Offset.Zero)
         }
         Box(Modifier.fillMaxSize(), contentAlignment = androidx.compose.ui.Alignment.TopCenter) {
@@ -2157,10 +2188,10 @@ fun RobotPet(
     if (buddy != Buddy.NONE && buddyAt.isSpecified && visible > 0f && !hidden) {
         val napping = asleep || show?.kind == Show.NAP_TOGETHER
         Canvas(Modifier.fillMaxSize()) {
-            drawBuddy(color, buddy, buddyAt, heightPx / 170f, t, napping)
+            drawBuddy(color, buddy, buddyAt, heightPx / 170f, t, napping, lw)
             val u = heightPx / 170f
             val run = showNow
-            if (run?.kind == Show.FETCH) drawCircle(color, 7f * u, fetchBall(showK, pos.value + Offset(widthPx * .8f, heightPx * .5f), fetchLanding, buddyAt), style = androidx.compose.ui.graphics.drawscope.Stroke(2f * u))
+            if (run?.kind == Show.FETCH) drawCircle(color, 7f * u, fetchBall(showK, pos.value + Offset(widthPx * .8f, heightPx * .5f), fetchLanding, buddyAt), style = androidx.compose.ui.graphics.drawscope.Stroke(2f * u * lw))
             if (run?.kind == Show.BUDDY && buddySteals(run.variant)) drawRoundRect(color, buddyAt + Offset(10f * u, -3f * u), androidx.compose.ui.geometry.Size(16f * u, 6f * u))
         }
         // voz e coração do bichinho, em balãozinho próprio
@@ -2214,8 +2245,8 @@ fun RobotPet(
             val at = guestPlace(scene, visitK, guestStand, guestEdge)
             val guestPose = (visitPair?.second ?: RobotPose()).copy(accessory = visibleAccessory(v.accessory, visitPair?.second?.face ?: Face.NORMAL))
             Canvas(Modifier.fillMaxSize()) {
-                translate(at.x, at.y) { drawRobot(v.color, guestPose, heightPx) }
-                if (v.buddy != Buddy.NONE) drawBuddy(v.color, v.buddy, at + Offset(if (at.x > pos.value.x) widthPx * 1.05f else -widthPx * .1f, heightPx * .92f), heightPx / 170f, t)
+                translate(at.x, at.y) { drawRobot(v.color, guestPose, lw, heightPx) }
+                if (v.buddy != Buddy.NONE) drawBuddy(v.color, v.buddy, at + Offset(if (at.x > pos.value.x) widthPx * 1.05f else -widthPx * .1f, heightPx * .92f), heightPx / 170f, t, lw = lw)
                 if (scene == VisitScene.BALL) drawCircle(color, heightPx * .05f, ballAt(visitK, pos.value + Offset(widthPx / 2, heightPx * .9f), at + Offset(widthPx / 2, heightPx * .9f), heightPx))
             }
             androidx.compose.material3.Text(
@@ -2601,17 +2632,16 @@ private fun SpeechBubble(text: String, color: Color, modifier: Modifier = Modifi
             overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
             modifier = Modifier
                 .widthIn(max = 240.dp)
-                .background(Color(0xE60C0C0E), RoundedCornerShape(12.dp))
-                .border(border, color.copy(alpha = .6f), RoundedCornerShape(12.dp))
-                .padding(horizontal = 10.dp, vertical = 5.dp),
+                .glitchBox(color, RoundedCornerShape(12.dp))
+                .padding(horizontal = 12.dp, vertical = 7.dp),
         )
         Canvas(Modifier.size(12.dp, 6.dp)) {
             val tail = androidx.compose.ui.graphics.Path().apply {
                 moveTo(0f, 0f); lineTo(size.width, 0f); lineTo(size.width / 2, size.height); close()
             }
-            drawPath(tail, Color(0xE60C0C0E))
-            drawLine(color.copy(alpha = .6f), Offset(0f, 0f), Offset(size.width / 2, size.height), border.toPx())
-            drawLine(color.copy(alpha = .6f), Offset(size.width, 0f), Offset(size.width / 2, size.height), border.toPx())
+            drawPath(tail, BOX_FILL)
+            drawLine(color.copy(alpha = .45f), Offset(0f, 0f), Offset(size.width / 2, size.height), border.toPx())
+            drawLine(color.copy(alpha = .45f), Offset(size.width, 0f), Offset(size.width / 2, size.height), border.toPx())
         }
     }
 }

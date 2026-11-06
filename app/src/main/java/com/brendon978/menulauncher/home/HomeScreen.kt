@@ -28,6 +28,8 @@ import com.brendon978.menulauncher.pet.LocalPetObstacles
 import com.brendon978.menulauncher.pet.PetObstacles
 import com.brendon978.menulauncher.pet.RobotPet
 import com.brendon978.menulauncher.pet.petObstacle
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
@@ -39,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import com.brendon978.menulauncher.apps.AppEntry
 import com.brendon978.menulauncher.icons.IconRenderer
 import com.brendon978.menulauncher.settings.GestureAction
+import com.brendon978.menulauncher.settings.ClockAlign
 import com.brendon978.menulauncher.settings.HomeMode
 import com.brendon978.menulauncher.settings.LauncherSettings
 import com.brendon978.menulauncher.settings.listensDoubleTap
@@ -67,7 +70,6 @@ fun HomeScreen(
     musicPlaying: Boolean = false,
     /** Desenhado por cima de tudo (símbolo flutuante da IA). */
     overlay: @Composable () -> Unit = {},
-    /** Gesto numa área vazia (arrastar para cima/baixo, toque duplo), com a ação escolhida nos ajustes. */
 ) {
     val color = Color(strokeColor)
     val obstacles = remember { PetObstacles() }
@@ -133,14 +135,22 @@ fun HomeScreen(
     ) {
         when (settings.mode) {
             HomeMode.ONE_HAND -> {
+                // alinhado ao centro ou à direita, o topo ocupa a largura toda
+                val align = settings.clockAlign
                 Column(
                     Modifier
                         // com o que é novo ligado a coluna cresce: a lista respeita o que sobrar
                         .then(if (growsTop) Modifier.onSizeChanged { topHeight = it.height } else Modifier)
+                        .then(if (align != ClockAlign.START) Modifier.fillMaxWidth() else Modifier)
                         .padding(start = 22.dp, end = 22.dp, top = 24.dp)
                         .petObstacle("top"),
+                    horizontalAlignment = when (align) {
+                        ClockAlign.START -> Alignment.Start
+                        ClockAlign.CENTER -> Alignment.CenterHorizontally
+                        ClockAlign.END -> Alignment.End
+                    },
                 ) {
-                    TopInfo(settings, color, screenTime = screenTime)
+                    TopInfo(settings, color, screenTime = screenTime, align = align)
                     if (settings.showQuickActions) QuickActions(color)
                     TopExtras(settings, color, onNoteChange)
                     musicSlotTop()

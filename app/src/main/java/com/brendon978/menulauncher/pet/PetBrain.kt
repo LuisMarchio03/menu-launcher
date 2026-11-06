@@ -122,10 +122,13 @@ fun freeSpot(
     return null
 }
 
+/** Folga até o obstáculo: encostado, o arredondamento já contaria como pisar nele. */
+private const val FREE_MARGIN = 1f
+
 /** O lugar livre mais perto de ([x], [y]) para o robô, ou null se os obstáculos não deixam nenhum. */
 fun nearestFree(x: Float, y: Float, w: Float, h: Float, area: Area, obstacles: List<Area>): Pair<Float, Float>? {
-    val xs = listOf(x) + obstacles.flatMap { listOf(it.l - w, it.r) }
-    val ys = listOf(y) + obstacles.flatMap { listOf(it.t - h, it.b) }
+    val xs = listOf(x) + obstacles.flatMap { listOf(it.l - w - FREE_MARGIN, it.r + FREE_MARGIN) }
+    val ys = listOf(y) + obstacles.flatMap { listOf(it.t - h - FREE_MARGIN, it.b + FREE_MARGIN) }
     return xs.flatMap { cx -> ys.map { cy -> cx to cy } }
         .filter { (cx, cy) ->
             val me = Area(cx, cy, cx + w, cy + h)

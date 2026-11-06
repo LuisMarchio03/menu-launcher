@@ -35,6 +35,14 @@ class BackupTest {
         assertEquals(s, Backup.decode(Backup.encode(s)))
     }
 
+    @Test fun relogioVaiNoBackup() {
+        val s = LauncherSettings(
+            clockStyle = ClockStyle.SEGMENTS, clockSeconds = true, clockAlign = ClockAlign.CENTER,
+            hourFormat = HourFormat.H12_AMPM, clockTap = ClockTap.CALENDAR,
+        )
+        assertEquals(s, Backup.decode(Backup.encode(s)))
+    }
+
     @Test fun backupAntigoCaiNosPadroes() {
         assertEquals(LauncherSettings(), Backup.decode("menu-launcher-backup=1"))
     }
