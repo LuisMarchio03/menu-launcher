@@ -151,19 +151,7 @@ fun SizeSection(settings: LauncherSettings, onChange: OnChange) {
 @Composable
 fun ClockSection(settings: LauncherSettings, onChange: OnChange) {
     Section("Relógio")
-    OptionChips(
-        listOf(
-            "Fino" to ClockStyle.THIN,
-            "Negrito empilhado" to ClockStyle.STACKED,
-            "Analógico" to ClockStyle.ANALOG,
-            "Por extenso" to ClockStyle.WORDS,
-            "7 segmentos" to ClockStyle.SEGMENTS,
-            "Terminal" to ClockStyle.TERMINAL,
-            "Gigante" to ClockStyle.GIANT,
-            "Analógico mínimo" to ClockStyle.ANALOG_MINIMAL,
-        ),
-        settings.clockStyle,
-    ) { v -> onChange { it.copy(clockStyle = v) } }
+    ClockStylePicker(settings) { v -> onChange { it.copy(clockStyle = v) } }
     SubLabel("Formato")
     OptionChips(
         listOf("Do celular" to HourFormat.SYSTEM, "24h" to HourFormat.H24, "12h" to HourFormat.H12, "12h com AM/PM" to HourFormat.H12_AMPM),

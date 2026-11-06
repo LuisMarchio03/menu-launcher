@@ -50,5 +50,7 @@ object SettingsCodec {
         enumField("bar_side", { it.barSide }) { s, v -> s.copy(barSide = v) },
         Field("grid_columns", { it.gridColumns.toString() }, { s, v -> v.toIntOrNull()?.takeIf { it == 0 || it in 3..7 }?.let { s.copy(gridColumns = it) } }),
         boolField("grid_labels", { it.gridLabels }) { s, v -> s.copy(gridLabels = v) },
+        enumField("music_style", { it.musicStyle }) { s, v -> s.copy(musicStyle = v) },
+        Field("custom_themes", { LookThemes.encode(it.customThemes) }, { s, v -> s.copy(customThemes = LookThemes.decode(v)) }),
     )
 }

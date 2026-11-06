@@ -48,6 +48,9 @@ import com.brendon978.menulauncher.settings.Backup
 import com.brendon978.menulauncher.settings.FavoritesOps
 import com.brendon978.menulauncher.settings.HomeMode
 import com.brendon978.menulauncher.settings.LauncherSettings
+import com.brendon978.menulauncher.settings.MusicStyle
+import com.brendon978.menulauncher.icons.IconRenderer
+import androidx.compose.runtime.remember
 import com.brendon978.menulauncher.settings.activeFavorites
 import com.brendon978.menulauncher.settings.editFavorites
 import kotlinx.coroutines.launch
@@ -62,6 +65,9 @@ fun SettingsScreen(
     onSetDefaultLauncher: () -> Unit,
     aiSection: @Composable () -> Unit,
     onClose: () -> Unit,
+    /** Os ajustes como a tela inicial os usa agora (cor automática já resolvida), para a prévia. */
+    preview: LauncherSettings = settings,
+    renderer: IconRenderer? = null,
 ) {
     var page by rememberSaveable { mutableStateOf<SettingsPage?>(null) }
     BackHandler(enabled = page != null) { page = null }
@@ -72,64 +78,65 @@ fun SettingsScreen(
             .fillMaxSize()
             .background(Color(0xFF0C0C0E))
             .statusBarsPadding()
-            .navigationBarsPadding()
-            .verticalScroll(scroll)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .navigationBarsPadding(),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 16.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 12.dp)) {
             if (page != null) {
                 Text("‹", color = Color.White, fontSize = 30.sp, modifier = Modifier.clickable { page = null }.padding(end = 14.dp, bottom = 4.dp))
             }
             Text(page?.title ?: "Ajustes", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
             Text("Fechar", color = Color.White.copy(alpha = 0.7f), modifier = Modifier.clickable(onClick = onClose).padding(8.dp))
         }
-        when (page) {
-            null -> SettingsPage.entries.forEach { p -> PageRow(p) { page = p } }
-            SettingsPage.LOOK -> LookPage(settings, onChange)
-            SettingsPage.HOME -> HomePage(settings, apps, onChange, hasUsageAccess)
-            SettingsPage.APPS -> AppsPage(settings, apps, onChange)
-            SettingsPage.GLITCH -> GlitchPage(settings, onChange)
-            SettingsPage.AI -> SettingsCard { aiSection() }
-            SettingsPage.WALLPAPER -> {
-                SettingsCard { WallpaperSection() }
-                SettingsCard { WallpaperRotationSection(settings, onChange) }
+        // Prévia fixa no topo onde a escolha muda a cara da tela inicial; o resto rola embaixo dela.
+        if (renderer != null && (page == null || page == SettingsPage.LOOK)) {
+            val shownApps = remember(settings.favorites, apps) {
+                settings.favorites.mapNotNull { apps[it] }.ifEmpty { apps.values.sortedBy { it.label.lowercase() } }.take(4)
             }
-            SettingsPage.SYSTEM -> SystemPage(settings, onChange, onSetDefaultLauncher)
+            LivePreview(preview, shownApps, renderer, Modifier.padding(horizontal = 16.dp).padding(bottom = 4.dp))
         }
-        Spacer(Modifier.height(24.dp))
+        Column(
+            Modifier
+                .weight(1f)
+                .verticalScroll(scroll)
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+        ) {
+            when (page) {
+                null -> {
+                    GroupLabel("Temas")
+                    ThemesRow(settings, preview.strokeColor, onChange)
+                    GroupLabel("Ajustar")
+                    SettingsPage.entries.chunked(2).forEach { pair ->
+                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(bottom = 10.dp)) {
+                            pair.forEach { p -> CategoryTile(p.title, p.hint, p.glyph, p.accent, { page = p }, Modifier.weight(1f)) }
+                            if (pair.size == 1) Spacer(Modifier.weight(1f))
+                        }
+                    }
+                }
+                SettingsPage.LOOK -> LookPage(settings, onChange)
+                SettingsPage.HOME -> HomePage(settings, apps, onChange, hasUsageAccess)
+                SettingsPage.APPS -> AppsPage(settings, apps, onChange)
+                SettingsPage.GLITCH -> GlitchPage(settings, onChange)
+                SettingsPage.AI -> SettingsCard { aiSection() }
+                SettingsPage.WALLPAPER -> {
+                    SettingsCard { WallpaperSection() }
+                    SettingsCard { WallpaperRotationSection(settings, onChange) }
+                }
+                SettingsPage.SYSTEM -> SystemPage(settings, onChange, onSetDefaultLauncher)
+            }
+            Spacer(Modifier.height(24.dp))
+        }
     }
 }
 
-/** As páginas dos Ajustes, na ordem da tela principal. */
-private enum class SettingsPage(val title: String, val hint: String) {
-    LOOK("Aparência", "Modo, tamanhos, relógio, cor, ícones e fonte"),
-    HOME("Tela inicial", "O que aparece, música e gestos"),
-    APPS("Apps", "Favoritos e apps escondidos"),
-    GLITCH("Glitch", "Acessório, bichinho, estado e comportamento"),
-    AI("IA", "Assistente e posição do símbolo"),
-    WALLPAPER("Papel de parede", "Aplicar e trocar sozinho"),
-    SYSTEM("Backup e sistema", "Backup, acessibilidade e tela padrão"),
-}
-
-@Composable
-private fun PageRow(page: SettingsPage, onClick: () -> Unit) {
-    val shape = RoundedCornerShape(CARD_RADIUS)
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .padding(bottom = 8.dp)
-            .fillMaxWidth()
-            .clip(shape)
-            .background(CARD_FILL, shape)
-            .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 14.dp),
-    ) {
-        Column(Modifier.weight(1f)) {
-            Text(page.title, color = Color.White, fontSize = 16.sp)
-            Text(page.hint, color = Color.White.copy(alpha = 0.55f), fontSize = 12.sp, modifier = Modifier.padding(top = 2.dp))
-        }
-        Text("›", color = Color.White.copy(alpha = 0.5f), fontSize = 22.sp, modifier = Modifier.padding(start = 12.dp))
-    }
+/** As páginas dos Ajustes, na ordem da grade da tela principal. */
+private enum class SettingsPage(val title: String, val hint: String, val glyph: String, val accent: Color) {
+    LOOK("Aparência", "Relógio, cor, fonte, tamanhos", "◐", Color(0xFF9D8CFF)),
+    HOME("Tela inicial", "Widgets, música e gestos", "⌂", Color(0xFF4CD18A)),
+    APPS("Apps", "Favoritos e escondidos", "▦", Color(0xFFFFA94D)),
+    GLITCH("Glitch", "Acessório, bichinho, humor", "☻", Color(0xFFFF7BA5)),
+    AI("IA", "Assistente e símbolo", "✦", Color(0xFF5CB8FF)),
+    WALLPAPER("Papel de parede", "Aplicar e trocar sozinho", "▨", Color(0xFF38D9C0)),
+    SYSTEM("Backup e sistema", "Exportar e tela padrão", "⚙", Color(0xFFADB5BD)),
 }
 
 private val CARD_FILL = Color(0xFF17171C)
@@ -152,9 +159,19 @@ private fun SettingsCard(content: @Composable ColumnScope.() -> Unit) {
 private fun LookPage(settings: LauncherSettings, onChange: ((LauncherSettings) -> LauncherSettings) -> Unit) {
     SettingsCard {
         Section("Modo")
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Chip("Uma mão", settings.mode == HomeMode.ONE_HAND) { onChange { it.copy(mode = HomeMode.ONE_HAND) } }
-            Chip("Grade", settings.mode == HomeMode.GRID) { onChange { it.copy(mode = HomeMode.GRID) } }
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            PictureChoice("Uma mão", settings.mode == HomeMode.ONE_HAND, { onChange { it.copy(mode = HomeMode.ONE_HAND) } }, Modifier.weight(1f)) {
+                Bars(54, 40, 48, 36)
+            }
+            PictureChoice("Grade", settings.mode == HomeMode.GRID, { onChange { it.copy(mode = HomeMode.GRID) } }, Modifier.weight(1f)) {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    repeat(3) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            repeat(4) { Box(Modifier.size(12.dp).border(1.dp, Color.White.copy(alpha = .5f), RoundedCornerShape(4.dp))) }
+                        }
+                    }
+                }
+            }
         }
 
     }
@@ -227,6 +244,29 @@ private fun HomePage(
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("Mostrar o que está tocando", color = Color.White, modifier = Modifier.weight(1f))
             Switch(settings.showMusic, onCheckedChange = { v -> onChange { it.copy(showMusic = v) } })
+        }
+        if (settings.showMusic) {
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(top = 8.dp)) {
+                PictureChoice("Faixa fina", settings.musicStyle == MusicStyle.CLASSIC, { onChange { it.copy(musicStyle = MusicStyle.CLASSIC) } }, Modifier.weight(1f)) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Box(Modifier.size(14.dp).border(1.dp, Color.White.copy(alpha = .5f), RoundedCornerShape(3.dp)))
+                        Bars(50, 34, height = 4)
+                    }
+                }
+                PictureChoice("Com capa", settings.musicStyle == MusicStyle.COVER, { onChange { it.copy(musicStyle = MusicStyle.COVER) } }, Modifier.weight(1f)) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Box(Modifier.size(40.dp).background(Color.White.copy(alpha = .35f), RoundedCornerShape(8.dp)))
+                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Bars(46, 30, height = 4)
+                            Row(horizontalArrangement = Arrangement.spacedBy(5.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Box(Modifier.size(6.dp).background(Color.White.copy(alpha = .5f), CircleShape))
+                                Box(Modifier.size(12.dp).border(1.dp, Color.White.copy(alpha = .7f), CircleShape))
+                                Box(Modifier.size(6.dp).background(Color.White.copy(alpha = .5f), CircleShape))
+                            }
+                        }
+                    }
+                }
+            }
         }
 
     }

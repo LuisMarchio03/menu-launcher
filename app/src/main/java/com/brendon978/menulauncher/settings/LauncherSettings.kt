@@ -6,10 +6,13 @@ import com.brendon978.menulauncher.wallpaper.WallpaperInterval
 enum class HomeMode { ONE_HAND, GRID }
 
 /** Fino e grande (o original), negrito com horas sobre minutos, analógico de contorno, por extenso. */
-enum class ClockStyle { THIN, STACKED, ANALOG, WORDS, SEGMENTS, TERMINAL, GIANT, ANALOG_MINIMAL }
+enum class ClockStyle { THIN, STACKED, ANALOG, WORDS, SEGMENTS, TERMINAL, GIANT, ANALOG_MINIMAL, WEEKDAY }
 
 /** Formato da hora: o do celular, 24 horas, 12 horas ou 12 horas com AM/PM. */
 enum class HourFormat { SYSTEM, H24, H12, H12_AMPM }
+
+/** Cartão de música: o original (faixa fina, controles embaixo) ou com a capa grande e os controles dentro. */
+enum class MusicStyle { CLASSIC, COVER }
 
 /** Onde o relógio e a data ficam na largura da tela (modo uma mão). */
 enum class ClockAlign { START, CENTER, END }
@@ -136,6 +139,9 @@ data class LauncherSettings(
     val wallpaperLastImage: String = "",
     /** Bichinho que segue o Glitch (enum Buddy). */
     val glitchBuddy: String = "DRONE",
+    /** Temas que você salvou nos Ajustes (os prontos ficam em [LookThemes.PRESETS]). */
+    val customThemes: List<LookTheme> = emptyList(),
+    val musicStyle: MusicStyle = MusicStyle.CLASSIC,
 )
 
 /** O símbolo da IA fica ao lado da barra de letras: troca de lado junto, para não cair em cima da lista. */

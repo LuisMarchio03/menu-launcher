@@ -20,7 +20,9 @@ import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
+import com.brendon978.menulauncher.home.LocalBorderWidth
 import com.brendon978.menulauncher.home.LocalLineScale
+import androidx.compose.foundation.border
 
 /** ⏮ ⏯ ⏭ em contorno, na zona do polegar; alvos de 48dp. */
 @Composable
@@ -31,6 +33,8 @@ fun MusicControls(
     onPlayPause: () -> Unit,
     onNext: () -> Unit,
     modifier: Modifier = Modifier,
+    /** Aro em volta do tocar/pausar (cartão com capa). */
+    ringPlay: Boolean = false,
 ) {
     val lw = LocalLineScale.current
     Row(
@@ -39,16 +43,20 @@ fun MusicControls(
         modifier = modifier.fillMaxWidth(),
     ) {
         ControlButton(onPrevious) { skip(color, forward = false, lw) }
-        ControlButton(onPlayPause) { if (playing) pause(color, lw) else play(color, lw) }
+        ControlButton(onPlayPause, ring = if (ringPlay) color else null) { if (playing) pause(color, lw) else play(color, lw) }
         ControlButton(onNext) { skip(color, forward = true, lw) }
     }
 }
 
 @Composable
-private fun ControlButton(onClick: () -> Unit, draw: DrawScope.() -> Unit) {
+private fun ControlButton(onClick: () -> Unit, ring: Color? = null, draw: DrawScope.() -> Unit) {
     Box(
         contentAlignment = Alignment.Center,
-        modifier = Modifier.size(48.dp).clip(CircleShape).clickable(onClick = onClick),
+        modifier = Modifier
+            .size(48.dp)
+            .clip(CircleShape)
+            .then(if (ring != null) Modifier.border(LocalBorderWidth.current * 1.5f, ring.copy(alpha = .6f), CircleShape) else Modifier)
+            .clickable(onClick = onClick),
     ) {
         Canvas(Modifier.size(22.dp), onDraw = draw)
     }

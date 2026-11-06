@@ -73,6 +73,48 @@ fun MusicCard(state: MusicState, color: Color, modifier: Modifier = Modifier, te
     }
 }
 
+/** Capa grande à esquerda; nome, artista e os controles ao lado, tudo dentro do cartão. */
+@Composable
+fun MusicCoverCard(
+    state: MusicState,
+    color: Color,
+    onPrevious: () -> Unit,
+    onPlayPause: () -> Unit,
+    onNext: () -> Unit,
+    modifier: Modifier = Modifier,
+    textSize: TextUnit = 12.sp,
+) {
+    val border = LocalBorderWidth.current
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier
+            .padding(top = 16.dp)
+            .fillMaxWidth()
+            .border(border, color.copy(alpha = 0.35f), RoundedCornerShape(14.dp))
+            .songProgressOutline(state, color, border * 2)
+            .padding(10.dp),
+    ) {
+        val art = remember(state.art) { state.art?.asImageBitmap() }
+        if (art != null) {
+            Image(art, null, contentScale = ContentScale.Crop, modifier = Modifier.size(84.dp).clip(RoundedCornerShape(12.dp)))
+        } else {
+            Box(Modifier.size(84.dp).border(border, color.copy(alpha = 0.35f), RoundedCornerShape(12.dp)))
+        }
+        Spacer(Modifier.width(12.dp))
+        Column(Modifier.weight(1f)) {
+            Text(state.title, color = color, fontSize = textSize * 1.25f, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(
+                listOfNotNull(state.artist, state.appLabel).joinToString(" · "),
+                color = color.copy(alpha = 0.6f),
+                fontSize = textSize,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            MusicControls(state.playing, color, onPrevious, onPlayPause, onNext, ringPlay = true)
+        }
+    }
+}
+
 /**
  * Contorno de progresso: uma linha vai sendo desenhada em volta da caixa conforme a música passa,
  * começando no meio do topo e andando no sentido do relógio. Fechou a volta, acabou a música.

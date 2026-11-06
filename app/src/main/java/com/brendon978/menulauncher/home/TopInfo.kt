@@ -47,7 +47,14 @@ import com.brendon978.menulauncher.clock.ClockFace
 import com.brendon978.menulauncher.clock.clockFace
 import com.brendon978.menulauncher.clock.segmentsOf
 import com.brendon978.menulauncher.clock.timeInWords
+import com.brendon978.menulauncher.clock.weekdayShort
 import com.brendon978.menulauncher.clock.zoneLabel
+import androidx.compose.foundation.layout.Box
+import androidx.compose.material3.LocalTextStyle
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.CompositingStrategy
 import com.brendon978.menulauncher.settings.ClockAlign
 import com.brendon978.menulauncher.settings.ClockStyle
 import com.brendon978.menulauncher.settings.ClockTap
@@ -121,26 +128,7 @@ fun TopInfo(settings: LauncherSettings, color: Color, modifier: Modifier = Modif
         ClockAlign.END -> Alignment.End
     }
     Column(modifier, horizontalAlignment = horizontal) {
-        when (settings.clockStyle) {
-            ClockStyle.THIN -> Text(face.text, color = color, fontSize = 52.sp * scale, fontWeight = FontWeight.ExtraLight, modifier = onTap)
-            // Como o da tela de bloqueio da One UI: horas em cima, minutos embaixo, em negrito.
-            ClockStyle.STACKED -> StackedClock(face, color, 64.sp * scale, FontWeight.Bold, horizontal, onTap)
-            // O mesmo empilhado, grande e fino: ocupa a largura da tela.
-            ClockStyle.GIANT -> StackedClock(face, color, 120.sp * scale, FontWeight.Thin, horizontal, onTap)
-            ClockStyle.SEGMENTS -> SegmentClock(face, color, onTap.padding(vertical = 6.dp).height(64.dp * scale))
-            ClockStyle.TERMINAL -> TerminalClock(face, color, 44.sp * scale, onTap)
-            ClockStyle.ANALOG -> AnalogClock(cal, color, onTap.padding(vertical = 4.dp).size(96.dp * scale))
-            ClockStyle.ANALOG_MINIMAL -> AnalogClock(cal, color, onTap.padding(vertical = 4.dp).size(96.dp * scale), minimal = true)
-            ClockStyle.WORDS -> Text(
-                remember(cal) { timeInWords(cal.get(Calendar.HOUR_OF_DAY), cal.get(Calendar.MINUTE)) },
-                color = color,
-                fontSize = 34.sp * scale,
-                lineHeight = 38.sp * scale,
-                fontWeight = FontWeight.ExtraLight,
-                textAlign = textAlign,
-                modifier = onTap.widthIn(max = 240.dp * scale),
-            )
-        }
+        ClockBody(settings.clockStyle, face, cal, color, scale, horizontal, textAlign, onTap)
         val small = 13.sp * settings.textScale
         if (date != null) Text(date, color = color.copy(alpha = 0.7f), fontSize = small)
         if (second != null) Text(second, color = color.copy(alpha = 0.7f), fontSize = small, modifier = Modifier.padding(top = 2.dp))
@@ -158,6 +146,65 @@ fun TopInfo(settings: LauncherSettings, color: Color, modifier: Modifier = Modif
                 )
             }
         }
+    }
+}
+
+/** Só o relógio, no estilo pedido; também desenha as miniaturas dos Ajustes. */
+@Composable
+fun ClockBody(
+    style: ClockStyle,
+    face: ClockFace,
+    cal: Calendar,
+    color: Color,
+    scale: Float,
+    horizontal: Alignment.Horizontal,
+    textAlign: TextAlign,
+    onTap: Modifier = Modifier,
+) {
+    when (style) {
+        ClockStyle.THIN -> Text(face.text, color = color, fontSize = 52.sp * scale, fontWeight = FontWeight.ExtraLight, modifier = onTap)
+        // Como o da tela de bloqueio da One UI: horas em cima, minutos embaixo, em negrito.
+        ClockStyle.STACKED -> StackedClock(face, color, 64.sp * scale, FontWeight.Bold, horizontal, onTap)
+        // O mesmo empilhado, grande e fino: ocupa a largura da tela.
+        ClockStyle.GIANT -> StackedClock(face, color, 120.sp * scale, FontWeight.Thin, horizontal, onTap)
+        ClockStyle.SEGMENTS -> SegmentClock(face, color, onTap.padding(vertical = 6.dp).height(64.dp * scale))
+        ClockStyle.TERMINAL -> TerminalClock(face, color, 44.sp * scale, onTap)
+        ClockStyle.ANALOG -> AnalogClock(cal, color, onTap.padding(vertical = 4.dp).size(96.dp * scale))
+        ClockStyle.ANALOG_MINIMAL -> AnalogClock(cal, color, onTap.padding(vertical = 4.dp).size(96.dp * scale), minimal = true)
+        ClockStyle.WORDS -> Text(
+            remember(cal) { timeInWords(cal.get(Calendar.HOUR_OF_DAY), cal.get(Calendar.MINUTE)) },
+            color = color,
+            fontSize = 34.sp * scale,
+            lineHeight = 38.sp * scale,
+            fontWeight = FontWeight.ExtraLight,
+            textAlign = textAlign,
+            modifier = onTap.widthIn(max = 240.dp * scale),
+        )
+        ClockStyle.WEEKDAY -> WeekdayClock(cal, face, color, scale, onTap)
+    }
+}
+
+/**
+ * O dia da semana enorme e fino, com a hora pequena por cima: as letras abrem um vão
+ * onde a hora passa (o vão é apagado, então o papel de parede aparece nele).
+ */
+@Composable
+private fun WeekdayClock(cal: Calendar, face: ClockFace, color: Color, scale: Float, modifier: Modifier) {
+    val big = 96.sp * scale
+    Box(modifier.graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }, contentAlignment = Alignment.Center) {
+        Text(weekdayShort(cal.get(Calendar.DAY_OF_WEEK)), color = color, fontSize = big, lineHeight = big, fontWeight = FontWeight.Thin, letterSpacing = 4.sp * scale)
+        Text(
+            face.text,
+            color = color,
+            fontSize = 15.sp * scale,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 3.sp * scale,
+            // a sombra da tela inicial mancharia o vão
+            style = LocalTextStyle.current.copy(shadow = null),
+            modifier = Modifier
+                .drawBehind { drawRect(Color.Black, topLeft = Offset(-6.dp.toPx(), 0f), size = Size(size.width + 12.dp.toPx(), size.height), blendMode = BlendMode.Clear) }
+                .padding(horizontal = 2.dp),
+        )
     }
 }
 

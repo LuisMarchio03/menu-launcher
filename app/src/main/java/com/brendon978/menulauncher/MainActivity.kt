@@ -274,7 +274,11 @@ class MainActivity : ComponentActivity() {
                     // Pedido do Brendon: controles logo abaixo do cartão, no topo (modo uma mão).
                     musicSlotTop = {
                         current?.let {
-                            Column {
+                            if (settings.musicStyle == com.brendon978.menulauncher.settings.MusicStyle.COVER) {
+                                com.brendon978.menulauncher.music.MusicCoverCard(
+                                    it, color, musicRepo::previous, musicRepo::playPause, musicRepo::next, textSize = settings.smallTextSize,
+                                )
+                            } else Column {
                                 MusicCard(it, color, textSize = settings.smallTextSize)
                                 MusicControls(it.playing, color, musicRepo::previous, musicRepo::playPause, musicRepo::next)
                             }
@@ -323,6 +327,8 @@ class MainActivity : ComponentActivity() {
                         }
                     },
                     onClose = { screen.value = Screen.Home },
+                    preview = shown,
+                    renderer = renderer,
                 )
                 is Screen.IconPicker -> IconPickerScreen(
                     appLabel = s.entry.label,
