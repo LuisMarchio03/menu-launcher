@@ -33,4 +33,12 @@ class GlitchWeatherTest {
         assertEquals(Accessory.UMBRELLA, wornAccessory(Face.NORMAL, 14, false, false, null, Accessory.NONE, Weather.RAIN))
         assertEquals(Accessory.SANTA_HAT, wornAccessory(Face.NORMAL, 14, false, false, SpecialDay.CHRISTMAS, Accessory.NONE, Weather.RAIN))
     }
+
+    @Test fun cidadeSemSiglaDoEstado() {
+        assertEquals("mineiros", cityQuery("mineiros-go"))
+        assertEquals("Goiânia", cityQuery(" Goiânia, GO "))
+        assertEquals("Porto Alegre", cityQuery("Porto Alegre"))
+        assertEquals("Rio Verde", cityQuery("Rio Verde/GO"))
+        assertEquals("Santa-Rosa", cityQuery("Santa-Rosa"))
+    }
 }

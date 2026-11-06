@@ -25,6 +25,9 @@ fun weatherOf(code: Int, tempC: Float, hour: Int): Weather? = when {
 fun jsonNumber(json: String, key: String): Float? =
     Regex("\"" + key + "\"\\s*:\\s*(-?[0-9.]+)").find(json)?.groupValues?.get(1)?.toFloatOrNull()
 
+/** "mineiros-go" e "Goiânia, GO" viram só a cidade: a busca não entende a sigla do estado. */
+fun cityQuery(city: String): String = city.trim().replace(Regex("\\s*[-,/]\\s*[A-Za-z]{2}$"), "").trim()
+
 /** Clima guardado por 30 min. Só consulta a internet se você escreveu sua cidade nos Ajustes. */
 object GlitchWeather {
     val current = mutableStateOf<Weather?>(null)
@@ -32,7 +35,7 @@ object GlitchWeather {
     private var fetchedCity = ""
 
     suspend fun refresh(city: String, hour: Int) {
-        val name = city.trim()
+        val name = cityQuery(city)
         if (name.isEmpty()) { current.value = null; return }
         val now = System.currentTimeMillis()
         if (name == fetchedCity && now - fetchedAt < 30 * 60_000L) return

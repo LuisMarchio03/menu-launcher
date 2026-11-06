@@ -33,7 +33,7 @@ import kotlin.math.sin
 
 /** Brincadeiras que você começa tocando duas vezes no Glitch. */
 enum class GameKind(val label: String) {
-    PASS("Bola"), HIDE("Esconde-esconde"), TAG("Pega-pega"), JOKENPO("Jokenpô"), BUBBLES("Bolhas"), BUGS("Caça aos bugs"), DUEL("Duelo"),
+    PASS("Bola"), HIDE("Esconde-esconde"), TAG("Pega-pega"), JOKENPO("Jokenpô"), BUBBLES("Bolhas"), BUGS("Caça aos bugs"), DUEL("Duelo"), MEMORY("Memória"), FLY("Voo"),
 }
 
 @Composable

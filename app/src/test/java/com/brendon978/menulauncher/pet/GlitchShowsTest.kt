@@ -73,4 +73,51 @@ class GlitchShowsTest {
         assertFalse(erased(100f, 100f))
         assertTrue(erased(151f, 100f))
     }
+
+    @Test fun semBichinhoNaoBrincaComEle() {
+        repeat(300) { assertTrue(pickShow(null, 12, true, Random(it), hasBuddy = false) != Show.BUDDY) }
+        assertTrue((0 until 300).any { pickShow(null, 12, true, Random(it), hasBuddy = true) == Show.BUDDY })
+    }
+
+    @Test fun brincadeiraTemDoisJeitos() {
+        assertTrue(buddyChase(0))
+        assertFalse(buddyChase(1))
+        assertTrue(buddySteals(2))
+        assertFalse(buddySteals(0))
+    }
+
+    @Test fun semBichinhoNaoTemShowADois() {
+        repeat(400) { assertTrue(pickShow(null, 12, true, Random(it), hasBuddy = false, tower = 6) !in DUO_SHOWS) }
+    }
+
+    @Test fun soDerrubaTorreComTorre() {
+        repeat(400) { assertTrue(pickShow(null, 12, true, Random(it), hasBuddy = true, tower = 2) != Show.KNOCK) }
+        assertTrue((0 until 400).any { pickShow(null, 12, true, Random(it), hasBuddy = true, tower = 3) == Show.KNOCK })
+    }
+
+    @Test fun buscarVaiEVolta() {
+        val hero = androidx.compose.ui.geometry.Offset(100f, 100f)
+        val ball = androidx.compose.ui.geometry.Offset(600f, 300f)
+        val run = ShowRun(Show.FETCH, 0L)
+        assertEquals(ball, duoGoal(run, .3f, hero, 100f, 200f, 1f, ball, ball, 0L))
+        assertTrue(duoGoal(run, .8f, hero, 100f, 200f, 1f, ball, ball, 0L)!!.x < 300f)
+    }
+
+    @Test fun bolinhaFicaNoChaoAteSerPega() {
+        val hand = androidx.compose.ui.geometry.Offset(0f, 0f)
+        val land = androidx.compose.ui.geometry.Offset(100f, 0f)
+        val buddy = androidx.compose.ui.geometry.Offset(50f, 50f)
+        assertEquals(land, fetchBall(.3f, hand, land, buddy))
+        assertEquals(buddy, fetchBall(.8f, hand, land, buddy))
+    }
+
+    @Test fun dedoAtraiPorPoucoTempo() {
+        assertTrue(fingerAttracts(1_000, 2_000))
+        assertFalse(fingerAttracts(1_000, 4_000))
+    }
+
+    @Test fun carinhoNoBichinhoPedeArrastar() {
+        assertFalse(buddyPetted(10f, 50f))
+        assertTrue(buddyPetted(70f, 50f))
+    }
 }

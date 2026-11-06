@@ -29,6 +29,9 @@ data class GlitchMemory(
     val lastWaterDay: Int = 0,
     /** Andares da torrinha de blocos. */
     val towerBlocks: Int = 0,
+    /** Recordes dos jogos. */
+    val memoryBest: Int = 0,
+    val flyBest: Int = 0,
 )
 
 class GlitchStore(private val context: Context) {
@@ -52,6 +55,8 @@ class GlitchStore(private val context: Context) {
         val plantWatered = intPreferencesKey("plant_watered")
         val lastWaterDay = intPreferencesKey("last_water_day")
         val towerBlocks = intPreferencesKey("tower_blocks")
+        val memoryBest = intPreferencesKey("memory_best")
+        val flyBest = intPreferencesKey("fly_best")
     }
 
     suspend fun load(): GlitchMemory {
@@ -69,6 +74,8 @@ class GlitchStore(private val context: Context) {
             plantWatered = p[K.plantWatered] ?: 0,
             lastWaterDay = p[K.lastWaterDay] ?: 0,
             towerBlocks = p[K.towerBlocks] ?: 0,
+            memoryBest = p[K.memoryBest] ?: 0,
+            flyBest = p[K.flyBest] ?: 0,
         )
     }
 
@@ -93,6 +100,8 @@ class GlitchStore(private val context: Context) {
             it[K.plantWatered] = m.plantWatered
             it[K.lastWaterDay] = m.lastWaterDay
             it[K.towerBlocks] = m.towerBlocks
+            it[K.memoryBest] = m.memoryBest
+            it[K.flyBest] = m.flyBest
         }
     }
 }
@@ -107,6 +116,8 @@ object GlitchBackup {
         "glitch.longing" to m.drives.longing.toString(), "glitch.curiosity" to m.drives.curiosity.toString(),
         "glitch.bond" to m.bond.toString(), "glitch.pokeExpect" to m.pokeExpect.toString(),
         "glitch.duelBest" to m.duelBest.toString(),
+        "glitch.memoryBest" to m.memoryBest.toString(),
+        "glitch.flyBest" to m.flyBest.toString(),
     )
 
     fun fromExtras(x: Map<String, String>): GlitchMemory? {
@@ -119,6 +130,8 @@ object GlitchBackup {
             lastSeen = System.currentTimeMillis(),
             pokeExpect = f("glitch.pokeExpect", 0f),
             duelBest = x["glitch.duelBest"]?.toLongOrNull() ?: 0L,
+            memoryBest = x["glitch.memoryBest"]?.toIntOrNull() ?: 0,
+            flyBest = x["glitch.flyBest"]?.toIntOrNull() ?: 0,
         )
     }
 }
