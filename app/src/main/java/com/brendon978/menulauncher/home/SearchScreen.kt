@@ -83,7 +83,7 @@ fun SearchScreen(
         verticalArrangement = Arrangement.Bottom,
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xE60C0C0E))
+            .background(com.brendon978.menulauncher.home.overlayBackground(com.brendon978.menulauncher.home.LocalGlass.current, solidAlpha = .9f))
             .statusBarsPadding()
             .navigationBarsPadding()
             .imePadding()

@@ -56,7 +56,7 @@ fun IconPickerScreen(
         val q = query.trim().lowercase()
         listOf(AUTO) + (if (q.isEmpty()) all else all.filter { q in it })
     }
-    Column(Modifier.fillMaxSize().background(Color(0xFF0C0C0E)).statusBarsPadding().padding(16.dp)) {
+    Column(Modifier.fillMaxSize().background(com.brendon978.menulauncher.home.overlayBackground(com.brendon978.menulauncher.home.LocalGlass.current)).statusBarsPadding().padding(16.dp)) {
         Text("Ícone de $appLabel", color = Color.White, fontSize = 18.sp)
         OutlinedTextField(
             value = query,

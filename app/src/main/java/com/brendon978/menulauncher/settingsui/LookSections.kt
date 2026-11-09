@@ -170,6 +170,9 @@ fun FinishSection(settings: LauncherSettings, onChange: OnChange) {
     SubLabel("Nota vazia")
     OptionChips(listOf("+ nota" to EmptyNote.PLUS, "Toque para anotar" to EmptyNote.TEXT), settings.emptyNote) { v -> onChange { it.copy(emptyNote = v) } }
     SwitchRow("Barra de letras em arco", settings.barCurved) { v -> onChange { it.copy(barCurved = v) } }
+    SwitchRow("Sombra nos desenhos dos atalhos", settings.iconHalo) { v -> onChange { it.copy(iconHalo = v) } }
+    SwitchRow("Fundo desfocado (Ajustes, busca)", settings.blurOverlays) { v -> onChange { it.copy(blurOverlays = v) } }
+    Hint("O desfoque some na economia de bateria: o sistema desliga e o fundo volta a ser escuro.")
     Text(
         "Voltar ao acabamento original",
         color = Color.White.copy(alpha = 0.8f),

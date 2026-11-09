@@ -1,5 +1,8 @@
 package com.brendon978.menulauncher.settingsui
 
+import com.brendon978.menulauncher.home.LocalGlass
+import com.brendon978.menulauncher.home.cardFill
+import com.brendon978.menulauncher.home.overlayBackground
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -81,6 +84,7 @@ fun SettingsScreen(
     renderer: IconRenderer? = null,
 ) {
     var page by rememberSaveable { mutableStateOf<SettingsPage?>(null) }
+    val glass = LocalGlass.current
     BackHandler(enabled = page != null) { page = null }
     // Cada página começa do topo.
     val scroll = key(page) { rememberScrollState() }
@@ -92,7 +96,7 @@ fun SettingsScreen(
             .fillMaxSize()
             .onGloballyPositioned { origin = it.positionInWindow() }
             .drawBehind {
-                val bg = Color(0xFF0C0C0E)
+                val bg = overlayBackground(glass)
                 val h = hole
                 if (h == null) drawRect(bg) else {
                     val r = h.translate(-origin)
@@ -170,7 +174,6 @@ private enum class SettingsPage(val title: String, val hint: String, val glyph: 
     SYSTEM("Backup e sistema", "Exportar e tela padrão", "⚙", Color(0xFFADB5BD)),
 }
 
-private val CARD_FILL = Color(0xFF17171C)
 private val CARD_RADIUS = 18.dp
 
 /** Bloco de uma página dos Ajustes. */
@@ -180,7 +183,7 @@ private fun SettingsCard(content: @Composable ColumnScope.() -> Unit) {
         Modifier
             .padding(bottom = 12.dp)
             .fillMaxWidth()
-            .background(CARD_FILL, RoundedCornerShape(CARD_RADIUS))
+            .background(cardFill(LocalGlass.current), RoundedCornerShape(CARD_RADIUS))
             .padding(16.dp),
         content = content,
     )

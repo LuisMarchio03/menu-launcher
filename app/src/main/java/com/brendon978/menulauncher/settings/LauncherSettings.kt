@@ -165,6 +165,10 @@ data class LauncherSettings(
     val appWeight: AppWeight = AppWeight.LIGHT,
     /** Multiplica os espaços entre os blocos da tela inicial. */
     val spacing: Float = 1f,
+    /** Ajustes, busca e trocas de ícone sobre o papel de parede desfocado (quando o sistema deixa). */
+    val blurOverlays: Boolean = true,
+    /** Sombra no tom oposto atrás dos desenhos dos atalhos, para ler sobre papel de parede com detalhe. */
+    val iconHalo: Boolean = true,
 )
 
 /** O título de uma seção no estilo escolhido; null = sem título. */

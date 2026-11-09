@@ -20,6 +20,12 @@ class FinishTest {
         assertEquals(1.4f, volta.spacing)
     }
 
+    @Test fun desfoqueESombraDosDesenhosVaoNoBackup() {
+        val volta = Backup.decode(Backup.encode(LauncherSettings(blurOverlays = false, iconHalo = false)))!!
+        assertEquals(false, volta.blurOverlays)
+        assertEquals(false, volta.iconHalo)
+    }
+
     @Test fun detalhesNuncaSomemDeVez() {
         val text = Backup.encode(LauncherSettings()).replace(Regex("look.detail_alpha=.*"), "look.detail_alpha=0.01")
         assertEquals(0.25f, Backup.decode(text)!!.detailAlpha)

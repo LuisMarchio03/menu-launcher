@@ -1,5 +1,8 @@
 package com.brendon978.menulauncher.settingsui
 
+import com.brendon978.menulauncher.home.LocalGlass
+import com.brendon978.menulauncher.home.cardFill
+import com.brendon978.menulauncher.home.tileFill
 import android.app.WallpaperManager
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -212,7 +215,7 @@ private fun ThemeCard(t: LookTheme, brush: Brush, selected: Boolean, color: Int,
         modifier
             .size(width = 96.dp, height = 132.dp)
             .clip(shape)
-            .background(brush, shape)
+            .then(if (LocalGlass.current) Modifier.background(tileFill(true), shape) else Modifier.background(brush, shape))
             .border(if (selected) 2.dp else 1.dp, Color.White.copy(alpha = if (selected) 1f else .15f), shape)
             .padding(8.dp),
     ) {
@@ -245,7 +248,7 @@ internal fun ClockStylePicker(settings: LauncherSettings, onPick: (ClockStyle) -
                         .weight(1f)
                         .height(92.dp)
                         .clip(shape)
-                        .background(Color(0xFF0F0F13), shape)
+                        .background(tileFill(LocalGlass.current), shape)
                         .border(if (on) 2.dp else 1.dp, Color.White.copy(alpha = if (on) 1f else .14f), shape)
                         .clickable { onPick(style) }
                         .padding(6.dp),
@@ -282,7 +285,7 @@ internal fun CategoryTile(title: String, hint: String, glyph: String, accent: Co
         modifier
             .height(104.dp)
             .clip(shape)
-            .background(Color(0xFF17171C), shape)
+            .background(cardFill(LocalGlass.current), shape)
             .clickable(onClick = onClick)
             .padding(14.dp),
     ) {
@@ -312,7 +315,7 @@ internal fun PictureChoice(label: String, selected: Boolean, onClick: () -> Unit
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier
             .clip(shape)
-            .background(Color(0xFF0F0F13), shape)
+            .background(tileFill(LocalGlass.current), shape)
             .border(if (selected) 2.dp else 1.dp, Color.White.copy(alpha = if (selected) 1f else .14f), shape)
             .clickable(onClick = onClick)
             .padding(10.dp),
