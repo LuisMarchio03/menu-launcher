@@ -77,7 +77,15 @@ private val DIGITAL = setOf(ClockStyle.THIN, ClockStyle.STACKED, ClockStyle.SEGM
  * Estilo, tamanho, formato e alinhamento vêm dos ajustes; [align] só vale onde o topo tem a largura toda.
  */
 @Composable
-fun TopInfo(settings: LauncherSettings, color: Color, modifier: Modifier = Modifier, screenTime: String? = null, align: ClockAlign = ClockAlign.START) {
+fun TopInfo(
+    settings: LauncherSettings,
+    color: Color,
+    modifier: Modifier = Modifier,
+    screenTime: String? = null,
+    align: ClockAlign = ClockAlign.START,
+    /** Tocar na linha da data (mostra os atalhos rápidos); null = só para olhar. */
+    onInfoTap: (() -> Unit)? = null,
+) {
     val context = LocalContext.current
     val seconds = settings.clockSeconds && settings.clockStyle in DIGITAL
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
@@ -130,9 +138,20 @@ fun TopInfo(settings: LauncherSettings, color: Color, modifier: Modifier = Modif
     Column(modifier, horizontalAlignment = horizontal) {
         ClockBody(settings.clockStyle, face, cal, color, scale, horizontal, textAlign, onTap)
         val small = 13.sp * settings.textScale
-        if (date != null) Text(date, color = color.copy(alpha = 0.7f), fontSize = small)
-        if (second != null) Text(second, color = color.copy(alpha = 0.7f), fontSize = small, modifier = Modifier.padding(top = 2.dp))
-        screenTime?.let { Text(it, color = color.copy(alpha = 0.55f), fontSize = 12.sp, modifier = Modifier.petObstacle("tempo-tela")) }
+        val infoTap = if (onInfoTap != null) Modifier.clickable(remember { MutableInteractionSource() }, indication = null, onClick = onInfoTap) else Modifier
+        if (settings.compactInfo) {
+            // data e tempo de tela numa linha só: menos coisa empilhada embaixo do relógio
+            // sem data nem tempo de tela, três pontinhos seguram o toque que mostra os atalhos
+            val line = com.brendon978.menulauncher.clock.infoLine(date, screenTime) ?: if (onInfoTap != null) "···" else null
+            line?.let {
+                Text(it, color = color.copy(alpha = 0.72f), fontSize = small, textAlign = textAlign, modifier = infoTap.petObstacle("tempo-tela"))
+            }
+            if (second != null) Text(second, color = color.copy(alpha = 0.6f), fontSize = small, modifier = Modifier.padding(top = 2.dp))
+        } else {
+            (date ?: if (onInfoTap != null) "···" else null)?.let { Text(it, color = color.copy(alpha = 0.7f), fontSize = small, modifier = infoTap) }
+            if (second != null) Text(second, color = color.copy(alpha = 0.7f), fontSize = small, modifier = Modifier.padding(top = 2.dp))
+            screenTime?.let { Text(it, color = color.copy(alpha = 0.55f), fontSize = 12.sp, modifier = Modifier.petObstacle("tempo-tela")) }
+        }
         if (settings.showNextEvent) {
             // próximo compromisso, relido a cada minuto (fora da thread principal)
             val event by androidx.compose.runtime.produceState<String?>(null, now / 60_000) {

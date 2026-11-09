@@ -147,7 +147,13 @@ internal fun LivePreview(settings: LauncherSettings, apps: List<AppEntry>, rende
 /** Temas prontos e os seus numa fileira; tocar aplica, segurar um seu apaga, o último salva o atual. */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-internal fun ThemesRow(settings: LauncherSettings, liveStroke: Int, onChange: ((LauncherSettings) -> LauncherSettings) -> Unit) {
+internal fun ThemesRow(
+    settings: LauncherSettings,
+    liveStroke: Int,
+    onChange: ((LauncherSettings) -> LauncherSettings) -> Unit,
+    /** Depois de aplicar: o jeito de antes, para desfazer. */
+    onApplied: (LookTheme) -> Unit = {},
+) {
     val brush = rememberWallpaperBrush()
     var naming by rememberSaveable { mutableStateOf(false) }
     var removing by remember { mutableStateOf<LookTheme?>(null) }
@@ -159,7 +165,10 @@ internal fun ThemesRow(settings: LauncherSettings, liveStroke: Int, onChange: ((
                 // o tema que segue o papel de parede mostra a cor que ele daria agora
                 color = if (t.strokeAuto == StrokeAuto.BY_WALLPAPER) liveStroke else t.strokeColor,
                 modifier = Modifier.combinedClickable(
-                    onClick = { onChange { it.applyTheme(t) } },
+                    onClick = {
+                        if (!settings.uses(t)) onApplied(settings.toTheme("antes"))
+                        onChange { it.applyTheme(t) }
+                    },
                     onLongClick = { if (mine) removing = t },
                 ),
             )
@@ -330,5 +339,25 @@ internal fun PictureChoice(label: String, selected: Boolean, onClick: () -> Unit
 internal fun Bars(vararg widths: Int, height: Int = 6) {
     Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
         widths.forEach { w -> Box(Modifier.width(w.dp).height(height.dp).background(Color.White.copy(alpha = .5f), RoundedCornerShape(3.dp))) }
+    }
+}
+
+/** Passo do primeiro uso: um tema e o modo da tela inicial, com a mesma prévia dos Ajustes. */
+@Composable
+fun FirstRunStyle(settings: LauncherSettings, liveStroke: Int, onChange: ((LauncherSettings) -> LauncherSettings) -> Unit) {
+    ThemesRow(settings, liveStroke, onChange)
+    Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(top = 16.dp)) {
+        PictureChoice("Uma mão", settings.mode == com.brendon978.menulauncher.settings.HomeMode.ONE_HAND, { onChange { it.copy(mode = com.brendon978.menulauncher.settings.HomeMode.ONE_HAND) } }, Modifier.weight(1f)) {
+            Bars(54, 40, 48, 36)
+        }
+        PictureChoice("Grade", settings.mode == com.brendon978.menulauncher.settings.HomeMode.GRID, { onChange { it.copy(mode = com.brendon978.menulauncher.settings.HomeMode.GRID) } }, Modifier.weight(1f)) {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                repeat(3) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        repeat(4) { Box(Modifier.size(12.dp).border(1.dp, Color.White.copy(alpha = .5f), RoundedCornerShape(4.dp))) }
+                    }
+                }
+            }
+        }
     }
 }

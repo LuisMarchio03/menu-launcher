@@ -54,8 +54,11 @@ fun AiSymbol(
     onHoldStart: () -> Unit,
     onHoldEnd: () -> Unit,
     onMoved: (Float, Float) -> Unit,
+    /** Aro em volta (ouvindo, o aro aparece sempre). */
+    ring: Boolean = true,
+    scale: Float = 1f,
 ) {
-    val size = 56.dp
+    val size = 56.dp * scale
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val density = LocalDensity.current
         val sizePx = with(density) { size.toPx() }
@@ -88,7 +91,10 @@ fun AiSymbol(
                     scaleX = s
                     scaleY = s
                 }
-                .border(if (listening) LocalBorderWidth.current * 2 else LocalBorderWidth.current, color.copy(alpha = if (listening) 1f else 0.45f), CircleShape)
+                .then(
+                    if (ring || listening) Modifier.border(if (listening) LocalBorderWidth.current * 2 else LocalBorderWidth.current, color.copy(alpha = if (listening) 1f else 0.45f), CircleShape)
+                    else Modifier,
+                )
                 .pointerInput(maxX, maxY) {
                     val slop = viewConfiguration.touchSlop
                     awaitEachGesture {
@@ -143,7 +149,7 @@ fun AiSymbol(
                     }
                 },
         ) {
-            if (symbol != null) Image(symbol, contentDescription = "IA", modifier = Modifier.size(34.dp))
+            if (symbol != null) Image(symbol, contentDescription = "IA", modifier = Modifier.size(34.dp * scale))
         }
     }
 }

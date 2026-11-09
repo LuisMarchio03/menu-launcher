@@ -191,6 +191,7 @@ class MainActivity : ComponentActivity() {
                 com.brendon978.menulauncher.home.rememberStrokeColor(settings)
             }
             val shown = remember(settings, stroke) { settings.forHome(stroke) }
+            androidx.compose.runtime.SideEffect { renderer.initialStyle = settings.initialStyle }
             val color = Color(stroke)
             // quem tinha a opção antiga de cor do papel de parede passa para a nova
             LaunchedEffect(settings.colorSource) {
@@ -236,6 +237,7 @@ class MainActivity : ComponentActivity() {
                             updateSettings { it.copy(aiPackage = pkg, aiActivity = act) }
                         }
                     },
+                    styleChooser = { com.brendon978.menulauncher.settingsui.FirstRunStyle(settings, stroke, ::updateSettings) },
                     onDone = {
                         val defaults = settingsRepo.defaultFavorites(apps)
                         updateSettings { st ->
@@ -587,6 +589,8 @@ class MainActivity : ComponentActivity() {
             onHoldStart = { startListening(pkg, activity) },
             onHoldEnd = { if (listening.value) voice.stop() },
             onMoved = { x, y -> updateSettings { it.copy(aiX = clampFraction(x), aiY = clampFraction(y)) } },
+            ring = settings.aiRing,
+            scale = settings.aiScale,
         )
     }
 

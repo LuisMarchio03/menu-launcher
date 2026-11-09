@@ -45,7 +45,7 @@ fun AppIcon(
     tracksBadge: Boolean = false,
 ) {
     val px = with(LocalDensity.current) { size.roundToPx() }
-    val bmp by produceState<ImageBitmap?>(null, entry.key, override, color, px, stroke) {
+    val bmp by produceState<ImageBitmap?>(null, entry.key, override, color, px, stroke, renderer.initialStyle) {
         value = withContext(Dispatchers.Default) { renderer.iconFor(entry, override, px, color, stroke) }
     }
     // bolinha de notificação: só aparece se o app tem notificação "de verdade"

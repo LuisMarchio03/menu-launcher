@@ -1,5 +1,14 @@
 package com.brendon978.menulauncher.home
 
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Row
@@ -31,12 +40,26 @@ fun AppRow(
     /** Deslizar para o lado; null deixa a linha como sempre foi. */
     onSwipe: (() -> Unit)? = null,
 ) {
+    // com movimento: a linha encolhe um pouco enquanto o dedo está nela e o toque vibra de leve
+    val press = remember { MutableInteractionSource() }
+    val pressed by press.collectIsPressedAsState()
+    val scale by animateFloatAsState(if (look.motion && pressed) .96f else 1f, label = "aperto")
+    val haptic = LocalHapticFeedback.current
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
             .height(look.height)
-            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
+            .graphicsLayer { scaleX = scale; scaleY = scale; transformOrigin = TransformOrigin(0f, .5f) }
+            .combinedClickable(
+                interactionSource = press,
+                indication = null,
+                onClick = {
+                    if (look.motion) haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    onClick()
+                },
+                onLongClick = onLongClick,
+            )
             .then(if (onSwipe != null) Modifier.swipeToActions(onSwipe) else Modifier),
     ) {
         AppIcon(entry, override, look.color, look.iconSize, renderer, stroke = look.stroke, shadow = look.shadow, tracksBadge = tracksBadge)

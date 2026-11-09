@@ -92,6 +92,8 @@ fun RobotPet(
     birthday: String = "",
     city: String = "",
     buddy: Buddy = Buddy.NONE,
+    /** Jardim e torrinha só aparecem durante a brincadeira de regar ou empilhar. */
+    calmGarden: Boolean = false,
     aiPackage: String? = null,
     named: Map<String, Area> = emptyMap(),
     area: Area,
@@ -1976,7 +1978,7 @@ fun RobotPet(
 
     // jardim: plantinha e torrinha, em cima da lista
     val gardenGround = currentNamed["list"]?.let { Offset(it.r - widthPx * .9f, it.t - 4f) }
-    if (gardenGround != null && (plantWatered > 0 || towerBlocks > 0 || show?.kind == Show.WATER || show?.kind == Show.BLOCKS)) {
+    if (gardenGround != null && ((!calmGarden && (plantWatered > 0 || towerBlocks > 0)) || show?.kind == Show.WATER || show?.kind == Show.BLOCKS)) {
         Canvas(Modifier.fillMaxSize()) {
             drawGarden(color, plantWatered, plantWilted(lastWaterDay, todayInt()), towerBlocks, gardenGround, heightPx / 170f * .8f)
         }

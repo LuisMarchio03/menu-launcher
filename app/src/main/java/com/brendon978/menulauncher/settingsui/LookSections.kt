@@ -1,5 +1,7 @@
 package com.brendon978.menulauncher.settingsui
 
+import com.brendon978.menulauncher.settings.InitialStyle
+import com.brendon978.menulauncher.settings.QuickReveal
 import com.brendon978.menulauncher.settings.AppWeight
 import com.brendon978.menulauncher.settings.EmptyNote
 import com.brendon978.menulauncher.settings.LabelStyle
@@ -169,6 +171,13 @@ fun FinishSection(settings: LauncherSettings, onChange: OnChange) {
     OptionChips(listOf("Só o desenho" to QuickStyle.PLAIN, "Em círculos" to QuickStyle.CIRCLES), settings.quickStyle) { v -> onChange { it.copy(quickStyle = v) } }
     SubLabel("Nota vazia")
     OptionChips(listOf("+ nota" to EmptyNote.PLUS, "Toque para anotar" to EmptyNote.TEXT), settings.emptyNote) { v -> onChange { it.copy(emptyNote = v) } }
+    ScaleSlider("Véu escuro no topo e no pé", settings.edgeVeil, 0f..1f) { v -> onChange { it.copy(edgeVeil = v) } }
+    SwitchRow("Data e tempo de tela numa linha", settings.compactInfo) { v -> onChange { it.copy(compactInfo = v) } }
+    SubLabel("Atalhos rápidos aparecem")
+    OptionChips(listOf("Ao tocar na data" to QuickReveal.ON_TAP, "Sempre" to QuickReveal.ALWAYS), settings.quickReveal) { v -> onChange { it.copy(quickReveal = v) } }
+    SwitchRow("Movimento (entrada, toque que encolhe, vibração)", settings.motion) { v -> onChange { it.copy(motion = v) } }
+    SwitchRow("Aro no símbolo da IA", settings.aiRing) { v -> onChange { it.copy(aiRing = v) } }
+    ScaleSlider("Tamanho do símbolo da IA", settings.aiScale, 0.5f..1.5f) { v -> onChange { it.copy(aiScale = v) } }
     SwitchRow("Barra de letras em arco", settings.barCurved) { v -> onChange { it.copy(barCurved = v) } }
     SwitchRow("Sombra nos desenhos dos atalhos", settings.iconHalo) { v -> onChange { it.copy(iconHalo = v) } }
     SwitchRow("Vidro no fundo (Ajustes, busca)", settings.blurOverlays) { v -> onChange { it.copy(blurOverlays = v) } }
@@ -182,6 +191,7 @@ fun FinishSection(settings: LauncherSettings, onChange: OnChange) {
                     it.copy(
                         quickStyle = QuickStyle.CIRCLES, detailAlpha = 0.6f, labelStyle = LabelStyle.NORMAL,
                         emptyNote = EmptyNote.TEXT, barCurved = true, appWeight = AppWeight.NORMAL, spacing = 1f,
+                        edgeVeil = 0f, compactInfo = false, quickReveal = QuickReveal.ALWAYS, motion = false, aiRing = true, aiScale = 1f,
                     )
                 }
             }
@@ -232,6 +242,10 @@ fun IconLookSection(settings: LauncherSettings, onChange: OnChange) {
     ScaleSlider("Espessura do traço dos ícones", settings.strokeScale, 0.5f..3f) { v -> onChange { it.copy(strokeScale = v) } }
     ScaleSlider("Espessura das bordas e do Glitch", settings.borderScale, 0.5f..3f) { v -> onChange { it.copy(borderScale = v) } }
     SwitchRow("Sombra (para papel de parede claro)", settings.textShadow) { v -> onChange { it.copy(textShadow = v) } }
+    SubLabel("App sem desenho no pacote")
+    OptionChips(listOf("Quadrado arredondado" to InitialStyle.SQUIRCLE, "Círculo" to InitialStyle.CIRCLE, "Só a letra" to InitialStyle.LETTER), settings.initialStyle) { v ->
+        onChange { it.copy(initialStyle = v) }
+    }
 }
 
 @Composable
@@ -243,6 +257,8 @@ fun FontSection(settings: LauncherSettings, onChange: OnChange) {
             "Condensada" to FontChoice.CONDENSED,
             "Serifada" to FontChoice.SERIF,
             "Mono" to FontChoice.MONO,
+            "Manrope" to FontChoice.MANROPE,
+            "Outfit" to FontChoice.OUTFIT,
         ).forEach { (label, font) ->
             Chip(label, settings.font == font, fontFamily = font.family) { onChange { it.copy(font = font) } }
         }

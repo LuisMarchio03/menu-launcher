@@ -1,5 +1,9 @@
 package com.brendon978.menulauncher.home
 
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Box
@@ -80,6 +84,14 @@ fun HomeScreen(
     val listensDoubleTap = settings.listensDoubleTap()
     val growsTop = settings.showNote || settings.showContacts || screenTime != null
     var topHeight by remember { mutableIntStateOf(0) }
+    // atalhos que só aparecem ao tocar na linha da data: somem sozinhos depois de um tempo
+    var quickShown by remember { mutableStateOf(false) }
+    LaunchedEffect(quickShown) { if (quickShown) { kotlinx.coroutines.delay(8_000); quickShown = false } }
+    val showQuick = settings.showQuickActions && (settings.quickReveal == com.brendon978.menulauncher.settings.QuickReveal.ALWAYS || quickShown)
+    val onInfoTap: (() -> Unit)? =
+        if (settings.showQuickActions && settings.quickReveal == com.brendon978.menulauncher.settings.QuickReveal.ON_TAP) ({ quickShown = !quickShown }) else null
+    // cada volta para a tela inicial (ou toque no home) refaz a entrada em sequência
+    val entrance = remember(homeOnTop, resetSignal) { if (homeOnTop) resetSignal + 1 else 0 }
     val swipeThreshold = with(LocalDensity.current) { 72.dp.toPx() }
     val swipe = remember(swipeThreshold) {
         SwipeTracker(swipeThreshold) { if (it == Swipe.DOWN) swipeDown() else swipeUp() }
@@ -130,6 +142,8 @@ fun HomeScreen(
                     onDragCancel = { swipe.reset() },
                 ) { _, dy -> swipe.add(dy) }
             }
+            // véu nas pontas: o relógio e a lista leem sobre papel de parede com muito detalhe
+            .then(if (settings.edgeVeil > 0f) Modifier.edgeVeil(settings.edgeVeil) else Modifier)
             .statusBarsPadding()
             .navigationBarsPadding(),
     ) {
@@ -143,6 +157,7 @@ fun HomeScreen(
                         .then(if (growsTop) Modifier.onSizeChanged { topHeight = it.height } else Modifier)
                         .then(if (align != ClockAlign.START) Modifier.fillMaxWidth() else Modifier)
                         .padding(start = 22.dp, end = 22.dp, top = 24.dp * settings.spacing)
+                        .enterIn(0, entrance, settings.motion)
                         .petObstacle("top"),
                     horizontalAlignment = when (align) {
                         ClockAlign.START -> Alignment.Start
@@ -150,8 +165,8 @@ fun HomeScreen(
                         ClockAlign.END -> Alignment.End
                     },
                 ) {
-                    TopInfo(settings, color, screenTime = screenTime, align = align)
-                    if (settings.showQuickActions) QuickActions(color, settings)
+                    TopInfo(settings, color, screenTime = screenTime, align = align, onInfoTap = onInfoTap)
+                    androidx.compose.animation.AnimatedVisibility(showQuick) { QuickActions(color, settings) }
                     TopExtras(settings, color, onNoteChange)
                     musicSlotTop()
                 }
@@ -166,14 +181,15 @@ fun HomeScreen(
                     onAppLongPress = onAppLongPress,
                     musicSlotBottom = musicSlotBottom,
                     onSearch = onSearch,
+                    modifier = Modifier.enterIn(1, entrance, settings.motion),
                 )
             }
             // Grade: player ao lado do relógio; a grade começa logo abaixo do que for mais alto.
             HomeMode.GRID -> Column(Modifier.fillMaxSize()) {
                 Row(Modifier.padding(start = 22.dp, end = 22.dp, top = 24.dp * settings.spacing, bottom = 12.dp * settings.spacing)) {
                     Column {
-                        TopInfo(settings, color, screenTime = screenTime)
-                        if (settings.showQuickActions) QuickActions(color, settings)
+                        TopInfo(settings, color, screenTime = screenTime, onInfoTap = onInfoTap)
+                        androidx.compose.animation.AnimatedVisibility(showQuick) { QuickActions(color, settings) }
                         TopExtras(settings, color, onNoteChange)
                     }
                     Box(Modifier.weight(1f).padding(start = 16.dp)) { musicSlotTop() }
@@ -236,6 +252,40 @@ private fun PetLayer(color: Color, musicPlaying: Boolean, settings: LauncherSett
             named = reg.rects.mapValues { (_, it) -> Area(it.left - origin.x, it.top - origin.y, it.right - origin.x, it.bottom - origin.y) },
             obstacles = obstacles,
             accessory = runCatching { com.brendon978.menulauncher.pet.Accessory.valueOf(settings.glitchAccessory) }.getOrDefault(com.brendon978.menulauncher.pet.Accessory.NONE),
+            calmGarden = settings.glitchCalm,
         )
+    }
+}
+
+/** Degradê escuro no topo e no pé da tela, com a força [strength] (0 a 1). */
+private fun Modifier.edgeVeil(strength: Float): Modifier = drawBehind {
+    val top = Color.Black.copy(alpha = .55f * strength)
+    drawRect(Brush.verticalGradient(listOf(top, Color.Transparent), endY = size.height * .32f), size = size.copy(height = size.height * .32f))
+    val from = size.height * .55f
+    drawRect(
+        Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = .7f * strength)), startY = from, endY = size.height),
+        topLeft = Offset(0f, from),
+        size = size.copy(height = size.height - from),
+    )
+}
+
+/**
+ * Entrada em sequência: o bloco [index] sobe 12dp e aparece, um pouco depois do anterior.
+ * [trigger] 0 = parado (outra tela por cima); cada valor novo refaz a entrada.
+ */
+@Composable
+private fun Modifier.enterIn(index: Int, trigger: Int, enabled: Boolean): Modifier {
+    if (!enabled) return this
+    val p = remember { androidx.compose.animation.core.Animatable(1f) }
+    LaunchedEffect(trigger) {
+        if (trigger == 0) return@LaunchedEffect
+        p.snapTo(0f)
+        kotlinx.coroutines.delay(60L * index)
+        p.animateTo(1f, androidx.compose.animation.core.tween(320, easing = androidx.compose.animation.core.FastOutSlowInEasing))
+    }
+    val lift = with(LocalDensity.current) { 12.dp.toPx() }
+    return graphicsLayer {
+        alpha = p.value
+        translationY = (1f - p.value) * lift
     }
 }

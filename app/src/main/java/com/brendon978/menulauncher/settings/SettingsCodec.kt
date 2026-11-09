@@ -60,6 +60,14 @@ object SettingsCodec {
         scale("spacing", { it.spacing }) { s, f -> s.copy(spacing = f) },
         boolField("blur_overlays", { it.blurOverlays }) { s, v -> s.copy(blurOverlays = v) },
         boolField("icon_halo", { it.iconHalo }) { s, v -> s.copy(iconHalo = v) },
+        Field("edge_veil", { it.edgeVeil.toString() }, { s, v -> v.toFloatOrNull()?.let { s.copy(edgeVeil = it.coerceIn(0f, 1f)) } }),
+        boolField("compact_info", { it.compactInfo }) { s, v -> s.copy(compactInfo = v) },
+        enumField("quick_reveal", { it.quickReveal }) { s, v -> s.copy(quickReveal = v) },
+        boolField("glitch_calm", { it.glitchCalm }) { s, v -> s.copy(glitchCalm = v) },
+        boolField("ai_ring", { it.aiRing }) { s, v -> s.copy(aiRing = v) },
+        scale("ai_scale", { it.aiScale }, max = 1.5f) { s, f -> s.copy(aiScale = f) },
+        enumField("initial_style", { it.initialStyle }) { s, v -> s.copy(initialStyle = v) },
+        boolField("motion", { it.motion }) { s, v -> s.copy(motion = v) },
         Field("custom_themes", { LookThemes.encode(it.customThemes) }, { s, v -> s.copy(customThemes = LookThemes.decode(v)) }),
     )
 }

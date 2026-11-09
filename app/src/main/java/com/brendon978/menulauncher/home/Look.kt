@@ -13,6 +13,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.ExperimentalTextApi
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontVariation
+import androidx.compose.ui.text.font.FontWeight
+import com.brendon978.menulauncher.R
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
@@ -36,12 +41,23 @@ val LauncherSettings.smallTextSize: TextUnit get() = 12.sp * textScale
 
 /** O que uma linha de app precisa, em valores estáveis: a linha só recompõe quando um deles muda. */
 @Immutable
-data class RowLook(val color: Int, val iconSize: Dp, val textSize: TextUnit, val height: Dp, val stroke: Float, val shadow: Boolean, val light: Boolean = false)
+data class RowLook(val color: Int, val iconSize: Dp, val textSize: TextUnit, val height: Dp, val stroke: Float, val shadow: Boolean, val light: Boolean = false, val motion: Boolean = false)
 
 val LauncherSettings.rowLook: RowLook
-    get() = RowLook(strokeColor, rowIconSize, rowTextSize, rowHeight, strokeScale, textShadow, appWeight == com.brendon978.menulauncher.settings.AppWeight.LIGHT)
+    get() = RowLook(strokeColor, rowIconSize, rowTextSize, rowHeight, strokeScale, textShadow, appWeight == com.brendon978.menulauncher.settings.AppWeight.LIGHT, motion)
 
 private val CONDENSED = FontFamily(Typeface.create("sans-serif-condensed", Typeface.NORMAL))
+
+/** Fontes variáveis que vêm no app (licença OFL, em assets/licencas): um peso por instância do eixo wght. */
+@OptIn(ExperimentalTextApi::class)
+private fun variable(res: Int) = FontFamily(
+    listOf(FontWeight.Thin, FontWeight.ExtraLight, FontWeight.Light, FontWeight.Normal, FontWeight.Medium, FontWeight.SemiBold, FontWeight.Bold).map { w ->
+        Font(res, w, variationSettings = FontVariation.Settings(FontVariation.weight(w.weight)))
+    },
+)
+
+private val MANROPE = variable(R.font.manrope)
+private val OUTFIT = variable(R.font.outfit)
 
 val FontChoice.family: FontFamily
     get() = when (this) {
@@ -49,6 +65,8 @@ val FontChoice.family: FontFamily
         FontChoice.CONDENSED -> CONDENSED
         FontChoice.SERIF -> FontFamily.Serif
         FontChoice.MONO -> FontFamily.Monospace
+        FontChoice.MANROPE -> MANROPE
+        FontChoice.OUTFIT -> OUTFIT
     }
 
 /** Borda fina dos contornos (1 dp no original), com a espessura dos ajustes. */

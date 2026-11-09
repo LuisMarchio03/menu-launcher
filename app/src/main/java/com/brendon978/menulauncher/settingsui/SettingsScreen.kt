@@ -1,5 +1,8 @@
 package com.brendon978.menulauncher.settingsui
 
+import androidx.compose.runtime.LaunchedEffect
+import com.brendon978.menulauncher.settings.applyTheme
+import com.brendon978.menulauncher.settings.LookTheme
 import com.brendon978.menulauncher.home.LocalGlass
 import com.brendon978.menulauncher.home.cardFill
 import com.brendon978.menulauncher.home.overlayBackground
@@ -84,6 +87,9 @@ fun SettingsScreen(
     renderer: IconRenderer? = null,
 ) {
     var page by rememberSaveable { mutableStateOf<SettingsPage?>(null) }
+    var query by rememberSaveable { mutableStateOf("") }
+    var undoTheme by remember { mutableStateOf<LookTheme?>(null) }
+    LaunchedEffect(undoTheme) { if (undoTheme != null) { kotlinx.coroutines.delay(5_000); undoTheme = null } }
     val glass = LocalGlass.current
     BackHandler(enabled = page != null) { page = null }
     // Cada página começa do topo.
@@ -119,7 +125,7 @@ fun SettingsScreen(
             Text("Fechar", color = Color.White.copy(alpha = 0.7f), modifier = Modifier.clickable(onClick = onClose).padding(8.dp))
         }
         // Prévia fixa no topo onde a escolha muda a cara da tela inicial; o resto rola embaixo dela.
-        if (renderer != null && (page == null || page == SettingsPage.LOOK)) {
+        if (renderer != null && (page == null || page == SettingsPage.LOOK || page == SettingsPage.HOME)) {
             val shownApps = remember(settings.favorites, apps) {
                 settings.favorites.mapNotNull { apps[it] }.ifEmpty { apps.values.sortedBy { it.label.lowercase() } }.take(4)
             }
@@ -137,14 +143,17 @@ fun SettingsScreen(
         ) {
             when (page) {
                 null -> {
+                    SettingsSearch(query, { query = it }) { hit -> query = ""; page = SettingsPage.valueOf(hit.page) }
+                    if (query.isBlank()) {
                     GroupLabel("Temas")
-                    ThemesRow(settings, preview.strokeColor, onChange)
+                    ThemesRow(settings, preview.strokeColor, onChange) { before -> undoTheme = before }
                     GroupLabel("Ajustar")
                     SettingsPage.entries.chunked(2).forEach { pair ->
                         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(bottom = 10.dp)) {
                             pair.forEach { p -> CategoryTile(p.title, p.hint, p.glyph, p.accent, { page = p }, Modifier.weight(1f)) }
                             if (pair.size == 1) Spacer(Modifier.weight(1f))
                         }
+                    }
                     }
                 }
                 SettingsPage.LOOK -> LookPage(settings, onChange)
@@ -159,6 +168,13 @@ fun SettingsScreen(
                 SettingsPage.SYSTEM -> SystemPage(settings, onChange, onSetDefaultLauncher)
             }
             Spacer(Modifier.height(24.dp))
+        }
+        // aplicou um tema sem querer: 5 segundos para voltar ao que era
+        undoTheme?.let { before ->
+            UndoBar("Tema aplicado", "Desfazer") {
+                undoTheme = null
+                onChange { it.applyTheme(before) }
+            }
         }
     }
 }
@@ -354,6 +370,7 @@ private fun GlitchPage(settings: LauncherSettings, onChange: ((LauncherSettings)
             Switch(settings.showPet, onCheckedChange = { v -> onChange { it.copy(showPet = v) } })
         }
         if (settings.showPet) {
+            ToggleRow("Glitch calmo", "Plantinha e torrinha só aparecem enquanto ele brinca com elas.", settings.glitchCalm) { v -> onChange { it.copy(glitchCalm = v) } }
             Text("Acessório", color = Color.White.copy(alpha = .75f), fontSize = 13.sp, modifier = Modifier.padding(top = 4.dp, bottom = 6.dp))
             androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 com.brendon978.menulauncher.pet.Accessory.entries.filter { it.choosable }.forEach { a ->
@@ -666,5 +683,54 @@ private fun NextEventToggle(value: Boolean, onToggle: (Boolean) -> Unit) {
         if (!v) onToggle(false)
         else if (context.checkSelfPermission(android.Manifest.permission.READ_CALENDAR) == android.content.pm.PackageManager.PERMISSION_GRANTED) onToggle(true)
         else ask.launch(android.Manifest.permission.READ_CALENDAR)
+    }
+}
+
+/** Campo de busca da tela principal dos Ajustes; com texto, a lista de opções achadas no lugar dos temas. */
+@Composable
+private fun SettingsSearch(query: String, onQuery: (String) -> Unit, onPick: (SettingsHit) -> Unit) {
+    OutlinedTextField(
+        value = query,
+        onValueChange = onQuery,
+        singleLine = true,
+        placeholder = { Text("Buscar nos ajustes", color = Color.White.copy(alpha = .45f)) },
+        shape = RoundedCornerShape(16.dp),
+        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+    )
+    if (query.isBlank()) return
+    val hits = remember(query) { SettingsIndex.search(query) }
+    if (hits.isEmpty()) {
+        Text("Nada com \"$query\".", color = Color.White.copy(alpha = .55f), fontSize = 13.sp, modifier = Modifier.padding(top = 14.dp))
+    }
+    hits.forEach { hit ->
+        val title = SettingsPage.valueOf(hit.page).title
+        Column(
+            Modifier
+                .padding(top = 8.dp)
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(14.dp))
+                .background(cardFill(LocalGlass.current), RoundedCornerShape(14.dp))
+                .clickable { onPick(hit) }
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+        ) {
+            Text(hit.label, color = Color.White, fontSize = 15.sp)
+            Text(title, color = Color.White.copy(alpha = .5f), fontSize = 12.sp)
+        }
+    }
+}
+
+/** Faixa no pé da tela com uma ação de desfazer. */
+@Composable
+private fun UndoBar(text: String, action: String, onAction: () -> Unit) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .padding(16.dp)
+            .fillMaxWidth()
+            .background(Color(0xFF2A2A30), RoundedCornerShape(14.dp))
+            .padding(start = 16.dp, end = 4.dp),
+    ) {
+        Text(text, color = Color.White, fontSize = 14.sp, modifier = Modifier.weight(1f))
+        Text(action, color = Color(0xFF9D8CFF), fontSize = 14.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.clickable(onClick = onAction).padding(14.dp))
     }
 }

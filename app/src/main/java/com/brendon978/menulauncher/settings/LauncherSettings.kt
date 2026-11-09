@@ -23,6 +23,12 @@ enum class EmptyNote { PLUS, TEXT }
 /** Peso do nome dos apps na lista. */
 enum class AppWeight { LIGHT, NORMAL }
 
+/** Atalhos rápidos: sempre à vista ou só depois de tocar na linha da data (somem sozinhos). */
+enum class QuickReveal { ON_TAP, ALWAYS }
+
+/** Ícone de app sem desenho no pacote: letra num quadrado arredondado, num círculo ou sozinha. */
+enum class InitialStyle { SQUIRCLE, CIRCLE, LETTER }
+
 /** Cartão de música: o original (faixa fina, controles embaixo) ou com a capa grande e os controles dentro. */
 enum class MusicStyle { CLASSIC, COVER }
 
@@ -39,7 +45,7 @@ enum class DateStyle { SHORT, LONG, NUMERIC, HIDDEN }
 enum class ColorSource { FIXED, WALLPAPER }
 
 /** Fontes do sistema: a padrão da One UI, condensada, serifada e monoespaçada. */
-enum class FontChoice { SYSTEM, CONDENSED, SERIF, MONO }
+enum class FontChoice { SYSTEM, CONDENSED, SERIF, MONO, MANROPE, OUTFIT }
 
 enum class BarSide { RIGHT, LEFT }
 
@@ -169,6 +175,19 @@ data class LauncherSettings(
     val blurOverlays: Boolean = true,
     /** Sombra no tom oposto atrás dos desenhos dos atalhos, para ler sobre papel de parede com detalhe. */
     val iconHalo: Boolean = true,
+    /** Escurece de leve o topo e o pé da tela (0 = nada). */
+    val edgeVeil: Float = 0.35f,
+    /** Data e tempo de tela numa linha só. */
+    val compactInfo: Boolean = true,
+    val quickReveal: QuickReveal = QuickReveal.ON_TAP,
+    /** Jardim e torrinha do Glitch só durante a brincadeira, não parados na tela. */
+    val glitchCalm: Boolean = true,
+    /** Aro em volta do símbolo da IA. */
+    val aiRing: Boolean = false,
+    val aiScale: Float = 0.8f,
+    val initialStyle: InitialStyle = InitialStyle.SQUIRCLE,
+    /** Entrada em sequência ao voltar para a tela inicial, linha que encolhe e vibração ao tocar. */
+    val motion: Boolean = true,
 )
 
 /** O título de uma seção no estilo escolhido; null = sem título. */

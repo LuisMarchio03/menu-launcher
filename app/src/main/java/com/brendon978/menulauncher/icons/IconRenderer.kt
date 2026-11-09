@@ -1,5 +1,9 @@
 package com.brendon978.menulauncher.icons
 
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.getValue
+import com.brendon978.menulauncher.settings.InitialStyle
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -31,7 +35,10 @@ class IconRenderer(
     /** Carregado na primeira vez que um ícone é desenhado (sempre fora da thread principal). */
     val filter: AppFilter by lazy(filterLoader)
 
-    private data class CacheKey(val source: IconSource, val sizePx: Int, val color: Int, val stroke: Float)
+    private data class CacheKey(val source: IconSource, val sizePx: Int, val color: Int, val stroke: Float, val initial: InitialStyle)
+
+    /** Forma do ícone de letra (app sem desenho no pacote). Estado do Compose: quem desenha relê ao trocar. */
+    var initialStyle by mutableStateOf(InitialStyle.SQUIRCLE)
 
     private val cache = LruCache<CacheKey, ImageBitmap>(400)
     // Os ícones são desenhados em várias threads ao mesmo tempo (um por linha visível).
@@ -44,16 +51,17 @@ class IconRenderer(
     }
 
     fun render(source: IconSource, sizePx: Int, color: Int, stroke: Float = 1f): ImageBitmap {
-        val key = CacheKey(source, sizePx, color, stroke)
+        val style = initialStyle
+        val key = CacheKey(source, sizePx, color, stroke, style)
         cache.get(key)?.let { return it }
         val bmp = when (source) {
             is IconSource.Lawnicon -> renderSvg("lawnicons/svgs/${source.name}.svg", sizePx, color, stroke)
-                ?: renderInitial('?', sizePx, color, stroke)
+                ?: renderInitial('?', sizePx, color, stroke, style)
             is IconSource.Own -> renderSvg("proprios/${source.name}.svg", sizePx, color, stroke)
-                ?: renderInitial('?', sizePx, color, stroke)
+                ?: renderInitial('?', sizePx, color, stroke, style)
             is IconSource.Monochrome -> monochromeOf(source.key)?.let { renderMonochrome(it, sizePx, color, stroke) }
-                ?: renderInitial('?', sizePx, color, stroke)
-            is IconSource.Initial -> renderInitial(source.letter, sizePx, color, stroke)
+                ?: renderInitial('?', sizePx, color, stroke, style)
+            is IconSource.Initial -> renderInitial(source.letter, sizePx, color, stroke, style)
         }
         return bmp.asImageBitmap().also { cache.put(key, it) }
     }
@@ -102,20 +110,29 @@ class IconRenderer(
         return if (sizePx == TRACE_SIZE) bmp else bmp.scale(sizePx, sizePx)
     }
 
-    private fun renderInitial(letter: Char, sizePx: Int, color: Int, strokeScale: Float): Bitmap {
+    private fun renderInitial(letter: Char, sizePx: Int, color: Int, strokeScale: Float, style: InitialStyle): Bitmap {
         val bmp = createBitmap(sizePx, sizePx)
         val canvas = Canvas(bmp)
         val stroke = sizePx * STROKE * strokeScale / TRACE_SIZE.toFloat()
         val ring = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            style = Paint.Style.STROKE
+            this.style = Paint.Style.STROKE
             strokeWidth = stroke
+            strokeJoin = Paint.Join.ROUND
             this.color = color
         }
         val c = sizePx / 2f
-        canvas.drawCircle(c, c, c - stroke, ring)
+        val inset = stroke
+        when (style) {
+            InitialStyle.CIRCLE -> canvas.drawCircle(c, c, c - stroke, ring)
+            // quadrado arredondado: a mesma moldura dos desenhos do Lawnicons
+            InitialStyle.SQUIRCLE -> canvas.drawRoundRect(inset, inset, sizePx - inset, sizePx - inset, sizePx * .3f, sizePx * .3f, ring)
+            InitialStyle.LETTER -> Unit
+        }
         val text = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             this.color = color
-            textSize = sizePx * 0.45f
+            // sozinha a letra cresce e fica fina, para pesar como um desenho
+            textSize = sizePx * if (style == InitialStyle.LETTER) 0.78f else 0.45f
+            typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, if (style == InitialStyle.LETTER) 300 else 500, false)
             textAlign = Paint.Align.CENTER
         }
         canvas.drawText(letter.toString(), c, c - (text.descent() + text.ascent()) / 2, text)
