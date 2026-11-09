@@ -161,7 +161,7 @@ data class LauncherSettings(
     val labelStyle: LabelStyle = LabelStyle.CAPS,
     val emptyNote: EmptyNote = EmptyNote.PLUS,
     /** Barra de letras em arco (o original) ou reta. */
-    val barCurved: Boolean = false,
+    val barCurved: Boolean = true,
     val appWeight: AppWeight = AppWeight.LIGHT,
     /** Multiplica os espaços entre os blocos da tela inicial. */
     val spacing: Float = 1f,
