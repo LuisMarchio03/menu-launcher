@@ -2,7 +2,7 @@ package com.brendon978.menulauncher.icons
 
 /**
  * Converte uma silhueta (canal alfa) em contorno: borda = dilate(mask, r) && !erode(mask, r),
- * com r = thickness/2 e vizinhança quadrada.
+ * com r = thickness/2 e vizinhança em disco (cantos redondos, como o traço dos Lawnicons).
  */
 object OutlineTracer {
     fun trace(alpha: IntArray, size: Int, thickness: Int): BooleanArray {
@@ -13,26 +13,36 @@ object OutlineTracer {
         return BooleanArray(size * size) { dilated[it] && !eroded[it] }
     }
 
-    // Separável: passa em linhas e depois em colunas. Fora da imagem conta como vazio.
+    /**
+     * Disco de raio [r]: cada linha dy do disco cobre x ± span[dy]. Com a soma acumulada de cada linha,
+     * "tem algum cheio" (dilatar) ou "está tudo cheio" (erodir) no trecho sai em tempo constante.
+     * Fora da imagem conta como vazio.
+     */
     private fun morph(src: BooleanArray, size: Int, r: Int, dilate: Boolean): BooleanArray {
-        val tmp = BooleanArray(size * size)
+        val prefix = IntArray(size * (size + 1))
+        for (y in 0 until size) {
+            val row = y * (size + 1)
+            for (x in 0 until size) prefix[row + x + 1] = prefix[row + x] + if (src[y * size + x]) 1 else 0
+        }
+        val span = IntArray(2 * r + 1) { i -> val dy = i - r; kotlin.math.sqrt((r * r - dy * dy).toDouble()).toInt() }
         val out = BooleanArray(size * size)
         for (y in 0 until size) for (x in 0 until size) {
-            tmp[y * size + x] = window(dilate, x - r, x + r, size) { src[y * size + it] }
-        }
-        for (y in 0 until size) for (x in 0 until size) {
-            out[y * size + x] = window(dilate, y - r, y + r, size) { tmp[it * size + x] }
+            var hit = !dilate
+            for (i in span.indices) {
+                val yy = y + i - r
+                val from = x - span[i]
+                val to = x + span[i]
+                if (yy !in 0 until size) {
+                    if (!dilate) { hit = false; break } else continue
+                }
+                if (!dilate && (from < 0 || to >= size)) { hit = false; break }
+                val row = yy * (size + 1)
+                val filled = prefix[row + minOf(size - 1, to) + 1] - prefix[row + maxOf(0, from)]
+                if (dilate && filled > 0) { hit = true; break }
+                if (!dilate && filled < to - from + 1) { hit = false; break }
+            }
+            out[y * size + x] = hit
         }
         return out
-    }
-
-    private inline fun window(dilate: Boolean, from: Int, to: Int, size: Int, get: (Int) -> Boolean): Boolean {
-        if (!dilate && (from < 0 || to >= size)) return false
-        for (i in maxOf(0, from)..minOf(size - 1, to)) {
-            val v = get(i)
-            if (dilate && v) return true
-            if (!dilate && !v) return false
-        }
-        return !dilate
     }
 }

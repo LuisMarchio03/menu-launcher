@@ -17,6 +17,7 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -250,6 +251,9 @@ class MainActivity : ComponentActivity() {
             // A tela inicial fica sempre por baixo: o Glitch continua vivo (e o painel dele, ao vivo)
             // enquanto a busca ou os Ajustes estão abertos por cima.
             Box(Modifier.fillMaxSize()) {
+            // Com os Ajustes abertos a tela inicial some sem parar (o Glitch segue vivo):
+            // a prévia dos Ajustes é um vão no fundo que mostra o papel de parede de verdade.
+            Box(Modifier.graphicsLayer { alpha = if (screen.value == Screen.Settings) 0f else 1f }) {
             HomeScreen(
                     homeOnTop = screen.value == Screen.Home,
                     apps = visibleApps,
@@ -285,6 +289,7 @@ class MainActivity : ComponentActivity() {
                         }
                     },
                 )
+            }
             if (screen.value != Screen.Home) Box(
                 Modifier
                     .fillMaxSize()

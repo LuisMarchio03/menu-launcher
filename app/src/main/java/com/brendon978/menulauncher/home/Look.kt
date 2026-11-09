@@ -36,10 +36,10 @@ val LauncherSettings.smallTextSize: TextUnit get() = 12.sp * textScale
 
 /** O que uma linha de app precisa, em valores estáveis: a linha só recompõe quando um deles muda. */
 @Immutable
-data class RowLook(val color: Int, val iconSize: Dp, val textSize: TextUnit, val height: Dp, val stroke: Float, val shadow: Boolean)
+data class RowLook(val color: Int, val iconSize: Dp, val textSize: TextUnit, val height: Dp, val stroke: Float, val shadow: Boolean, val light: Boolean = false)
 
 val LauncherSettings.rowLook: RowLook
-    get() = RowLook(strokeColor, rowIconSize, rowTextSize, rowHeight, strokeScale, textShadow)
+    get() = RowLook(strokeColor, rowIconSize, rowTextSize, rowHeight, strokeScale, textShadow, appWeight == com.brendon978.menulauncher.settings.AppWeight.LIGHT)
 
 private val CONDENSED = FontFamily(Typeface.create("sans-serif-condensed", Typeface.NORMAL))
 

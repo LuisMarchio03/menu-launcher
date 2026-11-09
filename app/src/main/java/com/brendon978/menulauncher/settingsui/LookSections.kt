@@ -1,5 +1,9 @@
 package com.brendon978.menulauncher.settingsui
 
+import com.brendon978.menulauncher.settings.AppWeight
+import com.brendon978.menulauncher.settings.EmptyNote
+import com.brendon978.menulauncher.settings.LabelStyle
+import com.brendon978.menulauncher.settings.QuickStyle
 import android.content.Intent
 import android.provider.Settings
 import androidx.compose.foundation.background
@@ -142,6 +146,40 @@ fun SizeSection(settings: LauncherSettings, onChange: OnChange) {
                 val d = LauncherSettings()
                 onChange {
                     it.copy(clockScale = d.clockScale, iconScale = d.iconScale, textScale = d.textScale, rowScale = d.rowScale, barScale = d.barScale)
+                }
+            }
+            .padding(vertical = 10.dp),
+    )
+}
+
+/** O que deixa a tela leve ou carregada: peso dos detalhes, títulos, atalhos, barra, nota e espaços. */
+@Composable
+fun FinishSection(settings: LauncherSettings, onChange: OnChange) {
+    Section("Acabamento")
+    ScaleSlider("Força dos detalhes", settings.detailAlpha, 0.25f..1f) { v -> onChange { it.copy(detailAlpha = v) } }
+    Hint("Atalhos, títulos, barra de letras e nota vazia. Mais baixo, os apps e o relógio aparecem mais.")
+    ScaleSlider("Respiro entre os blocos", settings.spacing, 0.6f..1.8f) { v -> onChange { it.copy(spacing = v) } }
+    SubLabel("Nome dos apps")
+    OptionChips(listOf("Fino" to AppWeight.LIGHT, "Normal" to AppWeight.NORMAL), settings.appWeight) { v -> onChange { it.copy(appWeight = v) } }
+    SubLabel("Títulos (Favoritos, Mais usados)")
+    OptionChips(listOf("MAIÚSCULAS" to LabelStyle.CAPS, "Normal" to LabelStyle.NORMAL, "Sem título" to LabelStyle.HIDDEN), settings.labelStyle) { v ->
+        onChange { it.copy(labelStyle = v) }
+    }
+    SubLabel("Atalhos rápidos")
+    OptionChips(listOf("Só o desenho" to QuickStyle.PLAIN, "Em círculos" to QuickStyle.CIRCLES), settings.quickStyle) { v -> onChange { it.copy(quickStyle = v) } }
+    SubLabel("Nota vazia")
+    OptionChips(listOf("+ nota" to EmptyNote.PLUS, "Toque para anotar" to EmptyNote.TEXT), settings.emptyNote) { v -> onChange { it.copy(emptyNote = v) } }
+    SwitchRow("Barra de letras em arco", settings.barCurved) { v -> onChange { it.copy(barCurved = v) } }
+    Text(
+        "Voltar ao acabamento original",
+        color = Color.White.copy(alpha = 0.8f),
+        modifier = Modifier
+            .clickable {
+                onChange {
+                    it.copy(
+                        quickStyle = QuickStyle.CIRCLES, detailAlpha = 0.6f, labelStyle = LabelStyle.NORMAL,
+                        emptyNote = EmptyNote.TEXT, barCurved = true, appWeight = AppWeight.NORMAL, spacing = 1f,
+                    )
                 }
             }
             .padding(vertical = 10.dp),

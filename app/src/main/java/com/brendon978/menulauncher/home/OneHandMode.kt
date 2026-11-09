@@ -1,5 +1,8 @@
 package com.brendon978.menulauncher.home
 
+import com.brendon978.menulauncher.settings.LabelStyle
+import com.brendon978.menulauncher.settings.sectionLabel
+import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -102,10 +105,10 @@ fun OneHandMode(
                     com.brendon978.menulauncher.settings.Usage.top(settings.usage, 5, activeFavorites.toSet() + settings.hiddenApps).mapNotNull { byKey[it] }
                 }
                 if (most.isNotEmpty()) {
-                    Text("Mais usados", color = color.copy(alpha = 0.6f), fontSize = settings.smallTextSize, modifier = Modifier.padding(bottom = 6.dp))
+                    SectionTitle(sectionLabel("Mais usados", settings.labelStyle), color, settings)
                     androidx.compose.foundation.layout.Row(
                         horizontalArrangement = Arrangement.spacedBy(18.dp),
-                        modifier = Modifier.padding(bottom = 14.dp),
+                        modifier = Modifier.padding(bottom = 14.dp * settings.spacing),
                     ) {
                         most.forEach { entry ->
                             androidx.compose.foundation.layout.Box(
@@ -115,7 +118,8 @@ fun OneHandMode(
                     }
                 }
             }
-            Text(header, color = color.copy(alpha = 0.6f), fontSize = settings.smallTextSize, modifier = Modifier.padding(bottom = 4.dp))
+            // letra sem app avisa sempre; o resto segue o estilo dos títulos
+            SectionTitle(if (shown.isEmpty()) header else sectionLabel(header, settings.labelStyle), color, settings)
             LazyColumn(
                 verticalArrangement = Arrangement.Bottom,
                 modifier = Modifier.weight(1f, fill = false),
@@ -147,6 +151,8 @@ fun OneHandMode(
             onSearch = onSearch,
             side = settings.barSide,
             scale = settings.barScale,
+            curved = settings.barCurved,
+            dim = (settings.detailAlpha + 0.2f).coerceAtMost(1f),
             modifier = Modifier
                 .align(if (left) Alignment.BottomStart else Alignment.BottomEnd)
                 .heightIn(max = barMaxHeight(maxHeight, settings.barScale))
@@ -154,6 +160,20 @@ fun OneHandMode(
                 .petObstacle("bar"),
         )
     }
+}
+
+/** Título de seção pequeno e apagado; em maiúsculas ganha espaço entre as letras. */
+@Composable
+private fun SectionTitle(text: String?, color: Color, settings: LauncherSettings) {
+    if (text == null) return
+    val caps = settings.labelStyle == LabelStyle.CAPS
+    Text(
+        text,
+        color = color.copy(alpha = settings.detailAlpha),
+        fontSize = if (caps) settings.smallTextSize * 0.85f else settings.smallTextSize,
+        letterSpacing = if (caps) 1.6.sp else androidx.compose.ui.unit.TextUnit.Unspecified,
+        modifier = Modifier.padding(bottom = 6.dp * settings.spacing),
+    )
 }
 
 /** Pelo menos duas linhas e o título: a lista nunca some, mesmo com o topo cheio. */

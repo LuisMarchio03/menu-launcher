@@ -64,6 +64,10 @@ fun AlphabetBar(
     modifier: Modifier = Modifier,
     side: BarSide = BarSide.RIGHT,
     scale: Float = 1f,
+    /** Em arco (o original) ou reta. */
+    curved: Boolean = true,
+    /** Opacidade das letras não escolhidas. */
+    dim: Float = 0.8f,
 ) {
     val letters = LetterIndex.BAR
     val left = side == BarSide.LEFT
@@ -111,7 +115,7 @@ fun AlphabetBar(
                 },
         ) {
             letters.forEachIndexed { i, letter ->
-                val curve = curveOf(i, letters.size)
+                val curve = if (curved) curveOf(i, letters.size) else 0.dp
                 val isSel = letter == selected
                 val enabled = letter == LetterIndex.STAR || letter in available
                 Box(
@@ -128,8 +132,8 @@ fun AlphabetBar(
                         lineHeight = letterSize,
                         color = when {
                             isSel -> if (color.luminance() > 0.5f) Color.Black else Color.White
-                            enabled -> color.copy(alpha = 0.8f)
-                            else -> color.copy(alpha = 0.35f)
+                            enabled -> color.copy(alpha = dim)
+                            else -> color.copy(alpha = dim * 0.45f)
                         },
                     )
                 }
@@ -142,7 +146,8 @@ fun AlphabetBar(
             onClick = onSearch,
             modifier = Modifier
                 .align(anchor)
-                .offset(y = -(itemHeight * (letters.size / 2f)) + 20.dp),
+                // em arco a lupa cabe no vão do meio; reta, fica em cima da estrela
+                .offset(y = if (curved) -(itemHeight * (letters.size / 2f)) + 20.dp else -(itemHeight * letters.size) - 4.dp),
         )
 
         LetterBubble(
@@ -153,6 +158,7 @@ fun AlphabetBar(
             itemHeight = itemHeight,
             color = color,
             left = left,
+            curved = curved,
             modifier = Modifier.align(anchor),
         )
     }
@@ -200,6 +206,7 @@ private fun LetterBubble(
     itemHeight: Dp,
     color: Color,
     left: Boolean,
+    curved: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val size = 56.dp
@@ -208,7 +215,7 @@ private fun LetterBubble(
     val targetY = size / 2 - itemHeight * (count - index - 0.5f)
     val y by animateDpAsState(targetY, tween<Dp>(90), label = "bubble-y")
     // longe o bastante para o polegar não cobrir
-    val x = (curveOf(index, count) + 52.dp).let { if (left) it else -it }
+    val x = ((if (curved) curveOf(index, count) else 0.dp) + 52.dp).let { if (left) it else -it }
     if (scale == 0f) return
     Box(
         contentAlignment = Alignment.Center,

@@ -51,6 +51,13 @@ object SettingsCodec {
         Field("grid_columns", { it.gridColumns.toString() }, { s, v -> v.toIntOrNull()?.takeIf { it == 0 || it in 3..7 }?.let { s.copy(gridColumns = it) } }),
         boolField("grid_labels", { it.gridLabels }) { s, v -> s.copy(gridLabels = v) },
         enumField("music_style", { it.musicStyle }) { s, v -> s.copy(musicStyle = v) },
+        enumField("quick_style", { it.quickStyle }) { s, v -> s.copy(quickStyle = v) },
+        Field("detail_alpha", { it.detailAlpha.toString() }, { s, v -> v.toFloatOrNull()?.let { s.copy(detailAlpha = it.coerceIn(0.25f, 1f)) } }),
+        enumField("label_style", { it.labelStyle }) { s, v -> s.copy(labelStyle = v) },
+        enumField("empty_note", { it.emptyNote }) { s, v -> s.copy(emptyNote = v) },
+        boolField("bar_curved", { it.barCurved }) { s, v -> s.copy(barCurved = v) },
+        enumField("app_weight", { it.appWeight }) { s, v -> s.copy(appWeight = v) },
+        scale("spacing", { it.spacing }) { s, f -> s.copy(spacing = f) },
         Field("custom_themes", { LookThemes.encode(it.customThemes) }, { s, v -> s.copy(customThemes = LookThemes.decode(v)) }),
     )
 }

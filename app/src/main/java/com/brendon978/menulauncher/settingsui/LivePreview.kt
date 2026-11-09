@@ -106,7 +106,7 @@ private fun faceOf(cal: Calendar, settings: LauncherSettings): ClockFace {
     return clockFace(cal.get(Calendar.HOUR_OF_DAY), cal.get(Calendar.MINUTE), 0, settings.hourFormat, is24h, showSeconds = false)
 }
 
-/** Um pedaço da tela inicial com os ajustes de agora: muda na hora, enquanto você mexe. */
+/** Um pedaço da tela inicial com os ajustes de agora, sobre o papel de parede: muda na hora, enquanto você mexe. */
 @Composable
 internal fun LivePreview(settings: LauncherSettings, apps: List<AppEntry>, renderer: IconRenderer, modifier: Modifier = Modifier) {
     val cal = rememberMinuteCalendar()
@@ -123,8 +123,8 @@ internal fun LivePreview(settings: LauncherSettings, apps: List<AppEntry>, rende
             .fillMaxWidth()
             .height(230.dp)
             .clip(shape)
-            .background(rememberWallpaperBrush(), shape)
-            .border(1.dp, Color.White.copy(alpha = .12f), shape),
+            // sem fundo: os Ajustes deixam um vão aqui e o papel de parede de verdade aparece
+            .border(1.dp, Color.White.copy(alpha = .18f), shape),
     ) {
         Column(Modifier.fillMaxSize().padding(16.dp), horizontalAlignment = horizontal) {
             // relógio em 60%: cabe a data e uns apps embaixo, como na tela de verdade

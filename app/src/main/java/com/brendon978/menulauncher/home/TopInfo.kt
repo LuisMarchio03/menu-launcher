@@ -197,6 +197,8 @@ private fun WeekdayClock(cal: Calendar, face: ClockFace, color: Color, scale: Fl
             face.text,
             color = color,
             fontSize = 15.sp * scale,
+            // altura da linha justa: o vão apagado fica só uma faixa no meio das letras
+            lineHeight = 15.sp * scale,
             fontWeight = FontWeight.Bold,
             letterSpacing = 3.sp * scale,
             // a sombra da tela inicial mancharia o vão

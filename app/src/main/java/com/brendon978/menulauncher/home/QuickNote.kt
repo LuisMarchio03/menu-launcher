@@ -1,5 +1,7 @@
 package com.brendon978.menulauncher.home
 
+import com.brendon978.menulauncher.settings.EmptyNote
+import com.brendon978.menulauncher.settings.LauncherSettings
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.padding
@@ -35,16 +37,21 @@ fun cleanNote(text: String): String {
 
 /** Nota curta na tela inicial; tocar edita. */
 @Composable
-fun QuickNote(text: String, color: Color, onSave: (String) -> Unit) {
+fun QuickNote(text: String, color: Color, onSave: (String) -> Unit, settings: LauncherSettings) {
     var editing by remember { mutableStateOf(false) }
+    val plus = text.isBlank() && settings.emptyNote == EmptyNote.PLUS
     Text(
-        text.ifBlank { "Toque para anotar" },
-        color = color.copy(alpha = if (text.isBlank()) .45f else .85f),
-        fontSize = 13.sp,
+        when {
+            text.isNotBlank() -> text
+            plus -> "+ nota"
+            else -> "Toque para anotar"
+        },
+        color = color.copy(alpha = if (text.isBlank()) settings.detailAlpha * .75f else .85f),
+        fontSize = if (plus) 11.sp else 13.sp,
         maxLines = 2,
         overflow = TextOverflow.Ellipsis,
         modifier = Modifier
-            .padding(top = 8.dp)
+            .padding(top = 8.dp * settings.spacing)
             .widthIn(max = 200.dp)
             .petObstacle("nota")
             .clickable(remember { MutableInteractionSource() }, indication = null) { editing = true },

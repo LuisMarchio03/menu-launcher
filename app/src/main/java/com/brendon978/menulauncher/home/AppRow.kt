@@ -41,6 +41,9 @@ fun AppRow(
     ) {
         AppIcon(entry, override, look.color, look.iconSize, renderer, stroke = look.stroke, shadow = look.shadow, tracksBadge = tracksBadge)
         Spacer(Modifier.width(14.dp))
-        Text(entry.label, color = Color(look.color), fontSize = look.textSize, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(
+            entry.label, color = Color(look.color), fontSize = look.textSize, maxLines = 1, overflow = TextOverflow.Ellipsis,
+            fontWeight = if (look.light) androidx.compose.ui.text.font.FontWeight.Light else null,
+        )
     }
 }

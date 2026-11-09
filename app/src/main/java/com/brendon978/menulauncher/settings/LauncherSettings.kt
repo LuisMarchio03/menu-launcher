@@ -11,6 +11,18 @@ enum class ClockStyle { THIN, STACKED, ANALOG, WORDS, SEGMENTS, TERMINAL, GIANT,
 /** Formato da hora: o do celular, 24 horas, 12 horas ou 12 horas com AM/PM. */
 enum class HourFormat { SYSTEM, H24, H12, H12_AMPM }
 
+/** Atalhos rápidos: só o desenho (mais leve) ou dentro de um círculo. */
+enum class QuickStyle { PLAIN, CIRCLES }
+
+/** Títulos "Favoritos", "Mais usados", letra: pequenos em maiúsculas, como eram, ou nenhum. */
+enum class LabelStyle { CAPS, NORMAL, HIDDEN }
+
+/** Nota vazia: um "+ nota" discreto ou o convite "Toque para anotar". */
+enum class EmptyNote { PLUS, TEXT }
+
+/** Peso do nome dos apps na lista. */
+enum class AppWeight { LIGHT, NORMAL }
+
 /** Cartão de música: o original (faixa fina, controles embaixo) ou com a capa grande e os controles dentro. */
 enum class MusicStyle { CLASSIC, COVER }
 
@@ -142,7 +154,25 @@ data class LauncherSettings(
     /** Temas que você salvou nos Ajustes (os prontos ficam em [LookThemes.PRESETS]). */
     val customThemes: List<LookTheme> = emptyList(),
     val musicStyle: MusicStyle = MusicStyle.CLASSIC,
+    // Acabamento: o que é secundário pesa menos que os apps e o relógio.
+    val quickStyle: QuickStyle = QuickStyle.PLAIN,
+    /** Opacidade dos detalhes (atalhos, títulos, barra de letras, nota vazia). */
+    val detailAlpha: Float = 0.6f,
+    val labelStyle: LabelStyle = LabelStyle.CAPS,
+    val emptyNote: EmptyNote = EmptyNote.PLUS,
+    /** Barra de letras em arco (o original) ou reta. */
+    val barCurved: Boolean = false,
+    val appWeight: AppWeight = AppWeight.LIGHT,
+    /** Multiplica os espaços entre os blocos da tela inicial. */
+    val spacing: Float = 1f,
 )
+
+/** O título de uma seção no estilo escolhido; null = sem título. */
+fun sectionLabel(text: String, style: LabelStyle): String? = when (style) {
+    LabelStyle.NORMAL -> text
+    LabelStyle.CAPS -> text.uppercase()
+    LabelStyle.HIDDEN -> null
+}
 
 /** O símbolo da IA fica ao lado da barra de letras: troca de lado junto, para não cair em cima da lista. */
 fun LauncherSettings.withBarSide(to: BarSide): LauncherSettings =

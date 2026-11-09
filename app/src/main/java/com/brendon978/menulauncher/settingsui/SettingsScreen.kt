@@ -35,6 +35,17 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.RoundRect
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathFillType
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
@@ -73,10 +84,26 @@ fun SettingsScreen(
     BackHandler(enabled = page != null) { page = null }
     // Cada página começa do topo.
     val scroll = key(page) { rememberScrollState() }
+    // onde a prévia está, em coordenadas da janela; o fundo escuro é pintado em volta dela
+    var hole by remember { mutableStateOf<Rect?>(null) }
+    var origin by remember { mutableStateOf(Offset.Zero) }
     Column(
         Modifier
             .fillMaxSize()
-            .background(Color(0xFF0C0C0E))
+            .onGloballyPositioned { origin = it.positionInWindow() }
+            .drawBehind {
+                val bg = Color(0xFF0C0C0E)
+                val h = hole
+                if (h == null) drawRect(bg) else {
+                    val r = h.translate(-origin)
+                    val path = Path().apply {
+                        fillType = PathFillType.EvenOdd
+                        addRect(Rect(Offset.Zero, size))
+                        addRoundRect(RoundRect(r, CornerRadius(22.dp.toPx())))
+                    }
+                    drawPath(path, bg)
+                }
+            }
             .statusBarsPadding()
             .navigationBarsPadding(),
     ) {
@@ -92,7 +119,11 @@ fun SettingsScreen(
             val shownApps = remember(settings.favorites, apps) {
                 settings.favorites.mapNotNull { apps[it] }.ifEmpty { apps.values.sortedBy { it.label.lowercase() } }.take(4)
             }
-            LivePreview(preview, shownApps, renderer, Modifier.padding(horizontal = 16.dp).padding(bottom = 4.dp))
+            LivePreview(
+                preview, shownApps, renderer,
+                Modifier.padding(horizontal = 16.dp).padding(bottom = 4.dp).onGloballyPositioned { hole = it.boundsInWindow() },
+            )
+            DisposableEffect(Unit) { onDispose { hole = null } }
         }
         Column(
             Modifier
@@ -177,6 +208,7 @@ private fun LookPage(settings: LauncherSettings, onChange: ((LauncherSettings) -
     }
     SettingsCard { SizeSection(settings, onChange) }
     SettingsCard { ClockSection(settings, onChange) }
+    SettingsCard { FinishSection(settings, onChange) }
     SettingsCard {
         Section("Cor do traço")
         ColorRow(settings.strokeColor) { c -> onChange { it.copy(strokeColor = c) } }

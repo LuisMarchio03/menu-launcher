@@ -142,7 +142,7 @@ fun HomeScreen(
                         // com o que é novo ligado a coluna cresce: a lista respeita o que sobrar
                         .then(if (growsTop) Modifier.onSizeChanged { topHeight = it.height } else Modifier)
                         .then(if (align != ClockAlign.START) Modifier.fillMaxWidth() else Modifier)
-                        .padding(start = 22.dp, end = 22.dp, top = 24.dp)
+                        .padding(start = 22.dp, end = 22.dp, top = 24.dp * settings.spacing)
                         .petObstacle("top"),
                     horizontalAlignment = when (align) {
                         ClockAlign.START -> Alignment.Start
@@ -151,7 +151,7 @@ fun HomeScreen(
                     },
                 ) {
                     TopInfo(settings, color, screenTime = screenTime, align = align)
-                    if (settings.showQuickActions) QuickActions(color)
+                    if (settings.showQuickActions) QuickActions(color, settings)
                     TopExtras(settings, color, onNoteChange)
                     musicSlotTop()
                 }
@@ -170,10 +170,10 @@ fun HomeScreen(
             }
             // Grade: player ao lado do relógio; a grade começa logo abaixo do que for mais alto.
             HomeMode.GRID -> Column(Modifier.fillMaxSize()) {
-                Row(Modifier.padding(start = 22.dp, end = 22.dp, top = 24.dp, bottom = 12.dp)) {
+                Row(Modifier.padding(start = 22.dp, end = 22.dp, top = 24.dp * settings.spacing, bottom = 12.dp * settings.spacing)) {
                     Column {
                         TopInfo(settings, color, screenTime = screenTime)
-                        if (settings.showQuickActions) QuickActions(color)
+                        if (settings.showQuickActions) QuickActions(color, settings)
                         TopExtras(settings, color, onNoteChange)
                     }
                     Box(Modifier.weight(1f).padding(start = 16.dp)) { musicSlotTop() }
@@ -200,7 +200,7 @@ fun HomeScreen(
 /** O que entra no topo só quando ligado nos Ajustes. */
 @Composable
 private fun TopExtras(settings: LauncherSettings, color: Color, onNoteChange: (String) -> Unit) {
-    if (settings.showNote) QuickNote(settings.noteText, color, onNoteChange)
+    if (settings.showNote) QuickNote(settings.noteText, color, onNoteChange, settings)
     if (settings.showContacts && settings.contactShortcuts.isNotEmpty()) ContactShortcutsRow(settings.contactShortcuts, color)
 }
 

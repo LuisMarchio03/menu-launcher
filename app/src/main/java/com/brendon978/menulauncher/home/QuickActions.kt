@@ -1,5 +1,7 @@
 package com.brendon978.menulauncher.home
 
+import com.brendon978.menulauncher.settings.LauncherSettings
+import com.brendon978.menulauncher.settings.QuickStyle
 import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
@@ -42,13 +44,19 @@ import kotlinx.coroutines.launch
 
 /** Lanterna, Wi-Fi, internet e não perturbe, em contorno, embaixo da data. */
 @Composable
-fun QuickActions(color: Color, modifier: Modifier = Modifier) {
+fun QuickActions(color: Color, settings: LauncherSettings, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val torch = rememberTorch()
     val nm = remember { context.getSystemService(NotificationManager::class.java) }
     val dnd = com.brendon978.menulauncher.pet.rememberDoNotDisturb()
     val scope = androidx.compose.runtime.rememberCoroutineScope()
-    Row(modifier.padding(top = 10.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+    val plain = settings.quickStyle == QuickStyle.PLAIN
+    val dim = settings.detailAlpha
+    // sem círculo cada alvo continua com 40dp para o dedo, mas o desenho fica leve
+    Row(modifier.padding(top = 10.dp * settings.spacing), horizontalArrangement = Arrangement.spacedBy(if (plain) 6.dp else 10.dp)) {
+        @Composable
+        fun QuickButton(color: Color, active: Boolean, onClick: () -> Unit, icon: DrawScope.(Color, Float) -> Unit) =
+            if (plain) PlainButton(color, dim, active, onClick, icon) else CircleButton(color, active, onClick, icon)
         QuickButton(color, active = torch.on, onClick = torch.toggle) { c, lw -> flashlight(c, lw) }
         QuickButton(color, active = false, onClick = { context.startPanel(Settings.Panel.ACTION_WIFI) }) { c, lw -> wifi(c, lw) }
         QuickButton(color, active = false, onClick = { context.startPanel(Settings.Panel.ACTION_INTERNET_CONNECTIVITY) }) { c, lw -> globe(c, lw) }
@@ -75,8 +83,23 @@ private fun Context.startPanel(action: String) {
     runCatching { startActivity(Intent(action).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
 }
 
+/** Só o desenho, apagado; ligado, ganha a cor cheia e um ponto embaixo. */
 @Composable
-private fun QuickButton(color: Color, active: Boolean, onClick: () -> Unit, icon: DrawScope.(Color, Float) -> Unit) {
+private fun PlainButton(color: Color, dim: Float, active: Boolean, onClick: () -> Unit, icon: DrawScope.(Color, Float) -> Unit) {
+    val lw = LocalLineScale.current
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier.size(40.dp).clip(CircleShape).clickable(onClick = onClick),
+    ) {
+        Canvas(Modifier.size(20.dp)) {
+            icon(color.copy(alpha = if (active) 1f else dim), lw)
+            if (active) drawCircle(color, size.width * .07f, Offset(size.width / 2, size.height + size.width * .3f))
+        }
+    }
+}
+
+@Composable
+private fun CircleButton(color: Color, active: Boolean, onClick: () -> Unit, icon: DrawScope.(Color, Float) -> Unit) {
     val lw = LocalLineScale.current
     Box(
         contentAlignment = Alignment.Center,
