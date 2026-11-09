@@ -215,7 +215,7 @@ private fun ThemeCard(t: LookTheme, brush: Brush, selected: Boolean, color: Int,
         modifier
             .size(width = 96.dp, height = 132.dp)
             .clip(shape)
-            .then(if (LocalGlass.current) Modifier.background(tileFill(true), shape) else Modifier.background(brush, shape))
+            .then(if (LocalGlass.current != com.brendon978.menulauncher.home.Glass.NONE) Modifier.background(tileFill(LocalGlass.current), shape) else Modifier.background(brush, shape))
             .border(if (selected) 2.dp else 1.dp, Color.White.copy(alpha = if (selected) 1f else .15f), shape)
             .padding(8.dp),
     ) {

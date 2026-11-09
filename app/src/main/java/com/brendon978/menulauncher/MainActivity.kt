@@ -250,13 +250,16 @@ class MainActivity : ComponentActivity() {
             ProvideLauncherText(shown) {
             // A tela inicial fica sempre por baixo: o Glitch continua vivo (e o painel dele, ao vivo)
             // enquanto a busca ou os Ajustes estão abertos por cima.
-            // Telas por cima ficam sobre o papel de parede desfocado, quando ligado e o sistema deixa.
-            val glass = com.brendon978.menulauncher.home.rememberBlurBehind(this@MainActivity, settings.blurOverlays && screen.value != Screen.Home)
+            // Telas por cima ficam em vidro sobre o papel de parede; ele é desfocado onde o sistema deixa
+            // (o One UI não deixa: lá o vidro fica sobre o papel nítido, com o véu um pouco mais escuro).
+            val glassOn = settings.blurOverlays && screen.value != Screen.Home
+            val blurred = com.brendon978.menulauncher.home.rememberBlurBehind(this@MainActivity, glassOn)
+            val glass = if (!glassOn) com.brendon978.menulauncher.home.Glass.NONE else if (blurred) com.brendon978.menulauncher.home.Glass.BLURRED else com.brendon978.menulauncher.home.Glass.CLEAR
             androidx.compose.runtime.CompositionLocalProvider(com.brendon978.menulauncher.home.LocalGlass provides glass) {
             Box(Modifier.fillMaxSize()) {
             // Com os Ajustes (ou o vidro) por cima a tela inicial some sem parar (o Glitch segue vivo):
             // a prévia dos Ajustes é um vão no fundo que mostra o papel de parede.
-            Box(Modifier.graphicsLayer { alpha = if (screen.value == Screen.Settings || (glass && screen.value != Screen.Home)) 0f else 1f }) {
+            Box(Modifier.graphicsLayer { alpha = if (screen.value == Screen.Settings || (glass != com.brendon978.menulauncher.home.Glass.NONE)) 0f else 1f }) {
             HomeScreen(
                     homeOnTop = screen.value == Screen.Home,
                     apps = visibleApps,

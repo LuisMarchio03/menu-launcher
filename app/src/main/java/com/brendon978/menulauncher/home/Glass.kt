@@ -12,19 +12,26 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import java.util.function.Consumer
 
-/** true = a tela de cima está sobre o papel de parede desfocado (vidro); false = fundo escuro cheio. */
-val LocalGlass = compositionLocalOf { false }
+/** Fundo das telas de cima: escuro cheio, vidro sobre o papel nítido ou vidro sobre o papel desfocado. */
+enum class Glass { NONE, CLEAR, BLURRED }
+
+val LocalGlass = compositionLocalOf { Glass.NONE }
 
 private val DARK = Color(0xFF0C0C0E)
 
 /** Fundo das telas que abrem por cima (Ajustes, busca, ícone): véu translúcido no vidro, escuro cheio sem. */
-fun overlayBackground(glass: Boolean, solidAlpha: Float = 1f): Color = if (glass) DARK.copy(alpha = .62f) else DARK.copy(alpha = solidAlpha)
+fun overlayBackground(glass: Glass, solidAlpha: Float = 1f): Color = when (glass) {
+    Glass.NONE -> DARK.copy(alpha = solidAlpha)
+    // papel nítido atrás: véu mais fechado para o texto não brigar com o desenho
+    Glass.CLEAR -> DARK.copy(alpha = .78f)
+    Glass.BLURRED -> DARK.copy(alpha = .55f)
+}
 
 /** Cartões e blocos em cima desse fundo. */
-fun cardFill(glass: Boolean): Color = if (glass) Color.White.copy(alpha = .08f) else Color(0xFF17171C)
+fun cardFill(glass: Glass): Color = if (glass != Glass.NONE) Color.White.copy(alpha = .07f) else Color(0xFF17171C)
 
 /** Miniaturas e opções com desenho (relógios, modos). */
-fun tileFill(glass: Boolean): Color = if (glass) Color.Black.copy(alpha = .28f) else Color(0xFF0F0F13)
+fun tileFill(glass: Glass): Color = if (glass != Glass.NONE) Color.Black.copy(alpha = .3f) else Color(0xFF0F0F13)
 
 /**
  * Desfoca o papel de parede atrás da janela enquanto [active]. Devolve se o desfoque está valendo:
