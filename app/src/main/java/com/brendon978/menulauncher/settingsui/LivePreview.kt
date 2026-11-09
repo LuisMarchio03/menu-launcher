@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -124,12 +125,13 @@ internal fun LivePreview(settings: LauncherSettings, apps: List<AppEntry>, rende
     Box(
         modifier
             .fillMaxWidth()
-            .height(230.dp)
+            // cresce com o relógio e o texto escolhidos: nenhuma linha fica cortada pela metade
+            .heightIn(min = 180.dp, max = 340.dp)
             .clip(shape)
             // sem fundo: os Ajustes deixam um vão aqui e o papel de parede de verdade aparece
             .border(1.dp, Color.White.copy(alpha = .18f), shape),
     ) {
-        Column(Modifier.fillMaxSize().padding(16.dp), horizontalAlignment = horizontal) {
+        Column(Modifier.fillMaxWidth().padding(16.dp), horizontalAlignment = horizontal) {
             // relógio em 60%: cabe a data e uns apps embaixo, como na tela de verdade
             ClockBody(settings.clockStyle, face, cal, color, settings.clockScale * .6f, horizontal, TextAlign.Start)
             formatDate(settings.dateStyle, cal.timeInMillis, TimeZone.getDefault())?.let {
@@ -138,7 +140,7 @@ internal fun LivePreview(settings: LauncherSettings, apps: List<AppEntry>, rende
             Spacer(Modifier.height(6.dp))
             val look = settings.rowLook.let { it.copy(height = it.height * .8f) }
             Column(Modifier.fillMaxWidth()) {
-                apps.take(4).forEach { app -> AppRow(app, settings.iconOverrides[app.key], look, renderer, onClick = {}, onLongClick = {}) }
+                apps.take(3).forEach { app -> AppRow(app, settings.iconOverrides[app.key], look, renderer, onClick = {}, onLongClick = {}) }
             }
         }
     }

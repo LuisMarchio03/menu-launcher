@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -125,7 +126,8 @@ fun SettingsScreen(
             Text("Fechar", color = Color.White.copy(alpha = 0.7f), modifier = Modifier.clickable(onClick = onClose).padding(8.dp))
         }
         // Prévia fixa no topo onde a escolha muda a cara da tela inicial; o resto rola embaixo dela.
-        if (renderer != null && (page == null || page == SettingsPage.LOOK || page == SettingsPage.HOME)) {
+        // buscando, a prévia sai e os resultados ficam acima do teclado
+        if (renderer != null && query.isBlank() && (page == null || page == SettingsPage.LOOK || page == SettingsPage.HOME)) {
             val shownApps = remember(settings.favorites, apps) {
                 settings.favorites.mapNotNull { apps[it] }.ifEmpty { apps.values.sortedBy { it.label.lowercase() } }.take(4)
             }
@@ -138,6 +140,7 @@ fun SettingsScreen(
         Column(
             Modifier
                 .weight(1f)
+                .imePadding()
                 .verticalScroll(scroll)
                 .padding(horizontal = 16.dp, vertical = 8.dp),
         ) {
