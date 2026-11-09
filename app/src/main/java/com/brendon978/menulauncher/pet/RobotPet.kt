@@ -497,7 +497,9 @@ fun RobotPet(
     var teleporting by remember { mutableStateOf(false) }
 
     suspend fun glitchTo(target: Offset) {
-        if (teleporting) return
+        // outro teleporte em andamento: espera um pouco antes de voltar. Voltar na hora deixava o laço
+        // da bola girando sem ceder a thread, e o teleporte da frente nunca terminava (ANR de 2026-11-09).
+        if (teleporting) { delay(120); return }
         teleporting = true
         // pisca, some, reaparece no outro lugar. Se for cancelado no meio (a tela mudou), ele não pode ficar invisível.
         try {
