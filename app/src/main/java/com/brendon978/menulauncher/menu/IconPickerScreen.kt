@@ -50,7 +50,9 @@ fun IconPickerScreen(
     assets: AssetManager,
     onPick: (String?) -> Unit,
 ) {
-    val all by produceState(emptyList<String>()) { value = withContext(Dispatchers.IO) { lawniconNames(assets) } }
+    // null = ainda lendo a lista (são mais de 10 mil desenhos: leva uns segundos na primeira vez)
+    val loaded by produceState<List<String>?>(null) { value = withContext(Dispatchers.IO) { lawniconNames(assets) } }
+    val all = loaded.orEmpty()
     var query by rememberSaveable { mutableStateOf(appLabel.lowercase().filter { it.isLetterOrDigit() }) }
     val shown = remember(all, query) {
         val q = query.trim().lowercase()
@@ -65,6 +67,8 @@ fun IconPickerScreen(
             placeholder = { Text("Buscar ícone") },
             modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
         )
+        if (loaded == null) Text("Carregando ícones…", color = Color.White.copy(alpha = 0.6f), fontSize = 13.sp, modifier = Modifier.padding(bottom = 8.dp))
+        else if (shown.size == 1 && query.isNotBlank()) Text("Nenhum ícone com \"$query\".", color = Color.White.copy(alpha = 0.6f), fontSize = 13.sp, modifier = Modifier.padding(bottom = 8.dp))
         LazyVerticalGrid(columns = GridCells.Adaptive(72.dp)) {
             items(shown, key = { it }) { name ->
                 Column(

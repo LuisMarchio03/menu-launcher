@@ -472,7 +472,8 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun uninstall(key: AppKey) {
-        startActivity(Intent(Intent.ACTION_DELETE, Uri.parse("package:${key.packageName}")))
+        runCatching { startActivity(Intent(Intent.ACTION_DELETE, Uri.parse("package:${key.packageName}"))) }
+            .onFailure { toast("Não consegui abrir a desinstalação") }
     }
 
     fun requestHomeRole() {
