@@ -1,5 +1,7 @@
 package com.brendon978.menulauncher.home
 
+import androidx.compose.ui.Alignment
+import androidx.compose.foundation.background
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.runtime.collectAsState
@@ -44,7 +46,7 @@ fun AppIcon(
     shadow: Boolean = false,
     tracksBadge: Boolean = false,
 ) {
-    val px = with(LocalDensity.current) { size.roundToPx() }
+    val px = with(LocalDensity.current) { (if (LocalIconShape.current == com.brendon978.menulauncher.settings.IconShape.OUTLINE) size else size * .72f).roundToPx() }
     val bmp by produceState<ImageBitmap?>(null, entry.key, override, color, px, stroke, renderer.initialStyle) {
         value = withContext(Dispatchers.Default) { renderer.iconFor(entry, override, px, color, stroke) }
     }
@@ -55,17 +57,25 @@ fun AppIcon(
     // só a lista da tela inicial marca onde a bolinha está: a busca abre por cima e tem outra posição
     val tracked = badged && tracksBadge
     if (tracked) DisposableEffect(pkg) { onDispose { GlitchSignals.badgeSpots.remove(pkg) } }
-    Box(Modifier.size(size).then(if (tracked) Modifier.onGloballyPositioned { GlitchSignals.badgeSpots[pkg] = it.boundsInRoot() } else Modifier)) {
+    // círculo ou quadrado translúcido em volta: o ícone encolhe um pouco para caber com folga
+    val shape = LocalIconShape.current
+    val inner = if (shape == com.brendon978.menulauncher.settings.IconShape.OUTLINE) size else size * .72f
+    val backing = when (shape) {
+        com.brendon978.menulauncher.settings.IconShape.OUTLINE -> Modifier
+        com.brendon978.menulauncher.settings.IconShape.CIRCLE -> Modifier.background(Color(color).copy(alpha = .16f), androidx.compose.foundation.shape.CircleShape)
+        com.brendon978.menulauncher.settings.IconShape.SQUARE -> Modifier.background(Color(color).copy(alpha = .16f), androidx.compose.foundation.shape.RoundedCornerShape(size * .28f))
+    }
+    Box(Modifier.size(size).then(backing).then(if (tracked) Modifier.onGloballyPositioned { GlitchSignals.badgeSpots[pkg] = it.boundsInRoot() } else Modifier), contentAlignment = Alignment.Center) {
         bmp?.let { b ->
             if (shadow) {
                 Image(
                     b,
                     contentDescription = null,
                     colorFilter = ColorFilter.tint(Color(haloFor(color)).copy(alpha = 0.6f)),
-                    modifier = Modifier.size(size).offset(y = 1.dp).blur(2.dp),
+                    modifier = Modifier.size(inner).offset(y = 1.dp).blur(2.dp),
                 )
             }
-            Image(b, contentDescription = null, modifier = Modifier.size(size))
+            Image(b, contentDescription = null, modifier = Modifier.size(inner))
         }
         if (badged) {
             Canvas(Modifier.size(size)) {

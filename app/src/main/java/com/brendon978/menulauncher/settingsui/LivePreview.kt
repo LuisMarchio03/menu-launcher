@@ -1,5 +1,7 @@
 package com.brendon978.menulauncher.settingsui
 
+import androidx.compose.foundation.layout.offset
+import com.brendon978.menulauncher.settings.HomeMode
 import com.brendon978.menulauncher.home.LocalGlass
 import com.brendon978.menulauncher.home.cardFill
 import com.brendon978.menulauncher.home.tileFill
@@ -348,18 +350,50 @@ internal fun Bars(vararg widths: Int, height: Int = 6) {
 @Composable
 fun FirstRunStyle(settings: LauncherSettings, liveStroke: Int, onChange: ((LauncherSettings) -> LauncherSettings) -> Unit) {
     ThemesRow(settings, liveStroke, onChange)
-    Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(top = 16.dp)) {
-        PictureChoice("Uma mão", settings.mode == com.brendon978.menulauncher.settings.HomeMode.ONE_HAND, { onChange { it.copy(mode = com.brendon978.menulauncher.settings.HomeMode.ONE_HAND) } }, Modifier.weight(1f)) {
-            Bars(54, 40, 48, 36)
-        }
-        PictureChoice("Grade", settings.mode == com.brendon978.menulauncher.settings.HomeMode.GRID, { onChange { it.copy(mode = com.brendon978.menulauncher.settings.HomeMode.GRID) } }, Modifier.weight(1f)) {
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                repeat(3) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        repeat(4) { Box(Modifier.size(12.dp).border(1.dp, Color.White.copy(alpha = .5f), RoundedCornerShape(4.dp))) }
+    Box(Modifier.padding(top = 16.dp)) { ModePicker(settings, onChange) }
+}
+
+/** Os cinco jeitos de mostrar os apps, cada um com um desenho pequeno. */
+@Composable
+fun ModePicker(settings: LauncherSettings, onChange: ((LauncherSettings) -> LauncherSettings) -> Unit) {
+    val dim = Color.White.copy(alpha = .5f)
+    @Composable
+    fun Choice(label: String, mode: HomeMode, modifier: Modifier, picture: @Composable () -> Unit) =
+        PictureChoice(label, settings.mode == mode, { onChange { it.copy(mode = mode) } }, modifier, picture)
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Choice("Uma mão", HomeMode.ONE_HAND, Modifier.weight(1f)) { Bars(54, 40, 48, 36) }
+            Choice("Grade", HomeMode.GRID, Modifier.weight(1f)) {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    repeat(3) { Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) { repeat(4) { Box(Modifier.size(12.dp).border(1.dp, dim, RoundedCornerShape(4.dp))) } } }
+                }
+            }
+            Choice("Categorias", HomeMode.CATEGORIES, Modifier.weight(1f)) {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    repeat(2) {
+                        Bars(22, height = 3)
+                        Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) { repeat(3) { Box(Modifier.size(10.dp).border(1.dp, dim, RoundedCornerShape(3.dp))) } }
                     }
                 }
             }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Choice("Leque", HomeMode.FAN, Modifier.weight(1f)) {
+                Box(Modifier.size(64.dp)) {
+                    listOf(0f to 44f, 16f to 26f, 34f to 12f, 50f to 4f).forEach { (x, y) ->
+                        Box(Modifier.offset(x.dp, y.dp).size(12.dp).border(1.dp, dim, RoundedCornerShape(4.dp)))
+                    }
+                }
+            }
+            Choice("Barra fixa", HomeMode.DOCK, Modifier.weight(1f)) {
+                Box(Modifier.size(width = 80.dp, height = 56.dp), contentAlignment = Alignment.BottomCenter) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        modifier = Modifier.background(Color.White.copy(alpha = .1f), RoundedCornerShape(8.dp)).padding(6.dp),
+                    ) { repeat(4) { Box(Modifier.size(10.dp).border(1.dp, dim, RoundedCornerShape(3.dp))) } }
+                }
+            }
+            Spacer(Modifier.weight(1f))
         }
     }
 }

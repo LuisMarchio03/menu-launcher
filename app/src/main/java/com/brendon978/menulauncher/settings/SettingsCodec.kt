@@ -68,6 +68,23 @@ object SettingsCodec {
         scale("ai_scale", { it.aiScale }, max = 1.5f) { s, f -> s.copy(aiScale = f) },
         enumField("initial_style", { it.initialStyle }) { s, v -> s.copy(initialStyle = v) },
         boolField("motion", { it.motion }) { s, v -> s.copy(motion = v) },
+        enumField("list_align", { it.listAlign }) { s, v -> s.copy(listAlign = v) },
+        enumField("block_position", { it.blockPosition }) { s, v -> s.copy(blockPosition = v) },
+        enumField("icon_shape", { it.iconShape }) { s, v -> s.copy(iconShape = v) },
+        boolField("show_labels", { it.showLabels }) { s, v -> s.copy(showLabels = v) },
+        boolField("favorite_pages", { it.favoritePages }) { s, v -> s.copy(favoritePages = v) },
+        Field(
+            "category_overrides",
+            { s -> s.categoryOverrides.entries.joinToString("\n") { "${it.key.encode()}\t${it.value}" } },
+            { s, v ->
+                s.copy(
+                    categoryOverrides = v.lines().mapNotNull { line ->
+                        val (k, c) = line.split('\t').takeIf { it.size == 2 } ?: return@mapNotNull null
+                        com.brendon978.menulauncher.apps.AppKey.decode(k)?.let { it to c }
+                    }.toMap(),
+                )
+            },
+        ),
         Field("custom_themes", { LookThemes.encode(it.customThemes) }, { s, v -> s.copy(customThemes = LookThemes.decode(v)) }),
     )
 }

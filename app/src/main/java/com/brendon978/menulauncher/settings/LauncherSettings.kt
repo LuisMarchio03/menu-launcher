@@ -3,7 +3,17 @@ package com.brendon978.menulauncher.settings
 import com.brendon978.menulauncher.apps.AppKey
 import com.brendon978.menulauncher.wallpaper.WallpaperInterval
 
-enum class HomeMode { ONE_HAND, GRID }
+/** Uma mão (lista com letras), grade, por categoria, leque no polegar e barra fixa com gaveta. */
+enum class HomeMode { ONE_HAND, GRID, CATEGORIES, FAN, DOCK }
+
+/** Onde a lista encosta na largura da tela. */
+enum class ListAlign { START, CENTER, END }
+
+/** Onde o bloco de apps fica na altura que sobra embaixo do relógio. */
+enum class BlockPosition { BOTTOM, MIDDLE, TOP }
+
+/** Ícone só no contorno (o original) ou dentro de um círculo ou quadrado cheio e translúcido. */
+enum class IconShape { OUTLINE, CIRCLE, SQUARE }
 
 /** Fino e grande (o original), negrito com horas sobre minutos, analógico de contorno, por extenso. */
 enum class ClockStyle { THIN, STACKED, ANALOG, WORDS, SEGMENTS, TERMINAL, GIANT, ANALOG_MINIMAL, WEEKDAY }
@@ -188,6 +198,15 @@ data class LauncherSettings(
     val initialStyle: InitialStyle = InitialStyle.SQUIRCLE,
     /** Entrada em sequência ao voltar para a tela inicial, linha que encolhe e vibração ao tocar. */
     val motion: Boolean = true,
+    val listAlign: ListAlign = ListAlign.START,
+    val blockPosition: BlockPosition = BlockPosition.BOTTOM,
+    val iconShape: IconShape = IconShape.OUTLINE,
+    /** Nome do app ao lado ou embaixo do ícone (desligado: só o ícone). */
+    val showLabels: Boolean = true,
+    /** Favoritos e cada pasta como páginas que trocam arrastando para o lado (modo uma mão). */
+    val favoritePages: Boolean = false,
+    /** Categoria escolhida à mão para um app (nome do AppCategory), por cima da automática. */
+    val categoryOverrides: Map<AppKey, String> = emptyMap(),
 )
 
 /** O título de uma seção no estilo escolhido; null = sem título. */

@@ -212,22 +212,9 @@ private fun SettingsCard(content: @Composable ColumnScope.() -> Unit) {
 private fun LookPage(settings: LauncherSettings, onChange: ((LauncherSettings) -> LauncherSettings) -> Unit) {
     SettingsCard {
         Section("Modo")
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            PictureChoice("Uma mão", settings.mode == HomeMode.ONE_HAND, { onChange { it.copy(mode = HomeMode.ONE_HAND) } }, Modifier.weight(1f)) {
-                Bars(54, 40, 48, 36)
-            }
-            PictureChoice("Grade", settings.mode == HomeMode.GRID, { onChange { it.copy(mode = HomeMode.GRID) } }, Modifier.weight(1f)) {
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    repeat(3) {
-                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            repeat(4) { Box(Modifier.size(12.dp).border(1.dp, Color.White.copy(alpha = .5f), RoundedCornerShape(4.dp))) }
-                        }
-                    }
-                }
-            }
-        }
-
+        ModePicker(settings, onChange)
     }
+    SettingsCard { ShapeSection(settings, onChange) }
     SettingsCard { SizeSection(settings, onChange) }
     SettingsCard { ClockSection(settings, onChange) }
     SettingsCard { FinishSection(settings, onChange) }

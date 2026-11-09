@@ -36,6 +36,8 @@ fun AppActionsSheet(
     folderName: String? = null,
     onFolder: (() -> Unit)? = null,
     onLeaveFolder: (() -> Unit)? = null,
+    /** Só no modo por categoria: trocar a gaveta do app. */
+    onCategory: (() -> Unit)? = null,
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -51,6 +53,7 @@ fun AppActionsSheet(
             onToggleHidden?.let { h -> Action(if (isHidden) "Mostrar na tela inicial" else "Esconder") { h(); onDismiss() } }
             if (folderName != null) onLeaveFolder?.let { l -> Action("Tirar da pasta \"$folderName\"") { l(); onDismiss() } }
             else onFolder?.let { f -> Action("Colocar em pasta") { f(); onDismiss() } }
+            onCategory?.let { c -> Action("Mudar categoria") { c(); onDismiss() } }
             Action("Informações do app") { onAppInfo(); onDismiss() }
             if (canUninstall) Action("Desinstalar") { onUninstall(); onDismiss() }
         }
@@ -126,6 +129,30 @@ fun FolderDialog(existing: List<String>, onPick: (String) -> Unit, onDismiss: ()
         confirmButton = {
             androidx.compose.material3.TextButton(enabled = name.isNotBlank(), onClick = { onPick(name.trim()); onDismiss() }) { Text("Criar", color = Color.White) }
         },
+        dismissButton = { androidx.compose.material3.TextButton(onClick = onDismiss) { Text("Cancelar", color = Color.White.copy(alpha = .7f)) } },
+    )
+}
+
+/** Escolhe a gaveta do app no modo por categoria; "Automático" volta ao palpite do launcher. */
+@Composable
+fun CategoryDialog(label: String, current: String?, onPick: (String?) -> Unit, onDismiss: () -> Unit) {
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Color(0xFF18181B),
+        title = { Text("Categoria de $label", color = Color.White) },
+        text = {
+            Column {
+                (listOf<Pair<String, String?>>("Automático" to null) + com.brendon978.menulauncher.apps.AppCategory.entries.map { it.label to it.name }).forEach { (name, value) ->
+                    Text(
+                        (if (value == current) "● " else "") + name,
+                        color = Color.White.copy(alpha = if (value == current) 1f else .8f),
+                        fontSize = 16.sp,
+                        modifier = Modifier.fillMaxWidth().clickable { onPick(value); onDismiss() }.padding(vertical = 10.dp),
+                    )
+                }
+            }
+        },
+        confirmButton = {},
         dismissButton = { androidx.compose.material3.TextButton(onClick = onDismiss) { Text("Cancelar", color = Color.White.copy(alpha = .7f)) } },
     )
 }

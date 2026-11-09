@@ -123,7 +123,7 @@ private fun GridCell(label: String, settings: LauncherSettings, onClick: () -> U
         modifier = Modifier.combinedClickable(onClick = onClick, onLongClick = onLongClick),
     ) {
         Box(Modifier.size(settings.gridCellSize), contentAlignment = Alignment.Center) { icon() }
-        if (settings.gridLabels) {
+        if (settings.gridLabels && settings.showLabels) {
             Spacer(Modifier.height(6.dp))
             Text(
                 label,

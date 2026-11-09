@@ -81,8 +81,13 @@ fun HomeScreen(
     val swipeDown by rememberUpdatedState(onSwipeDown)
     val swipeUp by rememberUpdatedState(onSwipeUp)
     val doubleTap by rememberUpdatedState(onEmptyDoubleTap)
+    val dockMode by rememberUpdatedState(settings.mode == HomeMode.DOCK)
+    val search by rememberUpdatedState(onSearch)
     val listensDoubleTap = settings.listensDoubleTap()
-    val growsTop = settings.showNote || settings.showContacts || screenTime != null
+    // o bloco de apps no meio ou em cima precisa saber onde o topo acaba, e os modos novos começam logo abaixo dele
+    val growsTop = settings.showNote || settings.showContacts || screenTime != null ||
+        settings.blockPosition != com.brendon978.menulauncher.settings.BlockPosition.BOTTOM ||
+        settings.mode == HomeMode.CATEGORIES
     var topHeight by remember { mutableIntStateOf(0) }
     // atalhos que só aparecem ao tocar na linha da data: somem sozinhos depois de um tempo
     var quickShown by remember { mutableStateOf(false) }
@@ -94,7 +99,14 @@ fun HomeScreen(
     val entrance = remember(homeOnTop, resetSignal) { if (homeOnTop) resetSignal + 1 else 0 }
     val swipeThreshold = with(LocalDensity.current) { 72.dp.toPx() }
     val swipe = remember(swipeThreshold) {
-        SwipeTracker(swipeThreshold) { if (it == Swipe.DOWN) swipeDown() else swipeUp() }
+        SwipeTracker(swipeThreshold) {
+            when {
+                it == Swipe.DOWN -> swipeDown()
+                // na barra fixa, deslizar para cima é sempre a gaveta com todos os apps
+                dockMode -> search()
+                else -> swipeUp()
+            }
+        }
     }
     // Arrasto que começa numa lista (favoritos, grade): o que a lista não rolou (já no topo, ou sem
     // o que rolar) vale como gesto, decidido ao soltar o dedo.
@@ -148,7 +160,7 @@ fun HomeScreen(
             .navigationBarsPadding(),
     ) {
         when (settings.mode) {
-            HomeMode.ONE_HAND -> {
+            HomeMode.ONE_HAND, HomeMode.CATEGORIES, HomeMode.FAN, HomeMode.DOCK -> {
                 // alinhado ao centro ou à direita, o topo ocupa a largura toda
                 val align = settings.clockAlign
                 Column(
@@ -170,19 +182,26 @@ fun HomeScreen(
                     TopExtras(settings, color, onNoteChange)
                     musicSlotTop()
                 }
-                OneHandMode(
-                    apps = apps,
-                    settings = settings,
-                    strokeColor = strokeColor,
-                    renderer = renderer,
-                    resetSignal = resetSignal,
-                    reservedTop = if (growsTop) with(LocalDensity.current) { topHeight.toDp() } else 0.dp,
-                    onLaunch = onLaunch,
-                    onAppLongPress = onAppLongPress,
-                    musicSlotBottom = musicSlotBottom,
-                    onSearch = onSearch,
-                    modifier = Modifier.enterIn(1, entrance, settings.motion),
-                )
+                val reserved = if (growsTop) with(LocalDensity.current) { topHeight.toDp() } else 0.dp
+                val below = Modifier.enterIn(1, entrance, settings.motion)
+                when (settings.mode) {
+                    HomeMode.CATEGORIES -> CategoryMode(apps, settings, renderer, reserved, onLaunch, onAppLongPress, below)
+                    HomeMode.FAN -> FanMode(apps, settings, renderer, onLaunch, onAppLongPress, onSearch, below)
+                    HomeMode.DOCK -> DockMode(apps, settings, renderer, onLaunch, onAppLongPress, onSearch, below)
+                    else -> OneHandMode(
+                        apps = apps,
+                        settings = settings,
+                        strokeColor = strokeColor,
+                        renderer = renderer,
+                        resetSignal = resetSignal,
+                        reservedTop = reserved,
+                        onLaunch = onLaunch,
+                        onAppLongPress = onAppLongPress,
+                        musicSlotBottom = musicSlotBottom,
+                        onSearch = onSearch,
+                        modifier = below,
+                    )
+                }
             }
             // Grade: player ao lado do relógio; a grade começa logo abaixo do que for mais alto.
             HomeMode.GRID -> Column(Modifier.fillMaxSize()) {
@@ -207,7 +226,8 @@ fun HomeScreen(
                 )
             }
         }
-        if (settings.mode == HomeMode.ONE_HAND && settings.showPet) PetLayer(color, musicPlaying, settings, homeOnTop)
+        // grade e categorias ocupam a tela toda com ícones: o Glitch não teria onde ficar
+        if (settings.mode != HomeMode.GRID && settings.mode != HomeMode.CATEGORIES && settings.showPet) PetLayer(color, musicPlaying, settings, homeOnTop)
         overlay()
     }
     }

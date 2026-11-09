@@ -1,5 +1,9 @@
 package com.brendon978.menulauncher.home
 
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.background
+import com.brendon978.menulauncher.settings.ListAlign
+import com.brendon978.menulauncher.settings.BlockPosition
 import com.brendon978.menulauncher.settings.LabelStyle
 import com.brendon978.menulauncher.settings.sectionLabel
 import androidx.compose.ui.unit.sp
@@ -91,10 +95,24 @@ fun OneHandMode(
         val half = maxHeight / 2
         val barRoom = barWidth(settings.barScale)
         val listMax = if (reservedTop > 0.dp) minOf(half, (maxHeight - reservedTop).coerceAtLeast(MIN_LIST)) else half
+        // bloco embaixo (o original), no meio ou logo abaixo do relógio; lista encostada no lado escolhido
+        val block = settings.blockPosition
         Column(
-            verticalArrangement = Arrangement.Bottom,
+            verticalArrangement = if (block == BlockPosition.TOP) Arrangement.Top else Arrangement.Bottom,
+            horizontalAlignment = when (settings.listAlign) {
+                ListAlign.START -> Alignment.Start
+                ListAlign.CENTER -> Alignment.CenterHorizontally
+                ListAlign.END -> Alignment.End
+            },
             modifier = Modifier
-                .align(Alignment.BottomStart)
+                .align(
+                    when (block) {
+                        BlockPosition.BOTTOM -> Alignment.BottomStart
+                        BlockPosition.MIDDLE -> Alignment.CenterStart
+                        BlockPosition.TOP -> Alignment.TopStart
+                    },
+                )
+                .padding(top = if (block == BlockPosition.TOP) reservedTop + 16.dp else 0.dp)
                 .fillMaxWidth()
                 .heightIn(max = listMax)
                 .padding(start = if (left) barRoom else 22.dp, end = if (left) 22.dp else barRoom)
@@ -120,7 +138,28 @@ fun OneHandMode(
             }
             // letra sem app avisa sempre; o resto segue o estilo dos títulos
             SectionTitle(if (shown.isEmpty()) header else sectionLabel(header, settings.labelStyle), color, settings)
-            LazyColumn(
+            val pages = if (settings.favoritePages && selected == LetterIndex.STAR) remember(favorites, settings.folders, byKey) {
+                favoritePages(favorites, settings.folders, byKey)
+            } else null
+            if (pages != null && pages.size > 1) {
+                // favoritos e cada pasta lado a lado: arrastar para o lado troca de página
+                val pager = androidx.compose.foundation.pager.rememberPagerState { pages.size }
+                androidx.compose.foundation.pager.HorizontalPager(pager, modifier = Modifier.weight(1f, fill = false), verticalAlignment = Alignment.Bottom) { i ->
+                    androidx.compose.foundation.layout.Column(verticalArrangement = Arrangement.Bottom) {
+                        if (i > 0) SectionTitle(sectionLabel(pages[i].first, settings.labelStyle), color, settings)
+                        pages[i].second.forEach { entry ->
+                            AppRow(entry, settings.iconOverrides[entry.key], look, renderer, { onLaunch(entry) }, { onAppLongPress(entry) })
+                        }
+                    }
+                }
+                androidx.compose.foundation.layout.Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.padding(top = 6.dp)) {
+                    repeat(pages.size) { i ->
+                        androidx.compose.foundation.layout.Box(
+                            Modifier.size(6.dp).background(color.copy(alpha = if (pager.currentPage == i) .9f else .3f), androidx.compose.foundation.shape.CircleShape),
+                        )
+                    }
+                }
+            } else LazyColumn(
                 verticalArrangement = Arrangement.Bottom,
                 modifier = Modifier.weight(1f, fill = false),
             ) {

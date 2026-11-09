@@ -1,5 +1,8 @@
 package com.brendon978.menulauncher.settingsui
 
+import com.brendon978.menulauncher.settings.IconShape
+import com.brendon978.menulauncher.settings.BlockPosition
+import com.brendon978.menulauncher.settings.ListAlign
 import com.brendon978.menulauncher.settings.InitialStyle
 import com.brendon978.menulauncher.settings.QuickReveal
 import com.brendon978.menulauncher.settings.AppWeight
@@ -152,6 +155,23 @@ fun SizeSection(settings: LauncherSettings, onChange: OnChange) {
             }
             .padding(vertical = 10.dp),
     )
+}
+
+/** Onde e como os apps aparecem, em qualquer modo. */
+@Composable
+fun ShapeSection(settings: LauncherSettings, onChange: OnChange) {
+    Section("Forma e posição dos apps")
+    SubLabel("Lista encostada")
+    OptionChips(listOf("Esquerda" to ListAlign.START, "Centro" to ListAlign.CENTER, "Direita" to ListAlign.END), settings.listAlign) { v -> onChange { it.copy(listAlign = v) } }
+    SubLabel("Bloco de apps (modo uma mão)")
+    OptionChips(listOf("Embaixo" to BlockPosition.BOTTOM, "No meio" to BlockPosition.MIDDLE, "Em cima" to BlockPosition.TOP), settings.blockPosition) { v ->
+        onChange { it.copy(blockPosition = v) }
+    }
+    SubLabel("Ícone")
+    OptionChips(listOf("Só contorno" to IconShape.OUTLINE, "Círculo" to IconShape.CIRCLE, "Quadrado" to IconShape.SQUARE), settings.iconShape) { v -> onChange { it.copy(iconShape = v) } }
+    SwitchRow("Nome dos apps", settings.showLabels) { v -> onChange { it.copy(showLabels = v) } }
+    SwitchRow("Páginas: favoritos e pastas lado a lado", settings.favoritePages) { v -> onChange { it.copy(favoritePages = v) } }
+    Hint("No modo uma mão, arraste a lista para o lado para trocar entre os favoritos e cada pasta.")
 }
 
 /** O que deixa a tela leve ou carregada: peso dos detalhes, títulos, atalhos, barra, nota e espaços. */

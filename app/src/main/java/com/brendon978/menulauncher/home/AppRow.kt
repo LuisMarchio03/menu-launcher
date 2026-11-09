@@ -45,12 +45,18 @@ fun AppRow(
     val pressed by press.collectIsPressedAsState()
     val scale by animateFloatAsState(if (look.motion && pressed) .96f else 1f, label = "aperto")
     val haptic = LocalHapticFeedback.current
+    val end = look.align == com.brendon978.menulauncher.settings.ListAlign.END
     Row(
         verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = when (look.align) {
+            com.brendon978.menulauncher.settings.ListAlign.START -> androidx.compose.foundation.layout.Arrangement.Start
+            com.brendon978.menulauncher.settings.ListAlign.CENTER -> androidx.compose.foundation.layout.Arrangement.Center
+            com.brendon978.menulauncher.settings.ListAlign.END -> androidx.compose.foundation.layout.Arrangement.End
+        },
         modifier = Modifier
             .fillMaxWidth()
             .height(look.height)
-            .graphicsLayer { scaleX = scale; scaleY = scale; transformOrigin = TransformOrigin(0f, .5f) }
+            .graphicsLayer { scaleX = scale; scaleY = scale; transformOrigin = TransformOrigin(if (end) 1f else 0f, .5f) }
             .combinedClickable(
                 interactionSource = press,
                 indication = null,
@@ -62,11 +68,20 @@ fun AppRow(
             )
             .then(if (onSwipe != null) Modifier.swipeToActions(onSwipe) else Modifier),
     ) {
-        AppIcon(entry, override, look.color, look.iconSize, renderer, stroke = look.stroke, shadow = look.shadow, tracksBadge = tracksBadge)
-        Spacer(Modifier.width(14.dp))
-        Text(
-            entry.label, color = Color(look.color), fontSize = look.textSize, maxLines = 1, overflow = TextOverflow.Ellipsis,
-            fontWeight = if (look.light) androidx.compose.ui.text.font.FontWeight.Light else null,
-        )
+        val icon = @Composable { AppIcon(entry, override, look.color, look.iconSize, renderer, stroke = look.stroke, shadow = look.shadow, tracksBadge = tracksBadge) }
+        val name = @Composable {
+            Text(
+                entry.label, color = Color(look.color), fontSize = look.textSize, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                fontWeight = if (look.light) androidx.compose.ui.text.font.FontWeight.Light else null,
+            )
+        }
+        // encostada à direita a linha espelha: nome e depois o ícone, colado na borda
+        if (end) {
+            if (look.label) { name(); Spacer(Modifier.width(14.dp)) }
+            icon()
+        } else {
+            icon()
+            if (look.label) { Spacer(Modifier.width(14.dp)); name() }
+        }
     }
 }

@@ -26,3 +26,21 @@ class PolishTest {
         assertEquals(1f, Backup.decode(text)!!.edgeVeil)
     }
 }
+
+class LayoutOptionsTest {
+    @Test fun opcoesDeFormaVaoNoBackup() {
+        val key = com.brendon978.menulauncher.apps.AppKey("com.whatsapp", "com.whatsapp.Main", 0)
+        val s = LauncherSettings(
+            mode = HomeMode.FAN, listAlign = ListAlign.CENTER, blockPosition = BlockPosition.MIDDLE,
+            iconShape = IconShape.CIRCLE, showLabels = false, favoritePages = true, categoryOverrides = mapOf(key to "GAMES"),
+        )
+        val v = Backup.decode(Backup.encode(s))!!
+        assertEquals(HomeMode.FAN, v.mode)
+        assertEquals(ListAlign.CENTER, v.listAlign)
+        assertEquals(BlockPosition.MIDDLE, v.blockPosition)
+        assertEquals(IconShape.CIRCLE, v.iconShape)
+        assertEquals(false, v.showLabels)
+        assertEquals(true, v.favoritePages)
+        assertEquals(mapOf(key to "GAMES"), v.categoryOverrides)
+    }
+}

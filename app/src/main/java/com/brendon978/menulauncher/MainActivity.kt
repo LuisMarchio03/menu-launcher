@@ -128,6 +128,7 @@ class MainActivity : ComponentActivity() {
     private val screen = mutableStateOf<Screen>(Screen.Home)
     private val sheetFor = mutableStateOf<AppEntry?>(null)
     private val renaming = mutableStateOf<AppEntry?>(null)
+    private val categorizing = mutableStateOf<AppEntry?>(null)
     private val foldering = mutableStateOf<AppEntry?>(null)
     private val isDefaultHome = mutableStateOf(false)
     private val hasMusicAccess = mutableStateOf(false)
@@ -282,7 +283,7 @@ class MainActivity : ComponentActivity() {
                     onNoteChange = { text -> updateSettings { it.copy(noteText = text) } },
                     musicPlaying = music?.playing == true,
                     // Na grade o símbolo fica no meio dos ícones e parece parte do fundo: só no modo uma mão.
-                    overlay = { if (settings.mode == HomeMode.ONE_HAND) AiOverlay(shown, apps, stroke) },
+                    overlay = { if (settings.mode != HomeMode.GRID) AiOverlay(shown, apps, stroke) },
                     // Pedido do Brendon: controles logo abaixo do cartão, no topo (modo uma mão).
                     musicSlotTop = {
                         current?.let {
@@ -374,7 +375,7 @@ class MainActivity : ComponentActivity() {
                         toast(
                             when {
                                 !adding -> "${entry.label} saiu dos favoritos"
-                                settings.mode == HomeMode.GRID -> "${entry.label} nos favoritos (aparecem no modo uma mão)"
+                                settings.mode == HomeMode.GRID || settings.mode == HomeMode.CATEGORIES -> "${entry.label} nos favoritos (aparecem na lista, no leque e na barra)"
                                 else -> "${entry.label} nos favoritos"
                             },
                         )
@@ -388,6 +389,7 @@ class MainActivity : ComponentActivity() {
                     onFolder = { foldering.value = entry },
                     onLeaveFolder = { updateSettings { it.copy(folders = com.brendon978.menulauncher.settings.FolderOps.remove(it.folders, entry.key)) } },
                     onRename = { renaming.value = entry },
+                    onCategory = if (settings.mode == HomeMode.CATEGORIES) ({ categorizing.value = entry }) else null,
                     onToggleHidden = {
                         updateSettings { FavoritesOps.setHidden(it, entry.key, hidden = entry.key !in it.hiddenApps) }
                     },
@@ -398,6 +400,16 @@ class MainActivity : ComponentActivity() {
                     existing = settings.folders.keys.toList(),
                     onPick = { name -> updateSettings { it.copy(folders = com.brendon978.menulauncher.settings.FolderOps.put(it.folders, name, entry.key)) } },
                     onDismiss = { foldering.value = null },
+                )
+            }
+            categorizing.value?.let { entry ->
+                com.brendon978.menulauncher.menu.CategoryDialog(
+                    label = entry.label,
+                    current = settings.categoryOverrides[entry.key],
+                    onPick = { cat ->
+                        updateSettings { it.copy(categoryOverrides = if (cat == null) it.categoryOverrides - entry.key else it.categoryOverrides + (entry.key to cat)) }
+                    },
+                    onDismiss = { categorizing.value = null },
                 )
             }
             renaming.value?.let { entry ->

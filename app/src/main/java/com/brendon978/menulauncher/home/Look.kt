@@ -41,10 +41,21 @@ val LauncherSettings.smallTextSize: TextUnit get() = 12.sp * textScale
 
 /** O que uma linha de app precisa, em valores estáveis: a linha só recompõe quando um deles muda. */
 @Immutable
-data class RowLook(val color: Int, val iconSize: Dp, val textSize: TextUnit, val height: Dp, val stroke: Float, val shadow: Boolean, val light: Boolean = false, val motion: Boolean = false)
+data class RowLook(
+    val color: Int,
+    val iconSize: Dp,
+    val textSize: TextUnit,
+    val height: Dp,
+    val stroke: Float,
+    val shadow: Boolean,
+    val light: Boolean = false,
+    val motion: Boolean = false,
+    val align: com.brendon978.menulauncher.settings.ListAlign = com.brendon978.menulauncher.settings.ListAlign.START,
+    val label: Boolean = true,
+)
 
 val LauncherSettings.rowLook: RowLook
-    get() = RowLook(strokeColor, rowIconSize, rowTextSize, rowHeight, strokeScale, textShadow, appWeight == com.brendon978.menulauncher.settings.AppWeight.LIGHT, motion)
+    get() = RowLook(strokeColor, rowIconSize, rowTextSize, rowHeight, strokeScale, textShadow, appWeight == com.brendon978.menulauncher.settings.AppWeight.LIGHT, motion, listAlign, showLabels)
 
 private val CONDENSED = FontFamily(Typeface.create("sans-serif-condensed", Typeface.NORMAL))
 
@@ -69,6 +80,9 @@ val FontChoice.family: FontFamily
         FontChoice.OUTFIT -> OUTFIT
     }
 
+/** Forma em volta dos ícones de app (contorno puro, círculo ou quadrado translúcido). */
+val LocalIconShape = compositionLocalOf { com.brendon978.menulauncher.settings.IconShape.OUTLINE }
+
 /** Borda fina dos contornos (1 dp no original), com a espessura dos ajustes. */
 val LocalBorderWidth = compositionLocalOf { 1.dp }
 
@@ -86,6 +100,7 @@ fun ProvideLauncherText(settings: LauncherSettings, content: @Composable () -> U
         base.merge(TextStyle(fontFamily = settings.font.family, shadow = if (settings.textShadow) textShadow(settings.strokeColor) else null))
     }
     CompositionLocalProvider(
+        LocalIconShape provides settings.iconShape,
         LocalBorderWidth provides 1.dp * settings.borderScale,
         LocalLineScale provides lineScale(settings.borderScale),
     ) { ProvideTextStyle(style, content) }
