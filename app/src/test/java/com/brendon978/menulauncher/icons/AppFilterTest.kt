@@ -41,4 +41,19 @@ class AppFilterTest {
     @Test fun pacoteAusente() {
         assertNull(filter.drawableFor("com.nao.existe", "X"))
     }
+
+    @Test fun componenteRelativoCasaComONomeCompleto() {
+        val f = AppFilter.parse("""
+            <item component="ComponentInfo{com.insta/.activity.Main}" drawable="insta" name="Insta" />
+            <item component="ComponentInfo{com.insta/com.insta.Outra}" drawable="outra" />
+            <item component="ComponentInfo{com.insta/com.insta.Mais}" drawable="outra" />
+        """.byteInputStream())
+        assertEquals("insta", f.drawableFor("com.insta", "com.insta.activity.Main"))
+    }
+
+    @Test fun nomeDoAppSemAcentoNemCaixa() {
+        assertEquals("spotify", filter.drawableForName("spotify"))
+        assertEquals("spotify", filter.drawableForName(" SPOTIFY "))
+        assertNull(filter.drawableForName("Nada"))
+    }
 }

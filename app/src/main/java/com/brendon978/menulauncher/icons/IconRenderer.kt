@@ -25,7 +25,7 @@ import kotlin.math.roundToInt
 
 /**
  * Desenha os ícones de contorno. Tudo sai numa cor só (a do ajuste), nunca com as cores do logo.
- * [iconOf] devolve o ícone do sistema do app (para a camada monocromática).
+ * [iconOf] devolve o ícone do sistema do app (de onde sai o contorno de quem não tem desenho pronto).
  */
 class IconRenderer(
     private val context: Context,
@@ -42,11 +42,11 @@ class IconRenderer(
 
     private val cache = LruCache<CacheKey, ImageBitmap>(400)
     // Os ícones são desenhados em várias threads ao mesmo tempo (um por linha visível).
-    private val monoCache = Memo<AppKey, Drawable?> { key -> (iconOf(key) as? AdaptiveIconDrawable)?.monochrome }
+    private val shapeCache = Memo<AppKey, BooleanArray?> { key -> iconOf(key)?.let(::shapeOf) }
 
     /** [stroke] multiplica a espessura do traço (1 = a do Lawnicons). */
     fun iconFor(entry: AppEntry, override: String?, sizePx: Int, color: Int, stroke: Float = 1f): ImageBitmap {
-        val source = resolveIcon(entry.key, entry.label, override, filter) { monochromeOf(it) != null }
+        val source = resolveIcon(entry.key, entry.label, override, filter) { shapeCache.get(it) != null }
         return render(source, sizePx, color, stroke)
     }
 
@@ -59,7 +59,7 @@ class IconRenderer(
                 ?: renderInitial('?', sizePx, color, stroke, style)
             is IconSource.Own -> renderSvg("proprios/${source.name}.svg", sizePx, color, stroke)
                 ?: renderInitial('?', sizePx, color, stroke, style)
-            is IconSource.Monochrome -> monochromeOf(source.key)?.let { renderMonochrome(it, sizePx, color, stroke) }
+            is IconSource.Traced -> shapeCache.get(source.key)?.let { renderTraced(it, sizePx, color, stroke) }
                 ?: renderInitial('?', sizePx, color, stroke, style)
             is IconSource.Initial -> renderInitial(source.letter, sizePx, color, stroke, style)
         }
@@ -68,10 +68,34 @@ class IconRenderer(
 
     fun clear() {
         cache.evictAll()
-        monoCache.clear()
+        shapeCache.clear()
     }
 
-    private fun monochromeOf(key: AppKey): Drawable? = monoCache.get(key)
+    /**
+     * Silhueta do app em [TRACE_SIZE]: a camada monocromática quando o app tem; senão a frente do ícone
+     * adaptativo; senão o ícone inteiro, pela [Silhouette]. null = nenhum desenho limpo (fica a letra).
+     */
+    private fun shapeOf(icon: Drawable): BooleanArray? {
+        if (icon is AdaptiveIconDrawable) {
+            icon.monochrome?.let { mono -> return pixelsOf(mono, layer = true).let { px -> BooleanArray(px.size) { Color.alpha(px[it]) >= 128 } } }
+            icon.foreground?.let { fg -> Silhouette.extract(pixelsOf(fg, layer = true), TRACE_SIZE)?.let { return it } }
+        }
+        return Silhouette.extract(pixelsOf(icon, layer = false), TRACE_SIZE)
+    }
+
+    /** Pixels de [d] em [TRACE_SIZE]; [layer] = camada adaptativa (108dp com 72dp visíveis: sobra 1/4 de cada lado). */
+    private fun pixelsOf(d: Drawable, layer: Boolean): IntArray {
+        val bmp = createBitmap(TRACE_SIZE, TRACE_SIZE)
+        val extra = if (layer) TRACE_SIZE / 4 else 0
+        // O mesmo Drawable pode ser pedido por duas threads ao mesmo tempo: bounds+draw não podem se cruzar.
+        synchronized(d) {
+            val old = d.copyBounds()
+            d.setBounds(-extra, -extra, TRACE_SIZE + extra, TRACE_SIZE + extra)
+            d.draw(Canvas(bmp))
+            d.bounds = old
+        }
+        return IntArray(TRACE_SIZE * TRACE_SIZE).also { bmp.getPixels(it, 0, TRACE_SIZE, 0, 0, TRACE_SIZE, TRACE_SIZE) }
+    }
 
     private fun renderSvg(path: String, sizePx: Int, color: Int, stroke: Float): Bitmap? {
         val svg = runCatching {
@@ -92,21 +116,10 @@ class IconRenderer(
         return bmp
     }
 
-    private fun renderMonochrome(mono: Drawable, sizePx: Int, color: Int, stroke: Float): Bitmap {
-        // A camada adaptativa tem 108dp com 72dp visíveis: sobra 1/4 de cada lado.
+    private fun renderTraced(shape: BooleanArray, sizePx: Int, color: Int, stroke: Float): Bitmap {
+        val edge = OutlineTracer.trace(shape, TRACE_SIZE, (STROKE * stroke).roundToInt().coerceAtLeast(2))
         val bmp = createBitmap(TRACE_SIZE, TRACE_SIZE)
-        val extra = TRACE_SIZE / 4
-        // O mesmo Drawable pode ser pedido em dois tamanhos ao mesmo tempo: bounds+draw não podem se cruzar.
-        synchronized(mono) {
-            mono.setBounds(-extra, -extra, TRACE_SIZE + extra, TRACE_SIZE + extra)
-            mono.draw(Canvas(bmp))
-        }
-        val pixels = IntArray(TRACE_SIZE * TRACE_SIZE)
-        bmp.getPixels(pixels, 0, TRACE_SIZE, 0, 0, TRACE_SIZE, TRACE_SIZE)
-        val alpha = IntArray(pixels.size) { Color.alpha(pixels[it]) }
-        val edge = OutlineTracer.trace(alpha, TRACE_SIZE, (STROKE * stroke).roundToInt().coerceAtLeast(2))
-        val out = IntArray(pixels.size) { if (edge[it]) color else Color.TRANSPARENT }
-        bmp.setPixels(out, 0, TRACE_SIZE, 0, 0, TRACE_SIZE, TRACE_SIZE)
+        bmp.setPixels(IntArray(edge.size) { if (edge[it]) color else Color.TRANSPARENT }, 0, TRACE_SIZE, 0, 0, TRACE_SIZE, TRACE_SIZE)
         return if (sizePx == TRACE_SIZE) bmp else bmp.scale(sizePx, sizePx)
     }
 

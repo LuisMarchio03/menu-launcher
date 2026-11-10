@@ -5,11 +5,20 @@ package com.brendon978.menulauncher.icons
  * com r = thickness/2 e vizinhança em disco (cantos redondos, como o traço dos Lawnicons).
  */
 object OutlineTracer {
-    fun trace(alpha: IntArray, size: Int, thickness: Int): BooleanArray {
-        val mask = BooleanArray(size * size) { alpha[it] >= 128 }
+    /** Fração da área que sobra ao erodir abaixo da qual o desenho é de traço fino. */
+    private const val THIN = 0.25
+
+    fun trace(alpha: IntArray, size: Int, thickness: Int): BooleanArray =
+        trace(BooleanArray(size * size) { alpha[it] >= 128 }, size, thickness)
+
+    fun trace(mask: BooleanArray, size: Int, thickness: Int): BooleanArray {
         val r = thickness / 2
-        val dilated = morph(mask, size, r, dilate = true)
         val eroded = morph(mask, size, r, dilate = false)
+        // Desenho já feito de traço fino (some quase todo ao erodir): contornar grudaria os dois lados
+        // de cada linha num borrão, então ele fica como está. Um ponto solto ainda vira disco.
+        val area = mask.count { it }
+        if (area >= thickness * thickness && eroded.count { it } < area * THIN) return mask.copyOf()
+        val dilated = morph(mask, size, r, dilate = true)
         return BooleanArray(size * size) { dilated[it] && !eroded[it] }
     }
 
