@@ -1,4 +1,4 @@
 <resources>
     <string name="app_name">menu-launcher</string>
-    <string name="lock_service_desc">Permite que o menu-launcher apague a tela quando você toca duas vezes no fundo da tela inicial. Não lê nada do que aparece na tela.</string>
+    <string name="accessibility_description">Deixa o menu-launcher bloquear a tela e abrir as notificações pelos gestos da tela inicial. Não lê nada do que aparece na tela.</string>
 </resources>

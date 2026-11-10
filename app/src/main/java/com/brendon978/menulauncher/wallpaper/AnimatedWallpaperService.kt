@@ -1,9 +1,11 @@
 package com.brendon978.menulauncher.wallpaper
 
+import android.app.WallpaperColors
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.ImageDecoder
 import android.graphics.drawable.AnimatedImageDrawable
+import android.media.MediaMetadataRetriever
 import android.media.MediaPlayer
 import android.os.Handler
 import android.os.Looper
@@ -16,6 +18,7 @@ import kotlin.math.max
  * Papel de parede animado: toca filesDir/wallpaper/current.mp4 (sem som) ou current.gif.
  * Fica parado quando invisível (tela apagada ou coberta). Sem arquivo: preto.
  * Ao ficar visível, recarrega se o arquivo mudou (o usuário escolheu outro nos Ajustes).
+ * As cores do papel (para a opção "cor do papel de parede") vêm do primeiro quadro.
  */
 class AnimatedWallpaperService : WallpaperService() {
     override fun onCreateEngine(): Engine = AnimatedEngine()
@@ -28,6 +31,9 @@ class AnimatedWallpaperService : WallpaperService() {
         private var gif: AnimatedImageDrawable? = null
         private var visible = false
         private var surfaceReady = false
+        @Volatile private var colors: WallpaperColors? = null
+        /** Só a leitura do arquivo mais recente grava as cores (trocas seguidas não se atropelam). */
+        @Volatile private var colorsGen = 0
 
         private val gifFrame = object : Runnable {
             override fun run() {
@@ -76,6 +82,35 @@ class AnimatedWallpaperService : WallpaperService() {
             super.onDestroy()
         }
 
+        override fun onComputeColors(): WallpaperColors? = colors
+
+        /** Lê o primeiro quadro fora da thread principal e avisa o sistema (e o launcher) das cores novas. */
+        private fun updateColors(file: File?) {
+            val gen = ++colorsGen
+            Thread {
+                val frame = runCatching {
+                    when (file?.extension) {
+                        "mp4" -> MediaMetadataRetriever().use { r ->
+                            r.setDataSource(file.absolutePath)
+                            r.getScaledFrameAtTime(0, MediaMetadataRetriever.OPTION_CLOSEST_SYNC, COLOR_FRAME_PX, COLOR_FRAME_PX)
+                        }
+                        "gif" -> ImageDecoder.decodeBitmap(ImageDecoder.createSource(file)) { d, info, _ ->
+                            d.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
+                            val scale = COLOR_FRAME_PX / maxOf(info.size.width, info.size.height).toFloat()
+                            if (scale < 1f) d.setTargetSize((info.size.width * scale).toInt().coerceAtLeast(1), (info.size.height * scale).toInt().coerceAtLeast(1))
+                        }
+                        else -> null
+                    }
+                }.getOrNull()
+                val computed = frame?.let { runCatching { WallpaperColors.fromBitmap(it) }.getOrNull() }
+                handler.post {
+                    if (gen != colorsGen) return@post
+                    colors = computed
+                    notifyColorsChanged()
+                }
+            }.start()
+        }
+
         private fun reloadIfChanged(force: Boolean) {
             val file = AnimatedFiles.current(this@AnimatedWallpaperService)
             val stamp = file?.lastModified() ?: 0L
@@ -83,6 +118,7 @@ class AnimatedWallpaperService : WallpaperService() {
             releaseAll()
             loaded = file
             loadedStamp = stamp
+            updateColors(file)
             when (file?.extension) {
                 "mp4" -> startVideo(file)
                 "gif" -> startGif(file)
@@ -164,5 +200,6 @@ class AnimatedWallpaperService : WallpaperService() {
 
     private companion object {
         const val FRAME_MS = 33L
+        const val COLOR_FRAME_PX = 256
     }
 }

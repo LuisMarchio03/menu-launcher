@@ -44,12 +44,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.min
 import androidx.compose.ui.unit.sp
 import com.brendon978.menulauncher.apps.LetterIndex
+import com.brendon978.menulauncher.settings.BarSide
 import kotlin.math.PI
 import kotlin.math.roundToInt
 import kotlin.math.sin
 
 /**
- * Barra ★ A–Z # na borda direita, curva para dentro no meio (como no esboço).
+ * Barra ★ A–Z # na borda direita (ou na esquerda, [side]), curva para dentro no meio (como no esboço).
  * Tocar ou arrastar seleciona; letra sem apps fica apagada.
  * Enquanto o dedo está na barra, um balão cresce para a esquerda mostrando a letra (o dedo cobre a barra).
  */
@@ -61,14 +62,22 @@ fun AlphabetBar(
     onSelect: (Char) -> Unit,
     onSearch: () -> Unit,
     modifier: Modifier = Modifier,
+    side: BarSide = BarSide.RIGHT,
+    scale: Float = 1f,
+    /** Em arco (o original) ou reta. */
+    curved: Boolean = true,
+    /** Opacidade das letras não escolhidas. */
+    dim: Float = 0.8f,
 ) {
     val letters = LetterIndex.BAR
+    val left = side == BarSide.LEFT
+    val anchor = if (left) Alignment.BottomStart else Alignment.BottomEnd
     val haptic = LocalHapticFeedback.current
     val currentSelected = rememberUpdatedState(selected)
     val currentOnSelect = rememberUpdatedState(onSelect)
 
     BoxWithConstraints(modifier) {
-        val itemHeight = min(15.5.dp, maxHeight / letters.size)
+        val itemHeight = min(15.5.dp * scale, maxHeight / letters.size)
         val density = LocalDensity.current
         val itemPx = with(density) { itemHeight.toPx() }
         // Altura de cada letra é fixa em dp: a fonte não pode crescer com a escala do sistema.
@@ -86,9 +95,9 @@ fun AlphabetBar(
         }
 
         Column(
-            horizontalAlignment = Alignment.End,
+            horizontalAlignment = if (left) Alignment.Start else Alignment.End,
             modifier = Modifier
-                .align(Alignment.BottomEnd)
+                .align(anchor)
                 .pointerInput(itemPx) {
                     detectTapGestures(onPress = {
                         pick(it.y)
@@ -106,14 +115,14 @@ fun AlphabetBar(
                 },
         ) {
             letters.forEachIndexed { i, letter ->
-                val curve = curveOf(i, letters.size)
+                val curve = if (curved) curveOf(i, letters.size) else 0.dp
                 val isSel = letter == selected
                 val enabled = letter == LetterIndex.STAR || letter in available
                 Box(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier
                         .height(itemHeight)
-                        .padding(end = curve)
+                        .padding(start = if (left) curve else 0.dp, end = if (left) 0.dp else curve)
                         .background(if (isSel) color else Color.Transparent, RoundedCornerShape(6.dp))
                         .padding(horizontal = 6.dp),
                 ) {
@@ -123,8 +132,8 @@ fun AlphabetBar(
                         lineHeight = letterSize,
                         color = when {
                             isSel -> if (color.luminance() > 0.5f) Color.Black else Color.White
-                            enabled -> color.copy(alpha = 0.8f)
-                            else -> color.copy(alpha = 0.35f)
+                            enabled -> color.copy(alpha = dim)
+                            else -> color.copy(alpha = dim * 0.45f)
                         },
                     )
                 }
@@ -136,8 +145,9 @@ fun AlphabetBar(
             color = color,
             onClick = onSearch,
             modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .offset(y = -(itemHeight * (letters.size / 2f)) + 20.dp),
+                .align(anchor)
+                // em arco a lupa cabe no vão do meio; reta, fica em cima da estrela
+                .offset(y = if (curved) -(itemHeight * (letters.size / 2f)) + 20.dp else -(itemHeight * letters.size) - 4.dp),
         )
 
         LetterBubble(
@@ -147,16 +157,25 @@ fun AlphabetBar(
             count = letters.size,
             itemHeight = itemHeight,
             color = color,
-            modifier = Modifier.align(Alignment.BottomEnd),
+            left = left,
+            curved = curved,
+            modifier = Modifier.align(anchor),
         )
     }
 }
+
+/** Espaço que a barra ocupa na lateral: a lista não entra embaixo dela. */
+fun barWidth(scale: Float): Dp = 52.dp * scale
+
+/** Altura máxima da barra: metade da tela no tamanho original, sem nunca subir até o relógio. */
+fun barMaxHeight(available: Dp, scale: Float): Dp = min(available / 2 * scale, available * 0.75f)
 
 private fun curveOf(i: Int, count: Int) = (sin(i / (count - 1).toFloat() * PI) * 22).roundToInt().dp
 
 /** Alvo de toque estreito (cabe no vão da curva) e alto, para o polegar acertar sem pegar as letras. */
 @Composable
 private fun SearchGlyph(color: Color, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val lw = LocalLineScale.current
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier
@@ -170,14 +189,14 @@ private fun SearchGlyph(color: Color, onClick: () -> Unit, modifier: Modifier = 
     ) {
         Canvas(Modifier.size(16.dp)) {
             val w = size.width
-            val stroke = w * 0.12f
+            val stroke = w * 0.12f * lw
             drawCircle(color, radius = w * 0.32f, center = Offset(w * 0.42f, w * 0.42f), style = Stroke(stroke))
             drawLine(color, Offset(w * 0.66f, w * 0.66f), Offset(w * 0.92f, w * 0.92f), stroke, StrokeCap.Round)
         }
     }
 }
 
-/** Balão à esquerda da letra escolhida; cresce da direita para a esquerda ao encostar e some ao soltar. */
+/** Balão ao lado da letra escolhida, do lado de dentro da tela; cresce a partir da barra e some ao soltar. */
 @Composable
 private fun LetterBubble(
     letter: Char,
@@ -186,6 +205,8 @@ private fun LetterBubble(
     count: Int,
     itemHeight: Dp,
     color: Color,
+    left: Boolean,
+    curved: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val size = 56.dp
@@ -194,7 +215,7 @@ private fun LetterBubble(
     val targetY = size / 2 - itemHeight * (count - index - 0.5f)
     val y by animateDpAsState(targetY, tween<Dp>(90), label = "bubble-y")
     // longe o bastante para o polegar não cobrir
-    val x = -(curveOf(index, count) + 52.dp)
+    val x = ((if (curved) curveOf(index, count) else 0.dp) + 52.dp).let { if (left) it else -it }
     if (scale == 0f) return
     Box(
         contentAlignment = Alignment.Center,
@@ -204,7 +225,7 @@ private fun LetterBubble(
             .graphicsLayer {
                 scaleX = scale
                 scaleY = scale
-                transformOrigin = TransformOrigin(1f, 0.5f)
+                transformOrigin = TransformOrigin(if (left) 0f else 1f, 0.5f)
             }
             .background(color, CircleShape),
     ) {

@@ -43,7 +43,7 @@ class AppRepository(context: Context) {
     }
 
     private fun LauncherActivityInfo.toEntry(serial: Long) =
-        AppEntry(AppKey(componentName.packageName, componentName.className, serial), label.toString())
+        AppEntry(AppKey(componentName.packageName, componentName.className, serial), label.toString(), applicationInfo.category)
 
     /** Desliga o aviso do sistema; chamar no onDestroy da Activity para ela não ficar presa na memória. */
     fun close() = launcherApps.unregisterCallback(callback)

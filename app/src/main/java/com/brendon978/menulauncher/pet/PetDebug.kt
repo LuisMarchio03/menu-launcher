@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.SharedFlow
  * Só na versão de desenvolvimento: comandos por ADB para testar o Glitch na tela de verdade.
  *   adb shell am broadcast -a com.brendon978.menulauncher.DEBUG_GLITCH --es acao parar   (fica parado no meio e loga onde está)
  *   adb shell am broadcast -a com.brendon978.menulauncher.DEBUG_GLITCH --es acao soltar  (volta a viver)
+ *   adb shell am broadcast -a com.brendon978.menulauncher.DEBUG_GLITCH --es acao pisar   (joga ele em cima do maior item)
  */
 object PetDebug {
     const val ACTION = "com.brendon978.menulauncher.DEBUG_GLITCH"

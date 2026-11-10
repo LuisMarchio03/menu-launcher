@@ -11,8 +11,8 @@ android {
         applicationId = "com.brendon978.menulauncher"
         minSdk = 35
         targetSdk = 37
-        versionCode = 2
-        versionName = "0.2.0"
+        versionCode = 4
+        versionName = "0.4.0"
     }
 
     buildFeatures {

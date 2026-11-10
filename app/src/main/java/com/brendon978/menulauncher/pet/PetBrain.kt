@@ -122,6 +122,25 @@ fun freeSpot(
     return null
 }
 
+/** Folga até o obstáculo: encostado, o arredondamento já contaria como pisar nele. */
+private const val FREE_MARGIN = 1f
+
+/** O lugar livre mais perto de ([x], [y]) para o robô, ou null se os obstáculos não deixam nenhum. */
+fun nearestFree(x: Float, y: Float, w: Float, h: Float, area: Area, obstacles: List<Area>): Pair<Float, Float>? {
+    val xs = listOf(x) + obstacles.flatMap { listOf(it.l - w - FREE_MARGIN, it.r + FREE_MARGIN) }
+    val ys = listOf(y) + obstacles.flatMap { listOf(it.t - h - FREE_MARGIN, it.b + FREE_MARGIN) }
+    return xs.flatMap { cx -> ys.map { cy -> cx to cy } }
+        .filter { (cx, cy) ->
+            val me = Area(cx, cy, cx + w, cy + h)
+            cx >= area.l && cy >= area.t && me.r <= area.r && me.b <= area.b && obstacles.none { it.intersects(me) }
+        }
+        .minByOrNull { (cx, cy) -> kotlin.math.hypot(cx - x, cy - y) }
+}
+
+/** Onde acaba o que desce a partir de ([x], [fromY]): no primeiro obstáculo abaixo ou no fim de [area]. */
+fun floorUnder(x: Float, fromY: Float, area: Area, obstacles: List<Area>): Float =
+    obstacles.filter { x >= it.l && x <= it.r && it.t >= fromY }.minOfOrNull { it.t } ?: area.b
+
 /** Quanto tempo ele marcha com a arma depois de guardar a mira. */
 const val MARCH_MS = 20_000L
 

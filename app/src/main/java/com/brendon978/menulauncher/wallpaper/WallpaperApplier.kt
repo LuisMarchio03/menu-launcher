@@ -4,7 +4,9 @@ import android.app.WallpaperManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.graphics.BitmapFactory
 import android.net.Uri
+import android.provider.DocumentsContract
 import android.provider.OpenableColumns
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -50,12 +52,51 @@ class WallpaperApplier(private val context: Context) {
         check(tmp.renameTo(target)) { "não consegui gravar $target" }
     }
 
+    /**
+     * Aplica na tela inicial (nunca no bloqueio) a próxima imagem da pasta e devolve o nome dela.
+     * null = nada aplicado. Arquivo que não abre é pulado; pasta inacessível lança, quem chama decide.
+     */
+    suspend fun applyNextFromFolder(folder: String, last: String): String? = withContext(Dispatchers.IO) {
+        val images = listImages(Uri.parse(folder))
+        rotationOrder(images.keys.toList(), last).take(MAX_TRIES).firstOrNull { name ->
+            val uri = images.getValue(name)
+            isReadableImage(uri) && runCatching { applyStatic(uri, StaticTarget.HOME) }.isSuccess
+        }
+    }
+
+    /** Imagens direto na pasta (sem entrar em subpastas): nome -> uri. */
+    private fun listImages(tree: Uri): Map<String, Uri> {
+        val children = DocumentsContract.buildChildDocumentsUriUsingTree(tree, DocumentsContract.getTreeDocumentId(tree))
+        val columns = arrayOf(
+            DocumentsContract.Document.COLUMN_DOCUMENT_ID,
+            DocumentsContract.Document.COLUMN_DISPLAY_NAME,
+            DocumentsContract.Document.COLUMN_MIME_TYPE,
+        )
+        val found = mutableMapOf<String, Uri>()
+        context.contentResolver.query(children, columns, null, null, null)?.use { c ->
+            while (c.moveToNext()) {
+                val name = c.getString(1) ?: continue
+                if (isRotationImage(c.getString(2), name)) found[name] = DocumentsContract.buildDocumentUriUsingTree(tree, c.getString(0))
+            }
+        }
+        return found
+    }
+
+    /** Só lê o cabeçalho: não entrega arquivo corrompido para o sistema. */
+    private fun isReadableImage(uri: Uri): Boolean = runCatching {
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        context.contentResolver.openInputStream(uri)!!.use { BitmapFactory.decodeStream(it, null, bounds) }
+        bounds.outWidth > 0 && bounds.outHeight > 0
+    }.getOrDefault(false)
+
     private fun displayName(uri: Uri): String? = runCatching {
         context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { c ->
             if (c.moveToFirst()) c.getString(0) else null
         }
     }.getOrNull()
 }
+
+private const val MAX_TRIES = 5
 
 /** Fundo do Glitch no bloqueio. */
 object LockFiles {

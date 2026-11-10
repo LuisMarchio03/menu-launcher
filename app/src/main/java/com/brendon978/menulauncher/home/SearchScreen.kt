@@ -32,6 +32,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -61,6 +62,7 @@ import com.brendon978.menulauncher.settings.LauncherSettings
 fun SearchScreen(
     apps: List<AppEntry>,
     settings: LauncherSettings,
+    strokeColor: Int,
     renderer: IconRenderer,
     onLaunch: (AppEntry) -> Unit,
     onAppLongPress: (AppEntry) -> Unit,
@@ -74,13 +76,14 @@ fun SearchScreen(
         value = if (settings.searchContacts) searchContacts(context, query) else emptyList()
     }
     val focus = remember { FocusRequester() }
+    val look = settings.rowLook
     LaunchedEffect(Unit) { focus.requestFocus() }
 
     Column(
         verticalArrangement = Arrangement.Bottom,
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xE60C0C0E))
+            .background(com.brendon978.menulauncher.home.overlayBackground(com.brendon978.menulauncher.home.LocalGlass.current, solidAlpha = .9f))
             .statusBarsPadding()
             .navigationBarsPadding()
             .imePadding()
@@ -94,21 +97,21 @@ fun SearchScreen(
                 AppRow(
                     entry = entry,
                     override = settings.iconOverrides[entry.key],
-                    color = settings.strokeColor,
+                    look = look,
                     renderer = renderer,
                     onClick = { onLaunch(entry) },
                     onLongClick = { onAppLongPress(entry) },
                 )
             }
         }
-        val strokeColor = Color(settings.strokeColor)
+        val lineColor = Color(strokeColor)
         contacts.forEach { (name, uri) ->
-            ResultLine("Contato · $name", strokeColor) {
+            ResultLine("Contato · $name", lineColor) {
                 runCatching { context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, uri).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)) }
             }
         }
         system.forEach { t ->
-            ResultLine("Ajuste · ${t.label}", strokeColor) {
+            ResultLine("Ajuste · ${t.label}", lineColor) {
                 runCatching { context.startActivity(android.content.Intent(t.action).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)) }
             }
         }
@@ -119,7 +122,7 @@ fun SearchScreen(
         math?.let { r ->
             Text(
                 "= $r",
-                color = strokeColor,
+                color = lineColor,
                 fontSize = 30.sp,
                 fontWeight = androidx.compose.ui.text.font.FontWeight.Light,
                 modifier = Modifier
@@ -135,7 +138,7 @@ fun SearchScreen(
         if (query.isNotBlank() && math == null) {
             Text(
                 "Buscar “${query.trim()}” na web",
-                color = strokeColor.copy(alpha = .8f),
+                color = lineColor.copy(alpha = .8f),
                 fontSize = 14.sp,
                 maxLines = 1,
                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
@@ -148,7 +151,7 @@ fun SearchScreen(
         SearchField(
             value = query,
             onValueChange = { query = it },
-            color = Color(settings.strokeColor),
+            color = lineColor,
             onGo = { results.firstOrNull()?.let(onLaunch) },
             modifier = Modifier
                 .padding(top = 8.dp)
@@ -201,7 +204,7 @@ private fun SearchField(
         value = value,
         onValueChange = onValueChange,
         singleLine = true,
-        textStyle = TextStyle(color = color, fontSize = 17.sp),
+        textStyle = LocalTextStyle.current.merge(TextStyle(color = color, fontSize = 17.sp)),
         cursorBrush = SolidColor(color),
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
         keyboardActions = KeyboardActions(onGo = { onGo() }),
@@ -239,6 +242,7 @@ private fun SearchPillFrame(
     inner: @Composable () -> Unit,
 ) {
     val shape = RoundedCornerShape(28.dp)
+    val lw = LocalLineScale.current
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier
@@ -247,12 +251,12 @@ private fun SearchPillFrame(
             .clip(shape)
             .then(if (onClick != null) Modifier.clickable(onClickLabel = "Buscar app", onClick = onClick) else Modifier)
             .background(Color.White.copy(alpha = 0.08f))
-            .border(1.dp, color.copy(alpha = 0.3f), shape)
+            .border(LocalBorderWidth.current, color.copy(alpha = 0.3f), shape)
             .padding(start = 18.dp, end = 6.dp),
     ) {
         Canvas(Modifier.size(18.dp)) {
             val w = size.width
-            val stroke = w * 0.1f
+            val stroke = w * 0.1f * lw
             val c = color.copy(alpha = 0.7f)
             drawCircle(c, radius = w * 0.33f, center = Offset(w * 0.42f, w * 0.42f), style = Stroke(stroke))
             drawLine(c, Offset(w * 0.67f, w * 0.67f), Offset(w * 0.92f, w * 0.92f), stroke, StrokeCap.Round)
@@ -273,8 +277,8 @@ private fun SearchPillFrame(
                 Canvas(Modifier.size(12.dp)) {
                     val w = size.width
                     val c = color.copy(alpha = 0.7f)
-                    drawLine(c, Offset(0f, 0f), Offset(w, w), w * 0.14f, StrokeCap.Round)
-                    drawLine(c, Offset(w, 0f), Offset(0f, w), w * 0.14f, StrokeCap.Round)
+                    drawLine(c, Offset(0f, 0f), Offset(w, w), w * 0.14f * lw, StrokeCap.Round)
+                    drawLine(c, Offset(w, 0f), Offset(0f, w), w * 0.14f * lw, StrokeCap.Round)
                 }
             }
         }

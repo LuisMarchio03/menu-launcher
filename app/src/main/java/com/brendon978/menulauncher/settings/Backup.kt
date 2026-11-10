@@ -1,6 +1,7 @@
 package com.brendon978.menulauncher.settings
 
 import com.brendon978.menulauncher.apps.AppKey
+import com.brendon978.menulauncher.wallpaper.WallpaperInterval
 import java.io.StringReader
 import java.io.StringWriter
 import java.util.Properties
@@ -12,6 +13,7 @@ import java.util.Properties
 object Backup {
     private const val HEADER = "menu-launcher-backup"
     private const val SEP = "\t"
+    private const val LOOK_PREFIX = "look."
 
     fun encode(s: LauncherSettings, extra: Map<String, String> = emptyMap()): String {
         val p = Properties()
@@ -19,6 +21,9 @@ object Backup {
         p["mode"] = s.mode.name
         p["favorites"] = s.favorites.joinToString("\n") { it.encode() }
         p["strokeColor"] = s.strokeColor.toString()
+        p["strokeAuto"] = s.strokeAuto.name
+        p["strokeDay"] = s.strokeDay.toString()
+        p["strokeNight"] = s.strokeNight.toString()
         p["iconOverrides"] = s.iconOverrides.entries.joinToString("\n") { "${it.key.encode()}$SEP${it.value}" }
         p["showMusic"] = s.showMusic.toString()
         p["firstRunDone"] = s.firstRunDone.toString()
@@ -32,9 +37,18 @@ object Backup {
         p["hiddenApps"] = s.hiddenApps.joinToString("\n") { it.encode() }
         p["folders"] = s.folders.entries.joinToString("\n") { (name, keys) -> name + SEP + keys.joinToString(",") { it.encode() } }
         p["doubleTapLock"] = s.doubleTapLock.toString()
+        p["gestureDown"] = s.gestureDown.encode()
+        p["gestureUp"] = s.gestureUp.encode()
+        s.gestureDoubleTap?.let { p["gestureDoubleTap"] = it.encode() }
         p["showMostUsed"] = s.showMostUsed.toString()
         p["usage"] = s.usage.entries.joinToString("\n") { "${it.key.encode()}$SEP${it.value}" }
+        p["swipeAppActions"] = s.swipeAppActions.toString()
         p["showQuickActions"] = s.showQuickActions.toString()
+        p["showNote"] = s.showNote.toString()
+        p["noteText"] = s.noteText
+        p["showScreenTime"] = s.showScreenTime.toString()
+        p["showContacts"] = s.showContacts.toString()
+        p["contactShortcuts"] = ContactOps.encode(s.contactShortcuts)
         p["showNextEvent"] = s.showNextEvent.toString()
         p["timeProfiles"] = s.timeProfiles.toString()
         p["profileFavorites"] = s.profileFavorites.entries.joinToString("\n") { (name, keys) -> name + SEP + keys.joinToString(",") { it.encode() } }
@@ -43,6 +57,12 @@ object Backup {
         p["glitchMischief"] = s.glitchMischief.toString()
         p["birthday"] = s.birthday
         p["weatherCity"] = s.weatherCity
+        p["wallpaperFolder"] = s.wallpaperFolder
+        p["wallpaperInterval"] = s.wallpaperInterval.name
+        p["wallpaperLastChange"] = s.wallpaperLastChange.toString()
+        p["wallpaperLastImage"] = s.wallpaperLastImage
+        p["glitchBuddy"] = s.glitchBuddy
+        SettingsCodec.FIELDS.forEach { p[LOOK_PREFIX + it.name] = it.write(s) }
         extra.forEach { (k, v) -> p[k] = v }
         return StringWriter().also { p.store(it, "menu-launcher") }.toString()
     }
@@ -59,6 +79,9 @@ object Backup {
             mode = runCatching { HomeMode.valueOf(p.getProperty("mode")) }.getOrDefault(d.mode),
             favorites = lines("favorites").mapNotNull { AppKey.decode(it) },
             strokeColor = p.getProperty("strokeColor")?.toIntOrNull() ?: d.strokeColor,
+            strokeAuto = runCatching { StrokeAuto.valueOf(p.getProperty("strokeAuto")) }.getOrDefault(d.strokeAuto),
+            strokeDay = p.getProperty("strokeDay")?.toIntOrNull() ?: d.strokeDay,
+            strokeNight = p.getProperty("strokeNight")?.toIntOrNull() ?: d.strokeNight,
             iconOverrides = pairs("iconOverrides"),
             showMusic = p.getProperty("showMusic")?.toBooleanStrictOrNull() ?: d.showMusic,
             firstRunDone = p.getProperty("firstRunDone")?.toBooleanStrictOrNull() ?: d.firstRunDone,
@@ -75,9 +98,18 @@ object Backup {
                 if (i <= 0) null else l.substring(0, i) to l.substring(i + 1).split(",").mapNotNull { AppKey.decode(it) }
             }.toMap(),
             doubleTapLock = p.getProperty("doubleTapLock")?.toBooleanStrictOrNull() ?: d.doubleTapLock,
+            gestureDown = GestureChoice.decode(p.getProperty("gestureDown")) ?: d.gestureDown,
+            gestureUp = GestureChoice.decode(p.getProperty("gestureUp")) ?: d.gestureUp,
+            gestureDoubleTap = GestureChoice.decode(p.getProperty("gestureDoubleTap")),
             showMostUsed = p.getProperty("showMostUsed")?.toBooleanStrictOrNull() ?: d.showMostUsed,
             usage = pairs("usage").mapNotNull { (k, v) -> v.toFloatOrNull()?.let { k to it } }.toMap(),
+            swipeAppActions = p.getProperty("swipeAppActions")?.toBooleanStrictOrNull() ?: d.swipeAppActions,
             showQuickActions = p.getProperty("showQuickActions")?.toBooleanStrictOrNull() ?: d.showQuickActions,
+            showNote = p.getProperty("showNote")?.toBooleanStrictOrNull() ?: d.showNote,
+            noteText = p.getProperty("noteText") ?: d.noteText,
+            showScreenTime = p.getProperty("showScreenTime")?.toBooleanStrictOrNull() ?: d.showScreenTime,
+            showContacts = p.getProperty("showContacts")?.toBooleanStrictOrNull() ?: d.showContacts,
+            contactShortcuts = ContactOps.decode(p.getProperty("contactShortcuts")),
             showNextEvent = p.getProperty("showNextEvent")?.toBooleanStrictOrNull() ?: d.showNextEvent,
             timeProfiles = p.getProperty("timeProfiles")?.toBooleanStrictOrNull() ?: d.timeProfiles,
             profileFavorites = lines("profileFavorites").mapNotNull { l ->
@@ -89,7 +121,14 @@ object Backup {
             glitchMischief = p.getProperty("glitchMischief")?.toBooleanStrictOrNull() ?: d.glitchMischief,
             birthday = p.getProperty("birthday") ?: d.birthday,
             weatherCity = p.getProperty("weatherCity") ?: d.weatherCity,
-        )
+            wallpaperFolder = p.getProperty("wallpaperFolder") ?: d.wallpaperFolder,
+            wallpaperInterval = runCatching { WallpaperInterval.valueOf(p.getProperty("wallpaperInterval")) }.getOrDefault(d.wallpaperInterval),
+            wallpaperLastChange = p.getProperty("wallpaperLastChange")?.toLongOrNull() ?: d.wallpaperLastChange,
+            wallpaperLastImage = p.getProperty("wallpaperLastImage") ?: d.wallpaperLastImage,
+            glitchBuddy = p.getProperty("glitchBuddy") ?: d.glitchBuddy,
+        ).let { base ->
+            SettingsCodec.FIELDS.fold(base) { s, f -> p.getProperty(LOOK_PREFIX + f.name)?.let { f.read(s, it) } ?: s }
+        }
     }
 
     /** As chaves extras (memória do Glitch), para quem souber ler. */

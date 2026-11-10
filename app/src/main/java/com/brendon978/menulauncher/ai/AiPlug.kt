@@ -19,6 +19,9 @@ fun holdAction(acceptsCommands: Boolean): HoldAction = if (acceptsCommands) Hold
 /** Posição do símbolo em fração da tela, sempre dentro dela. */
 fun clampFraction(v: Float): Float = if (v.isNaN()) 0.5f else v.coerceIn(0f, 1f)
 
+/** Posição num eixo do mapa de Ajustes, em fração da tela. */
+fun positionFraction(pos: Float, size: Float): Float = if (size <= 0f) 0.5f else clampFraction(pos / size)
+
 /** IA desinstalada: desconecta. */
 fun pruneAi(s: LauncherSettings, installedPackages: Set<String>): LauncherSettings =
     if (s.aiPackage == null || s.aiPackage in installedPackages) s

@@ -22,4 +22,12 @@ class OutlineTracerTest {
     @Test fun transparenteDaVazio() {
         assertTrue(OutlineTracer.trace(IntArray(size * size), size, 14).none { it })
     }
+
+    @Test fun cantoDoTracoEhRedondo() {
+        // um ponto só: o traço em volta dele é um disco, não um quadrado
+        val ponto = IntArray(size * size).also { it[96 * size + 96] = 255 }
+        val out = OutlineTracer.trace(ponto, size, 8)
+        assertTrue("na reta, a 4px, é traço", out[96 * size + 100])
+        assertFalse("na diagonal, a 4px de cada lado (5,7px), já não é", out[100 * size + 100])
+    }
 }

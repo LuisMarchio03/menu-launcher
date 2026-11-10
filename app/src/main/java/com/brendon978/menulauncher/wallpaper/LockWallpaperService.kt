@@ -73,6 +73,7 @@ class LockWallpaperService : WallpaperService() {
         private var debugNight = false
         private var hour = 12
         private var charging = false
+        private var settings: com.brendon978.menulauncher.settings.LauncherSettings? = null
         private var special: SpecialDay? = null
         private var debugSpecial: SpecialDay? = null
         private var birthday = ""
@@ -112,7 +113,8 @@ class LockWallpaperService : WallpaperService() {
             }
             scope.launch {
                 SettingsRepository(applicationContext).settings.collect { s ->
-                    stroke = Color(s.strokeColor)
+                    settings = s
+                    stroke = strokeNow()
                     accessory = runCatching { Accessory.valueOf(s.glitchAccessory) }.getOrDefault(Accessory.NONE)
                     birthday = s.birthday
                 }
@@ -158,7 +160,16 @@ class LockWallpaperService : WallpaperService() {
             super.onDestroy()
         }
 
+        /** Segue a cor automática da tela inicial, quando ela estiver ligada. */
+        private fun strokeNow(): Color {
+            val s = settings ?: return stroke
+            val wall = android.app.WallpaperManager.getInstance(this@LockWallpaperService)
+                .getWallpaperColors(android.app.WallpaperManager.FLAG_SYSTEM)?.let(::wallpaperBase)
+            return Color(com.brendon978.menulauncher.settings.effectiveStroke(s, Calendar.getInstance().get(Calendar.HOUR_OF_DAY), wall))
+        }
+
         private fun readMood(now: Long) {
+            stroke = strokeNow()
             moodAt = now
             val battery = registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
             val level = battery?.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)?.takeIf { it >= 0 }
@@ -250,7 +261,7 @@ class LockWallpaperService : WallpaperService() {
                 val y = c.height * LOCK_ROBOT_FEET - h
                 if (charging) drawCable(c, x + w * .5f, y + h * .62f, w, stroke)
                 canvasScope.draw(Density(1f), LayoutDirection.Ltr, ComposeCanvas(c), Size(w, h)) {
-                    translate(x, y) { drawRobot(stroke, pose) }
+                    translate(x, y) { drawRobot(stroke, pose, 1f) }
                 }
             } finally {
                 runCatching { holder.unlockCanvasAndPost(c) }

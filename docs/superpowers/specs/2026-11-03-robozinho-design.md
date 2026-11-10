@@ -162,3 +162,37 @@ Dormindo das 23h às 7h, na tela inicial e no bloqueio, ele usa gorrinho com pom
 - **Falar com a IA**: pelo menu do Glitch; ele mostra "Ouvindo..." e "Pensando...", e a resposta volta no balão.
 - **Bloqueio**: cabinho carregando e cartinha quando chega notificação.
 
+## Shows (2026-11-04)
+
+Números curtos que ele faz sozinho, sorteados sem repetir o último. Ficam em `pet/GlitchShows.kt`.
+
+- **Clones**: 3 Glitches confusos. Em cerca de 70% das vezes um vira do mal (contorno vermelho, única cor fora do traço), os clones do bem ajudam e ele finaliza com golpe sorteado: espada, pistola de raios, varinha, AK (aqui ela atira, pedido do Brendon, só contra o clone), marreta ou foguete. O clone vira pixels e todos somem.
+- **Entrada** ao voltar depois de 1 min fora: paraquedas, queda ou caixa.
+- **Veículos**: jetpack, skate, patinete.
+- **Rotina**: café de manhã, flexões, regar a plantinha (uma vez por dia, 6 estágios, murcha com 3 dias sem água).
+- **Torrinha**: um bloco por show; passou de 6, desaba.
+- **Mágica**: tira algo da cartola; às vezes falha e ele some.
+- **Grafite**: rabisca um desenho e fica até você esfregar o dedo por cima.
+- **Bichinho**: mini drone ou gato-robô, nos Ajustes; às vezes escapa.
+- **Bloqueio**: também olha para a câmera e cochila em pé.
+
+- **Brincar com o bichinho** (só com bichinho ligado): pega-pega indo e voltando, ou carinho com ele colado na mão.
+
+## Mais interação (2026-11-04)
+
+- **Peteleco**: arrastar rápido em cima dele empurra; ele tomba e levanta.
+- **Cócegas**: esfregar muito rápido faz ele rir; sobe um pouco o vínculo.
+- **Tocar no bichinho**: ele reage, só quando o bichinho não está sobre nada tocável.
+- **Bichinho**: dorme junto à noite (drone pousa, gato enrola) e dança junto com música.
+- **Memória**: quatro blocos, sequência crescente, recorde salvo.
+- **Voo**: tocar sobe; desviar dos muros, recorde salvo.
+- **Falas soltas**: a cada 2 a 5 min, conforme hora e vínculo; segue o interruptor de comentários.
+
+## Glitch e bichinho (2026-11-04)
+
+Sozinhos: buscar a bolinha, bichinho na cabeça dele, roubar o parafuso (ele corre atrás), susto, derrubar a torrinha (com 3 ou mais blocos) e cochilo juntos. Um reage ao outro: consola quando ele está triste, foge quando ele está bravo e ajuda na caça aos bugs. Com você: vai atrás do seu dedo por um instante depois de cada toque, responde ao toque com a própria voz e, com carinho, mostra coração e o Glitch às vezes fica com ciúme.
+
+## Visita de outro Glitch (2026-11-04)
+
+Em `pet/GlitchVisit.kt`. O visitante chega pela borda com o nome, a cor, o acessório e o bichinho dele, faz de 3 a 4 cenas sorteadas com diálogo (toca aqui, dança, pega-pega, jokenpô, bola, exibir acessório, discussão, foto) e vai embora. Por enquanto só existe por comando de teste; o servidor vai dizer quem chegou.
+
