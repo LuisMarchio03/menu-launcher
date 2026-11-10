@@ -42,7 +42,7 @@ fun GesturesSection(
     val usesLock = listOf(settings.gestureDown, settings.gestureUp, settings.doubleTapChoice()).any { it.action == GestureAction.LOCK }
     if (usesLock) {
         Text(
-            "Apagar a tela precisa ligar o menu-launcher em Configurações → Acessibilidade (ele só apaga a tela, não lê nada).",
+            "Apagar a tela usa a acessibilidade do menu-launcher (ela só apaga a tela, não lê nada). Veja em Ajustes → Acessibilidade e tela padrão.",
             color = Color.White.copy(alpha = .5f),
             fontSize = 12.sp,
             modifier = Modifier.padding(top = 8.dp),

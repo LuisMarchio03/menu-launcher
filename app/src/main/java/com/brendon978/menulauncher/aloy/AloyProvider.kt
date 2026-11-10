@@ -81,7 +81,8 @@ private fun currentSettings(context: Context) = runBlocking { SettingsRepository
 private class AndroidAloySystem(private val context: Context) : AloySystem {
     override fun notifications(): Boolean = LauncherAccessibility.notifications(context)
 
-    override fun lock(): Boolean = LauncherAccessibility.lock()
+    // Roda na thread do binder: esperar o serviço ligar sob demanda não trava a tela.
+    override fun lock(): Boolean = runBlocking { LauncherAccessibility.lock(context) }
 
     override fun setMode(mode: HomeMode) {
         runBlocking { SettingsRepository(context).update { it.copy(mode = mode) } }

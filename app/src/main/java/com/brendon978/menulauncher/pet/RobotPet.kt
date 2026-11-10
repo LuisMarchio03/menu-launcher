@@ -1685,7 +1685,7 @@ fun RobotPet(
             for (n in listOf("3", "2", "1")) { say(n, 900); delay(900) }
             speechUntil = 0L
             delay(350)
-            if (!com.brendon978.menulauncher.gestures.LauncherAccessibility.screenshot()) {
+            if (!com.brendon978.menulauncher.gestures.LauncherAccessibility.screenshot(context)) {
                 poseUntil = 0L
                 say("Liga a acessibilidade do launcher pra eu tirar foto!", 3_000)
             } else {

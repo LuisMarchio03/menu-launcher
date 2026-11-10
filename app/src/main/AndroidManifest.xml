@@ -22,6 +22,8 @@
     <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" tools:ignore="ProtectedPermissions" />
 
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- Dada uma vez por adb: liga a acessibilidade só no instante de bloquear ou tirar print (ver LauncherAccessibility). -->
+    <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS" tools:ignore="ProtectedPermissions" />
 
 
     <queries>

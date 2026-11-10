@@ -459,9 +459,14 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun lockScreen() {
-        if (!LauncherAccessibility.lock()) {
-            android.widget.Toast.makeText(this, "Ligue o menu-launcher em Acessibilidade para apagar a tela", android.widget.Toast.LENGTH_LONG).show()
-            startActivity(Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS))
+        lifecycleScope.launch {
+            if (LauncherAccessibility.lock(this@MainActivity)) return@launch
+            if (LauncherAccessibility.onDemand(this@MainActivity)) {
+                toast("Não consegui ligar a acessibilidade para apagar a tela")
+            } else {
+                android.widget.Toast.makeText(this@MainActivity, "Ligue o menu-launcher em Acessibilidade para apagar a tela", android.widget.Toast.LENGTH_LONG).show()
+                startActivity(Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS))
+            }
         }
     }
 
@@ -519,6 +524,7 @@ class MainActivity : ComponentActivity() {
         isDefaultHome.value = getSystemService(RoleManager::class.java).isRoleHeld(RoleManager.ROLE_HOME)
         hasMusicAccess.value = musicRepo.hasAccess()
         hasUsageStats.value = hasUsageAccess(this)
+        LauncherAccessibility.offIfOnDemand(this)
         rotateWallpaperIfDue()
         refreshWallpaperColor()
     }

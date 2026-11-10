@@ -306,6 +306,11 @@ fun GridSection(settings: LauncherSettings, onChange: OnChange) {
 fun AccessibilityRow() {
     val context = LocalContext.current
     val on by LauncherAccessibility.isOn.collectAsState()
+    if (LauncherAccessibility.onDemand(context)) {
+        Text("Acessibilidade sob demanda: liga só no instante de apagar a tela ou tirar print", color = DIM, modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp))
+        Hint("Fica desligada o resto do tempo, então apps de banco não reclamam.")
+        return
+    }
     Text(
         if (on) "Acessibilidade ligada: bloquear e notificações funcionam" else "Ligar a acessibilidade (para bloquear a tela e abrir as notificações)",
         color = if (on) DIM else WHITE,
@@ -315,6 +320,7 @@ fun AccessibilityRow() {
             .padding(vertical = 12.dp),
     )
     if (!on) Hint("Em Acessibilidade > Apps instalados > menu-launcher. Se a opção estiver bloqueada, abra Informações do app > ⋮ > Permitir configurações restritas.")
+    Hint("Ligada o tempo todo, apps de banco (Nubank e outros) podem bloquear. Para ela ligar só na hora, rode uma vez no PC: adb shell pm grant ${context.packageName} android.permission.WRITE_SECURE_SETTINGS")
 }
 
 @Composable
