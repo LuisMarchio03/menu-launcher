@@ -16,6 +16,7 @@ object SettingsIndex {
         "Acabamento (detalhes, títulos, respiro)" to "LOOK" to "acabamento detalhes titulos respiro espaco peso vidro sombra veu atalhos movimento animacao",
         "Cor do traço" to "LOOK" to "cor traco automatica papel de parede dia noite hex",
         "Ícones: espessura e sombra" to "LOOK" to "icones espessura traco borda sombra letra",
+        "Forma dos ícones (placa, círculo, quadrado)" to "LOOK" to "icones forma placa circulo quadrado contorno aloy atlas fundo",
         "Fonte" to "LOOK" to "fonte letra manrope outfit serifada mono condensada",
         "Barra de letras" to "LOOK" to "barra letras alfabeto lado arco",
         "Grade: colunas e nomes" to "LOOK" to "grade colunas nomes",

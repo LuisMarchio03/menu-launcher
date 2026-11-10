@@ -12,8 +12,11 @@ enum class ListAlign { START, CENTER, END }
 /** Onde o bloco de apps fica na altura que sobra embaixo do relógio. */
 enum class BlockPosition { BOTTOM, MIDDLE, TOP }
 
-/** Ícone só no contorno (o original) ou dentro de um círculo ou quadrado cheio e translúcido. */
-enum class IconShape { OUTLINE, CIRCLE, SQUARE }
+/**
+ * Ícone só no contorno (o original), dentro de um círculo ou quadrado cheio e translúcido, ou em placa
+ * escura opaca no padrão da ALOY e do Atlas (símbolo na cor do traço, ver plateColors).
+ */
+enum class IconShape { OUTLINE, CIRCLE, SQUARE, PLATE }
 
 /** Fino e grande (o original), negrito com horas sobre minutos, analógico de contorno, por extenso. */
 enum class ClockStyle { THIN, STACKED, ANALOG, WORDS, SEGMENTS, TERMINAL, GIANT, ANALOG_MINIMAL, WEEKDAY }
@@ -201,6 +204,8 @@ data class LauncherSettings(
     val listAlign: ListAlign = ListAlign.START,
     val blockPosition: BlockPosition = BlockPosition.BOTTOM,
     val iconShape: IconShape = IconShape.OUTLINE,
+    /** Claridade da placa ([IconShape.PLATE]): 0 quase preto, 1 o escuro mais aberto. */
+    val plateLight: Float = 0.3f,
     /** Nome do app ao lado ou embaixo do ícone (desligado: só o ícone). */
     val showLabels: Boolean = true,
     /** Favoritos e cada pasta como páginas que trocam arrastando para o lado (modo uma mão). */

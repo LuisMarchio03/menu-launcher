@@ -21,6 +21,14 @@ class PolishTest {
         assertEquals(false, v.motion)
     }
 
+    @Test fun placaEClaridadeVaoNoBackup() {
+        val v = Backup.decode(Backup.encode(LauncherSettings(iconShape = IconShape.PLATE, plateLight = 0.65f)))!!
+        assertEquals(IconShape.PLATE, v.iconShape)
+        assertEquals(0.65f, v.plateLight)
+        val fora = Backup.encode(LauncherSettings()).replace(Regex("look.plate_light=.*"), "look.plate_light=-3")
+        assertEquals(0f, Backup.decode(fora)!!.plateLight)
+    }
+
     @Test fun veuForaDaFaixaFicaNoLimite() {
         val text = Backup.encode(LauncherSettings()).replace(Regex("look.edge_veil=.*"), "look.edge_veil=7")
         assertEquals(1f, Backup.decode(text)!!.edgeVeil)

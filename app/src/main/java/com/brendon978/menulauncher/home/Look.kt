@@ -80,8 +80,11 @@ val FontChoice.family: FontFamily
         FontChoice.OUTFIT -> OUTFIT
     }
 
-/** Forma em volta dos ícones de app (contorno puro, círculo ou quadrado translúcido). */
+/** Forma em volta dos ícones de app (contorno puro, círculo ou quadrado translúcido, placa). */
 val LocalIconShape = compositionLocalOf { com.brendon978.menulauncher.settings.IconShape.OUTLINE }
+
+/** Claridade da placa dos ícones, de 0 a 1 (ver plateColors). */
+val LocalPlateLight = compositionLocalOf { 0.3f }
 
 /** Borda fina dos contornos (1 dp no original), com a espessura dos ajustes. */
 val LocalBorderWidth = compositionLocalOf { 1.dp }
@@ -101,6 +104,7 @@ fun ProvideLauncherText(settings: LauncherSettings, content: @Composable () -> U
     }
     CompositionLocalProvider(
         LocalIconShape provides settings.iconShape,
+        LocalPlateLight provides settings.plateLight,
         LocalBorderWidth provides 1.dp * settings.borderScale,
         LocalLineScale provides lineScale(settings.borderScale),
     ) { ProvideTextStyle(style, content) }

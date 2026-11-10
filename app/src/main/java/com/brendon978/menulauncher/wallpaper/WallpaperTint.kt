@@ -37,7 +37,7 @@ fun legibleStroke(argb: Int, darkText: Boolean): Int {
     return c
 }
 
-private fun luminance(c: Int): Double {
+internal fun luminance(c: Int): Double {
     fun ch(v: Int): Double {
         val x = v / 255.0
         return if (x <= 0.03928) x / 12.92 else ((x + 0.055) / 1.055).pow(2.4)
@@ -45,7 +45,7 @@ private fun luminance(c: Int): Double {
     return 0.2126 * ch(c shr 16 and 0xFF) + 0.7152 * ch(c shr 8 and 0xFF) + 0.0722 * ch(c and 0xFF)
 }
 
-private fun toHsl(c: Int): Triple<Double, Double, Double> {
+internal fun toHsl(c: Int): Triple<Double, Double, Double> {
     val r = (c shr 16 and 0xFF) / 255.0
     val g = (c shr 8 and 0xFF) / 255.0
     val b = (c and 0xFF) / 255.0
@@ -63,7 +63,7 @@ private fun toHsl(c: Int): Triple<Double, Double, Double> {
     return Triple(h, s, l)
 }
 
-private fun fromHsl(h: Double, s: Double, l: Double): Int {
+internal fun fromHsl(h: Double, s: Double, l: Double): Int {
     val c = (1 - abs(2 * l - 1)) * s
     val x = c * (1 - abs((h / 60).mod(2.0) - 1))
     val m = l - c / 2

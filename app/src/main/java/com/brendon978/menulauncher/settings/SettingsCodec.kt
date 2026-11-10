@@ -71,6 +71,7 @@ object SettingsCodec {
         enumField("list_align", { it.listAlign }) { s, v -> s.copy(listAlign = v) },
         enumField("block_position", { it.blockPosition }) { s, v -> s.copy(blockPosition = v) },
         enumField("icon_shape", { it.iconShape }) { s, v -> s.copy(iconShape = v) },
+        Field("plate_light", { it.plateLight.toString() }, { s, v -> v.toFloatOrNull()?.let { s.copy(plateLight = it.coerceIn(0f, 1f)) } }),
         boolField("show_labels", { it.showLabels }) { s, v -> s.copy(showLabels = v) },
         boolField("favorite_pages", { it.favoritePages }) { s, v -> s.copy(favoritePages = v) },
         Field(

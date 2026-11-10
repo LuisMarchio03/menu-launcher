@@ -168,7 +168,14 @@ fun ShapeSection(settings: LauncherSettings, onChange: OnChange) {
         onChange { it.copy(blockPosition = v) }
     }
     SubLabel("Ícone")
-    OptionChips(listOf("Só contorno" to IconShape.OUTLINE, "Círculo" to IconShape.CIRCLE, "Quadrado" to IconShape.SQUARE), settings.iconShape) { v -> onChange { it.copy(iconShape = v) } }
+    OptionChips(
+        listOf("Só contorno" to IconShape.OUTLINE, "Círculo" to IconShape.CIRCLE, "Quadrado" to IconShape.SQUARE, "Placa" to IconShape.PLATE),
+        settings.iconShape,
+    ) { v -> onChange { it.copy(iconShape = v) } }
+    if (settings.iconShape == IconShape.PLATE) {
+        ScaleSlider("Claridade da placa", settings.plateLight, 0f..1f) { v -> onChange { it.copy(plateLight = v) } }
+        Hint("Placa escura no tom do traço, como os ícones da ALOY e do Atlas. O desenho fica na cor do traço e clareia sozinho se a placa não deixar ler.")
+    }
     SwitchRow("Nome dos apps", settings.showLabels) { v -> onChange { it.copy(showLabels = v) } }
     SwitchRow("Páginas: favoritos e pastas lado a lado", settings.favoritePages) { v -> onChange { it.copy(favoritePages = v) } }
     Hint("No modo uma mão, arraste a lista para o lado para trocar entre os favoritos e cada pasta.")

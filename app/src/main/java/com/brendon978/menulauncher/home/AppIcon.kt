@@ -2,6 +2,12 @@ package com.brendon978.menulauncher.home
 
 import androidx.compose.ui.Alignment
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.remember
+import com.brendon978.menulauncher.icons.plateColors
+import com.brendon978.menulauncher.settings.IconShape
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.runtime.collectAsState
@@ -46,9 +52,19 @@ fun AppIcon(
     shadow: Boolean = false,
     tracksBadge: Boolean = false,
 ) {
-    val px = with(LocalDensity.current) { (if (LocalIconShape.current == com.brendon978.menulauncher.settings.IconShape.OUTLINE) size else size * .72f).roundToPx() }
-    val bmp by produceState<ImageBitmap?>(null, entry.key, override, color, px, stroke, renderer.initialStyle) {
-        value = withContext(Dispatchers.Default) { renderer.iconFor(entry, override, px, color, stroke) }
+    // círculo, quadrado ou placa em volta: o ícone encolhe um pouco para caber com folga
+    val shape = LocalIconShape.current
+    val plateLight = LocalPlateLight.current
+    val plate = if (shape == IconShape.PLATE) remember(color, plateLight) { plateColors(color, plateLight) } else null
+    val ink = plate?.symbol ?: color
+    val inner = when (shape) {
+        IconShape.OUTLINE -> size
+        IconShape.PLATE -> size * .66f
+        else -> size * .72f
+    }
+    val px = with(LocalDensity.current) { inner.roundToPx() }
+    val bmp by produceState<ImageBitmap?>(null, entry.key, override, ink, px, stroke, renderer.initialStyle) {
+        value = withContext(Dispatchers.Default) { renderer.iconFor(entry, override, px, ink, stroke) }
     }
     // bolinha de notificação: só aparece se o app tem notificação "de verdade"
     val badges by MediaListener.badges.collectAsState()
@@ -57,17 +73,19 @@ fun AppIcon(
     // só a lista da tela inicial marca onde a bolinha está: a busca abre por cima e tem outra posição
     val tracked = badged && tracksBadge
     if (tracked) DisposableEffect(pkg) { onDispose { GlitchSignals.badgeSpots.remove(pkg) } }
-    // círculo ou quadrado translúcido em volta: o ícone encolhe um pouco para caber com folga
-    val shape = LocalIconShape.current
-    val inner = if (shape == com.brendon978.menulauncher.settings.IconShape.OUTLINE) size else size * .72f
     val backing = when (shape) {
-        com.brendon978.menulauncher.settings.IconShape.OUTLINE -> Modifier
-        com.brendon978.menulauncher.settings.IconShape.CIRCLE -> Modifier.background(Color(color).copy(alpha = .16f), androidx.compose.foundation.shape.CircleShape)
-        com.brendon978.menulauncher.settings.IconShape.SQUARE -> Modifier.background(Color(color).copy(alpha = .16f), androidx.compose.foundation.shape.RoundedCornerShape(size * .28f))
+        IconShape.OUTLINE -> Modifier
+        IconShape.CIRCLE -> Modifier.background(Color(color).copy(alpha = .16f), CircleShape)
+        IconShape.SQUARE -> Modifier.background(Color(color).copy(alpha = .16f), RoundedCornerShape(size * .28f))
+        // placa opaca no padrão da ALOY/Atlas; o aro fino a separa de papel de parede escuro
+        IconShape.PLATE -> RoundedCornerShape(size * .26f).let { r ->
+            Modifier.background(Color(plate!!.fill), r).border(Dp.Hairline, Color(plate.ring), r)
+        }
     }
     Box(Modifier.size(size).then(backing).then(if (tracked) Modifier.onGloballyPositioned { GlitchSignals.badgeSpots[pkg] = it.boundsInRoot() } else Modifier), contentAlignment = Alignment.Center) {
         bmp?.let { b ->
-            if (shadow) {
+            // a placa já separa o desenho do papel de parede: sem sombra
+            if (shadow && plate == null) {
                 Image(
                     b,
                     contentDescription = null,
@@ -82,7 +100,7 @@ fun AppIcon(
                 val r = this.size.minDimension * .17f
                 val c = Offset(this.size.width - r * .6f, r * .6f)
                 drawCircle(Color(0xFF0C0C0E), r + 1.6f, c)
-                drawCircle(Color(color), r, c)
+                drawCircle(Color(ink), r, c)
             }
         }
     }
