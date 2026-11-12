@@ -18,7 +18,7 @@ object SettingsIndex {
         "Ícones: espessura e sombra" to "LOOK" to "icones espessura traco borda sombra letra",
         "Forma dos ícones (placa, círculo, quadrado)" to "LOOK" to "icones forma placa circulo quadrado contorno aloy atlas fundo",
         "Fonte" to "LOOK" to "fonte letra manrope outfit serifada mono condensada",
-        "Barra de letras" to "LOOK" to "barra letras alfabeto lado arco",
+        "Barra de letras" to "LOOK" to "barra letras alfabeto lado arco esconder rolar aparece sempre",
         "Grade: colunas e nomes" to "LOOK" to "grade colunas nomes",
         "Mais usados, atalhos e nota" to "HOME" to "mais usados atalhos lanterna wifi nota bloco tempo de tela compromisso agenda",
         "Contatos" to "HOME" to "contatos busca pessoas atalhos",

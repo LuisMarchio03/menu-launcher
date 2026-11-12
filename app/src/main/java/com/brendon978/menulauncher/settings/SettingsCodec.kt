@@ -56,6 +56,7 @@ object SettingsCodec {
         enumField("label_style", { it.labelStyle }) { s, v -> s.copy(labelStyle = v) },
         enumField("empty_note", { it.emptyNote }) { s, v -> s.copy(emptyNote = v) },
         boolField("bar_curved", { it.barCurved }) { s, v -> s.copy(barCurved = v) },
+        enumField("bar_reveal", { it.barReveal }) { s, v -> s.copy(barReveal = v) },
         enumField("app_weight", { it.appWeight }) { s, v -> s.copy(appWeight = v) },
         scale("spacing", { it.spacing }) { s, f -> s.copy(spacing = f) },
         boolField("blur_overlays", { it.blurOverlays }) { s, v -> s.copy(blurOverlays = v) },

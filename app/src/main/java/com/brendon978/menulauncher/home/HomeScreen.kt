@@ -295,17 +295,21 @@ private fun Modifier.edgeVeil(strength: Float): Modifier = drawBehind {
  */
 @Composable
 private fun Modifier.enterIn(index: Int, trigger: Int, enabled: Boolean): Modifier {
-    if (!enabled) return this
+    if (!rememberMotion(enabled)) return this
     val p = remember { androidx.compose.animation.core.Animatable(1f) }
     LaunchedEffect(trigger) {
         if (trigger == 0) return@LaunchedEffect
         p.snapTo(0f)
-        kotlinx.coroutines.delay(60L * index)
-        p.animateTo(1f, androidx.compose.animation.core.tween(320, easing = androidx.compose.animation.core.FastOutSlowInEasing))
+        kotlinx.coroutines.delay(70L * index)
+        p.animateTo(1f, androidx.compose.animation.core.tween(340, easing = EnterEasing))
     }
-    val lift = with(LocalDensity.current) { 12.dp.toPx() }
+    val lift = with(LocalDensity.current) { 14.dp.toPx() }
     return graphicsLayer {
         alpha = p.value
         translationY = (1f - p.value) * lift
+        // chega quase no tamanho, sem "pulo": só um respiro de 2%
+        val s = .98f + .02f * p.value
+        scaleX = s
+        scaleY = s
     }
 }

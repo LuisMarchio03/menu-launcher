@@ -55,12 +55,17 @@ fun GridMode(
     val items = remember(apps, settings.folders) { FolderOps.gridItems(apps, settings.folders) }
     var openFolder by remember { mutableStateOf<String?>(null) }
     val color = Color(strokeColor)
+    val gridState = androidx.compose.foundation.lazy.grid.rememberLazyGridState()
     Column(modifier.fillMaxSize()) {
         LazyVerticalGrid(
+            state = gridState,
             columns = if (settings.gridColumns > 0) GridCells.Fixed(settings.gridColumns)
             else GridCells.Adaptive(76.dp * settings.iconScale.coerceAtLeast(1f)),
             verticalArrangement = Arrangement.spacedBy(18.dp),
-            modifier = Modifier.weight(1f).padding(horizontal = 14.dp),
+            modifier = Modifier
+                .weight(1f)
+                .padding(horizontal = 14.dp)
+                .fadingEdges(gridState.canScrollBackward, gridState.canScrollForward, 36.dp),
         ) {
             items(items, key = { if (it is GridItem.App) it.entry.key.encode() else "pasta:" + it.label }) { item ->
                 when (item) {
@@ -118,11 +123,13 @@ fun GridMode(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun GridCell(label: String, settings: LauncherSettings, onClick: () -> Unit, onLongClick: () -> Unit, icon: @Composable () -> Unit) {
+    val press = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.combinedClickable(onClick = onClick, onLongClick = onLongClick),
+        modifier = Modifier.combinedClickable(interactionSource = press, indication = null, onClick = onClick, onLongClick = onLongClick),
     ) {
-        Box(Modifier.size(settings.gridCellSize), contentAlignment = Alignment.Center) { icon() }
+        // só o ícone encolhe ao toque; o nome fica parado e legível
+        Box(Modifier.size(settings.gridCellSize).pressScale(press, rememberMotion(settings.motion), to = .86f), contentAlignment = Alignment.Center) { icon() }
         if (settings.gridLabels && settings.showLabels) {
             Spacer(Modifier.height(6.dp))
             Text(

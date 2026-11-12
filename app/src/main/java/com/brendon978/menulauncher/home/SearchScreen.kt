@@ -42,6 +42,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.animation.core.tween
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
@@ -94,6 +95,8 @@ fun SearchScreen(
             modifier = Modifier.weight(1f, fill = false),
         ) {
             items(results, key = { it.key.encode() }) { entry ->
+                // ao digitar, os resultados escorregam para o novo lugar em vez de pular
+                Box(Modifier.animateItem(fadeInSpec = tween(180), placementSpec = tween(220, easing = EnterEasing), fadeOutSpec = tween(120))) {
                 AppRow(
                     entry = entry,
                     override = settings.iconOverrides[entry.key],
@@ -102,6 +105,7 @@ fun SearchScreen(
                     onClick = { onLaunch(entry) },
                     onLongClick = { onAppLongPress(entry) },
                 )
+                }
             }
         }
         val lineColor = Color(strokeColor)
