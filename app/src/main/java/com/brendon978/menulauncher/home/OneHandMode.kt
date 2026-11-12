@@ -19,7 +19,21 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
+import android.os.SystemClock
+import com.brendon978.menulauncher.settings.BarReveal
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -82,15 +96,34 @@ fun OneHandMode(
     )
     val color = Color(strokeColor)
 
-    val shown = if (selected == LetterIndex.STAR) favorites else groups[selected].orEmpty()
-    val header = when {
-        selected == LetterIndex.STAR -> "Favoritos"
-        shown.isEmpty() -> "$selected · nenhum app"
-        else -> selected.toString()
-    }
-
     val left = settings.barSide == BarSide.LEFT
     val look = settings.rowLook
+    val motion = rememberMotion(settings.motion)
+    val density = LocalDensity.current
+
+    // Barra de letras que aparece com o dedo: rolar a lista ou encostar na borda acorda, e ela some
+    // sozinha um pouco depois de parar (nunca com o dedo em cima dela).
+    val autoHide = settings.barReveal == BarReveal.ON_SCROLL
+    var barAwake by remember { mutableStateOf(false) }
+    var barHeld by remember { mutableStateOf(false) }
+    val lastTouch = remember { longArrayOf(0L) }
+    val wake = remember {
+        {
+            lastTouch[0] = SystemClock.uptimeMillis()
+            if (!barAwake) barAwake = true
+        }
+    }
+    LaunchedEffect(resetSignal) { barAwake = false }
+    LaunchedEffect(barAwake, barHeld, autoHide) {
+        if (!autoHide || !barAwake || barHeld) return@LaunchedEffect
+        while (true) {
+            val left = BAR_LINGER_MS - (SystemClock.uptimeMillis() - lastTouch[0])
+            if (left <= 0) break
+            kotlinx.coroutines.delay(left)
+        }
+        barAwake = false
+    }
+
     BoxWithConstraints(modifier.fillMaxSize()) {
         val half = maxHeight / 2
         val barRoom = barWidth(settings.barScale)
@@ -116,9 +149,39 @@ fun OneHandMode(
                 .fillMaxWidth()
                 .heightIn(max = listMax)
                 .padding(start = if (left) barRoom else 22.dp, end = if (left) 22.dp else barRoom)
+                .then(if (autoHide) Modifier.onDragWake(wake) else Modifier)
                 .petObstacle("list"),
         ) {
-            if (settings.showMostUsed && selected == LetterIndex.STAR) {
+            androidx.compose.animation.AnimatedContent(
+                targetState = selected,
+                transitionSpec = {
+                    if (!motion) androidx.compose.animation.EnterTransition.None togetherWith androidx.compose.animation.ExitTransition.None
+                    else (
+                        fadeIn(tween(220, delayMillis = 60, easing = EnterEasing)) +
+                            slideInVertically(tween(280, easing = EnterEasing)) { with(density) { 18.dp.roundToPx() } }
+                        ) togetherWith fadeOut(tween(110, easing = ExitEasing)) using
+                        SizeTransform(clip = false) { _, _ -> tween(260, easing = EnterEasing) }
+                },
+                contentAlignment = Alignment.BottomStart,
+                label = "lista",
+                modifier = Modifier.weight(1f, fill = false),
+            ) { sel ->
+            val since = remember(sel, resetSignal) { SystemClock.uptimeMillis() }
+            val shown = if (sel == LetterIndex.STAR) favorites else groups[sel].orEmpty()
+            val header = when {
+                sel == LetterIndex.STAR -> "Favoritos"
+                shown.isEmpty() -> "$sel · nenhum app"
+                else -> sel.toString()
+            }
+            Column(
+                verticalArrangement = Arrangement.Bottom,
+                horizontalAlignment = when (settings.listAlign) {
+                    ListAlign.START -> Alignment.Start
+                    ListAlign.CENTER -> Alignment.CenterHorizontally
+                    ListAlign.END -> Alignment.End
+                },
+            ) {
+            if (settings.showMostUsed && sel == LetterIndex.STAR) {
                 val most = remember(settings.usage, activeFavorites, settings.hiddenApps, byKey) {
                     com.brendon978.menulauncher.settings.Usage.top(settings.usage, 5, activeFavorites.toSet() + settings.hiddenApps).mapNotNull { byKey[it] }
                 }
@@ -128,17 +191,25 @@ fun OneHandMode(
                         horizontalArrangement = Arrangement.spacedBy(18.dp),
                         modifier = Modifier.padding(bottom = 14.dp * settings.spacing),
                     ) {
-                        most.forEach { entry ->
+                        most.forEachIndexed { i, entry ->
+                            val press = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
                             androidx.compose.foundation.layout.Box(
-                                Modifier.combinedClickableCompat(onClick = { onLaunch(entry) }, onLongClick = { onAppLongPress(entry) }),
+                                Modifier
+                                    .staggerIn(i, since, motion)
+                                    .pressScale(press, motion, to = .88f)
+                                    .combinedClickableCompat(press, onClick = { onLaunch(entry) }, onLongClick = { onAppLongPress(entry) }),
                             ) { AppIcon(entry, settings.iconOverrides[entry.key], settings.strokeColor, settings.gridIconSize, renderer, stroke = settings.strokeScale, shadow = settings.textShadow) }
                         }
                     }
                 }
             }
-            // letra sem app avisa sempre; o resto segue o estilo dos títulos
-            SectionTitle(if (shown.isEmpty()) header else sectionLabel(header, settings.labelStyle), color, settings)
-            val pages = if (settings.favoritePages && selected == LetterIndex.STAR) remember(favorites, settings.folders, byKey) {
+            // letra sem app avisa sempre; a letra com apps vira um título grande com a contagem
+            if (sel != LetterIndex.STAR && shown.isNotEmpty() && settings.labelStyle != LabelStyle.HIDDEN) {
+                LetterTitle(sel, shown.size, color, settings)
+            } else {
+                SectionTitle(if (shown.isEmpty()) header else sectionLabel(header, settings.labelStyle), color, settings)
+            }
+            val pages = if (settings.favoritePages && sel == LetterIndex.STAR) remember(favorites, settings.folders, byKey) {
                 favoritePages(favorites, settings.folders, byKey)
             } else null
             if (pages != null && pages.size > 1) {
@@ -159,13 +230,22 @@ fun OneHandMode(
                         )
                     }
                 }
-            } else LazyColumn(
+            } else {
+                val listState = rememberLazyListState()
+                // rolar a lista acorda a barra de letras (o arrasto já acorda; isto cobre a inércia)
+                if (autoHide) LaunchedEffect(listState) {
+                    androidx.compose.runtime.snapshotFlow { listState.isScrollInProgress }.collect { if (it) wake() }
+                }
+                LazyColumn(
+                state = listState,
                 verticalArrangement = Arrangement.Bottom,
-                modifier = Modifier.weight(1f, fill = false),
+                modifier = Modifier
+                    .weight(1f, fill = false)
+                    .fadingEdges(listState.canScrollBackward, listState.canScrollForward, 32.dp),
             ) {
-                items(shown, key = { it.key.encode() }) { entry ->
-                    val first = selected == LetterIndex.STAR && entry === shown.first()
-                    Box(Modifier.then(if (first) Modifier.offset(x = pushed) else Modifier)) {
+                itemsIndexed(shown, key = { _, it -> it.key.encode() }) { i, entry ->
+                    val first = sel == LetterIndex.STAR && entry === shown.first()
+                    Box(Modifier.staggerIn(i, since, motion).then(if (first) Modifier.offset(x = pushed) else Modifier)) {
                         AppRow(
                             entry = entry,
                             override = settings.iconOverrides[entry.key],
@@ -178,6 +258,9 @@ fun OneHandMode(
                         )
                     }
                 }
+            }
+            }
+            }
             }
             musicSlotBottom()
             Box(Modifier.height(8.dp))
@@ -192,6 +275,9 @@ fun OneHandMode(
             scale = settings.barScale,
             curved = settings.barCurved,
             dim = (settings.detailAlpha + 0.2f).coerceAtMost(1f),
+            visible = !autoHide || barAwake,
+            onHold = { held -> barHeld = held; if (held) wake() else lastTouch[0] = SystemClock.uptimeMillis() },
+            motion = motion,
             modifier = Modifier
                 .align(if (left) Alignment.BottomStart else Alignment.BottomEnd)
                 .heightIn(max = barMaxHeight(maxHeight, settings.barScale))
@@ -215,9 +301,56 @@ private fun SectionTitle(text: String?, color: Color, settings: LauncherSettings
     )
 }
 
+/** Letra escolhida na barra: grande e fina, com quantos apps ela tem ao lado, mais leve. */
+@Composable
+private fun LetterTitle(letter: Char, count: Int, color: Color, settings: LauncherSettings) {
+    androidx.compose.foundation.layout.Row(
+        verticalAlignment = Alignment.Bottom,
+        modifier = Modifier.padding(bottom = 8.dp * settings.spacing),
+    ) {
+        Text(
+            letter.toString(),
+            color = color.copy(alpha = .92f),
+            fontSize = 34.sp * settings.textScale,
+            lineHeight = 34.sp * settings.textScale,
+            fontWeight = androidx.compose.ui.text.font.FontWeight.Light,
+            modifier = Modifier.alignByBaseline(),
+        )
+        androidx.compose.foundation.layout.Spacer(Modifier.size(10.dp))
+        Text(
+            if (count == 1) "1 app" else "$count apps",
+            color = color.copy(alpha = settings.detailAlpha),
+            fontSize = settings.smallTextSize,
+            letterSpacing = .4.sp,
+            modifier = Modifier.alignByBaseline(),
+        )
+    }
+}
+
+/** Avisa [onDrag] a cada passo de um arrasto que começa aqui, sem tomar o toque de ninguém. */
+private fun Modifier.onDragWake(onDrag: () -> Unit): Modifier = pointerInput(Unit) {
+    val slop = viewConfiguration.touchSlop
+    awaitEachGesture {
+        val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+        var moved = false
+        while (true) {
+            val change = awaitPointerEvent(PointerEventPass.Initial).changes.firstOrNull { it.id == down.id } ?: break
+            if (!moved && (change.position - down.position).getDistance() > slop) moved = true
+            if (moved) onDrag()
+            if (!change.pressed) break
+        }
+    }
+}
+
+/** Quanto a barra de letras espera, depois do último toque, para sumir sozinha. */
+private const val BAR_LINGER_MS = 1200L
+
 /** Pelo menos duas linhas e o título: a lista nunca some, mesmo com o topo cheio. */
 private val MIN_LIST = 110.dp
 
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
-private fun Modifier.combinedClickableCompat(onClick: () -> Unit, onLongClick: () -> Unit): Modifier =
-    this.then(Modifier.combinedClickable(onClick = onClick, onLongClick = onLongClick))
+private fun Modifier.combinedClickableCompat(
+    source: androidx.compose.foundation.interaction.MutableInteractionSource,
+    onClick: () -> Unit,
+    onLongClick: () -> Unit,
+): Modifier = this.then(Modifier.combinedClickable(interactionSource = source, indication = null, onClick = onClick, onLongClick = onLongClick))

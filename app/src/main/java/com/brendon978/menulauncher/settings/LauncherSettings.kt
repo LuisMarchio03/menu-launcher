@@ -39,6 +39,9 @@ enum class AppWeight { LIGHT, NORMAL }
 /** Atalhos rápidos: sempre à vista ou só depois de tocar na linha da data (somem sozinhos). */
 enum class QuickReveal { ON_TAP, ALWAYS }
 
+/** Barra de letras: aparece ao rolar a lista ou tocar na borda e some sozinha, ou fica sempre à vista (o original). */
+enum class BarReveal { ON_SCROLL, ALWAYS }
+
 /** Ícone de app sem desenho no pacote: letra num quadrado arredondado, num círculo ou sozinha. */
 enum class InitialStyle { SQUIRCLE, CIRCLE, LETTER }
 
@@ -181,6 +184,8 @@ data class LauncherSettings(
     val emptyNote: EmptyNote = EmptyNote.PLUS,
     /** Barra de letras em arco (o original) ou reta. */
     val barCurved: Boolean = true,
+    /** Barra de letras escondida até rolar a lista ou tocar na borda (padrão), ou sempre à vista. */
+    val barReveal: BarReveal = BarReveal.ON_SCROLL,
     val appWeight: AppWeight = AppWeight.LIGHT,
     /** Multiplica os espaços entre os blocos da tela inicial. */
     val spacing: Float = 1f,

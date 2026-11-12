@@ -91,11 +91,14 @@ fun CategoryMode(
     modifier: Modifier = Modifier,
 ) {
     val groups = remember(apps, settings.categoryOverrides) { groupByCategory(apps, settings.categoryOverrides) }
+    val listState = androidx.compose.foundation.lazy.rememberLazyListState()
     LazyColumn(
-        modifier
+        state = listState,
+        modifier = modifier
             .fillMaxSize()
             .padding(top = reservedTop + 8.dp)
             .padding(horizontal = 22.dp)
+            .fadingEdges(listState.canScrollBackward, listState.canScrollForward, 32.dp)
             .petObstacle("list"),
     ) {
         items(groups, key = { it.first.name }) { (category, list) ->

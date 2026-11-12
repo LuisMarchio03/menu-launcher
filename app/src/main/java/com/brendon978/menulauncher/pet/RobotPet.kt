@@ -73,12 +73,19 @@ import kotlin.random.Random
 /** Altura do robozinho na tela. */
 val ROBOT_HEIGHT = 84.dp
 private val TOUCH_PAD = 14.dp
+/** Chance de escolher um lugar vazio (fora do que é tocável) ao decidir para onde ir; no resto, qualquer lugar. */
+private const val REST_IN_EMPTY = .35f
+
 /** Segurar parado este tempo pega no colo; antes disso, mexer o dedo é carinho. */
 private const val PICKUP_HOLD_MS = 650L
 
 /**
- * O robozinho andando pela tela inicial inteira, sem pisar no que é tocável ([obstacles]) e dentro de [area]
- * (coordenadas do próprio container, em px). Humor pelo celular e reação ao toque, tudo só visual.
+ * O robozinho andando livre pela tela inicial inteira, dentro de [area] (coordenadas do próprio container, em px):
+ * passa por cima do relógio, do player e da lista. Só o corpo dele (com uma folga pequena) pega o toque; o resto
+ * da tela continua respondendo embaixo dele. [obstacles] (o que é tocável) não prende o movimento: serve para
+ * ele preferir parar em lugar vazio de vez em quando, para os post-its e a placa do castigo não cobrirem algo
+ * que se usa, e para as brincadeiras que usam as coisas da tela (bola, tomada, explorar).
+ * Humor pelo celular e reação ao toque, tudo só visual.
  * Muito bravo, ele para e aponta a AK de brinquedo para você; guarda quando se acalma. Nunca atira.
  * As animações vivem do relógio de quadros do Compose, que para quando a tela inicial não está visível.
  */
@@ -465,6 +472,8 @@ fun RobotPet(
     var visible by remember { mutableFloatStateOf(1f) }
     val currentArea by rememberUpdatedState(area)
     val currentObstacles by rememberUpdatedState(obstacles)
+    // andar não desvia de nada: ele circula por cima de tudo (só o corpo dele pega o toque)
+    val walkBlocks = emptyList<Area>()
     // post-it consome o toque: nunca em cima de algo que se usa
     fun noteFits(x: Float, y: Float, w: Float, h: Float) = currentObstacles.none { it.intersects(Area(x, y, x + w, y + h)) }
     // marchando, ele anda mesmo que estivesse dormindo, cansado ou dançando
@@ -489,9 +498,15 @@ fun RobotPet(
     val stillMood = visiting || shoved || tickled || dueling || eating || tiltShown != Tilt.LEVEL || posing || fainted || striking || menuOpen || game == GameKind.JOKENPO || hidden || working || spinning || flinching || punished || celebrating || debugHold || petting || held || flying || dizzy || menacing || (!marching && game == null && (mood == Mood.SLEEPING || mood == Mood.TIRED || mood == Mood.DANCING || sulking))
     val random = remember { Random(System.nanoTime()) }
 
-    fun spot(from: Offset?, minDistance: Float): Offset? =
-        freeSpot(random, currentArea, widthPx, heightPx, currentObstacles, from?.let { it.x to it.y }, minDistance)
+    // destino em qualquer lugar da tela; de vez em quando prefere um canto vazio (sem prender: não achou, vai a qualquer um)
+    fun spot(from: Offset?, minDistance: Float): Offset? {
+        val calm = if (random.nextFloat() < REST_IN_EMPTY) {
+            freeSpot(random, currentArea, widthPx, heightPx, currentObstacles, null, 0f)
+                ?.takeIf { from == null || kotlin.math.hypot(it.first - from.x, it.second - from.y) >= minDistance }
+        } else null
+        return (calm ?: freeSpot(random, currentArea, widthPx, heightPx, walkBlocks, from?.let { it.x to it.y }, minDistance))
             ?.let { Offset(it.first, it.second) }
+    }
 
     // vários lugares pedem glitch: dois ao mesmo tempo fariam ele piscar duas vezes e ir para outro destino
     var teleporting by remember { mutableStateOf(false) }
@@ -523,20 +538,20 @@ fun RobotPet(
         val a = currentArea
         val maxX = a.r - widthPx
         val target = (0 until 15).map { a.l + random.nextFloat() * (maxX - a.l) }
-            .filter { abs(it - here.x) > widthPx * 1.5f && pathClear(here.x to here.y, it to here.y, widthPx, heightPx, currentObstacles) }
+            .filter { abs(it - here.x) > widthPx * 1.5f && pathClear(here.x to here.y, it to here.y, widthPx, heightPx, walkBlocks) }
             .maxByOrNull { abs(it - here.x) }
             ?: return@LaunchedEffect
         moonFacingLeft = target > here.x // olha para o lado contrário de onde vai
         pos.animateTo(Offset(target, here.y), tween((DANCE_MOVE_MS - 300).toInt(), easing = LinearEasing))
     }
 
-    // primeira posição, e fugir de onde a tela mudou (lista cresceu, IA veio para cá)
-    LaunchedEffect(area, obstacles) {
+    // primeira posição, e voltar para dentro quando a área encolhe (girou a tela, teclado)
+    LaunchedEffect(area) {
         if (held || flying) return@LaunchedEffect
         val p = pos.value
         val me = if (p.isSpecified) Area(p.x, p.y, p.x + widthPx, p.y + heightPx) else null
         val inside = me != null && me.l >= area.l && me.t >= area.t && me.r <= area.r && me.b <= area.b
-        if (me == null || !inside || obstacles.any { it.intersects(me) }) {
+        if (me == null || !inside) {
             val target = spot(null, 0f) ?: return@LaunchedEffect
             if (!placed) { pos.snapTo(target); placed = true } else glitchTo(target)
         }
@@ -546,9 +561,9 @@ fun RobotPet(
     fun spotNear(target: Offset): Offset? =
         (0 until 20).mapNotNull { spot(pos.value, widthPx) }.minByOrNull { (it + Offset(widthPx / 2, heightPx / 2) - target).getDistance() }
 
-    // o mais perto de um ponto sem pisar em nada: as brincadeiras miram em qualquer lugar da tela
+    // o mais perto de um ponto, dentro da tela: as brincadeiras miram em qualquer lugar e ele pode ir por cima de tudo
     fun freeNear(target: Offset): Offset? =
-        nearestFree(target.x, target.y, widthPx, heightPx, currentArea, currentObstacles)?.let { Offset(it.first, it.second) }
+        nearestFree(target.x, target.y, widthPx, heightPx, currentArea, walkBlocks)?.let { Offset(it.first, it.second) }
 
     // um glitch no meio toma a posição e cancela a animação: isso não pode encerrar quem estava andando
     suspend fun glide(target: Offset, ms: Int) {
@@ -561,10 +576,10 @@ fun RobotPet(
         }
     }
 
-    // anda até lá sem atravessar o que é tocável; sem caminho livre, vai num glitch
+    // anda até lá em linha reta, por cima do que estiver no caminho
     suspend fun dash(target: Offset, speed: Float, maxMs: Int = Int.MAX_VALUE) {
         val here = pos.value
-        if (!pathClear(here.x to here.y, target.x to target.y, widthPx, heightPx, currentObstacles)) return glitchTo(target)
+        if (!pathClear(here.x to here.y, target.x to target.y, widthPx, heightPx, walkBlocks)) return glitchTo(target)
         facingLeft = target.x < here.x
         walking = true
         val ms = ((target - here).getDistance() / speed * 1000).roundToInt().coerceIn(1, maxMs)
@@ -585,7 +600,7 @@ fun RobotPet(
 
     fun onSomething(): Boolean {
         val p = pos.value
-        return p.isSpecified && currentObstacles.any { it.intersects(Area(p.x, p.y, p.x + widthPx, p.y + heightPx)) }
+        return p.isSpecified && walkBlocks.any { it.intersects(Area(p.x, p.y, p.x + widthPx, p.y + heightPx)) }
     }
 
     suspend fun walkTo(target: Offset) = dash(target, with(density) { 38.dp.toPx() })
@@ -687,7 +702,7 @@ fun RobotPet(
                             val to = if (i % 2 == 0) right else left
                             val dest = Offset(to, start.y)
                             facingLeft = to < pos.value.x
-                            if (pathClear(pos.value.x to start.y, to to start.y, widthPx, heightPx, currentObstacles)) pos.animateTo(dest, tween((run.kind.ms / 3).toInt(), easing = LinearEasing))
+                            if (pathClear(pos.value.x to start.y, to to start.y, widthPx, heightPx, walkBlocks)) pos.animateTo(dest, tween((run.kind.ms / 3).toInt(), easing = LinearEasing))
                             else delay(run.kind.ms / 3)
                         }
                     } else {
@@ -1419,7 +1434,7 @@ fun RobotPet(
         val a = currentArea
         val here = pos.value
         val x = if (tiltNow == Tilt.LEFT) a.l else a.r - widthPx
-        if (pathClear(here.x to here.y, x to here.y, widthPx, heightPx, currentObstacles)) {
+        if (pathClear(here.x to here.y, x to here.y, widthPx, heightPx, walkBlocks)) {
             pos.animateTo(Offset(x, here.y), tween(1_400))
         }
     }
@@ -1950,9 +1965,7 @@ fun RobotPet(
                 flying = false
                 android.util.Log.d(PetDebug.TAG, "pousou em ${b.x.roundToInt()},${b.y.roundToInt()} depois de $steps passos, impacto=${impact.roundToInt()}")
             }
-            // caiu por cima de algo tocável (soltou ele já dentro da lista, por exemplo): sai dali num glitch
-            val me = Area(pos.value.x, pos.value.y, pos.value.x + widthPx, pos.value.y + heightPx)
-            if (currentObstacles.any { it.intersects(me) }) spot(null, 0f)?.let { glitchTo(it) }
+            // caiu por cima da lista ou do relógio: fica ali mesmo, ele pode estar em qualquer lugar
             if (impact > 1_500f) {
                 dizzyUntil = System.currentTimeMillis() + 2_500
                 say(LAND_LINES.random(brainRandom))
@@ -2419,7 +2432,7 @@ fun RobotPet(
                                 say(SHOVE_LINES.random(brainRandom), 1_600)
                                 val c = currentArea
                                 val x = (pos.value.x + shoveDir * widthPx).coerceIn(c.l, c.r - widthPx)
-                                if (pathClear(pos.value.x to pos.value.y, x to pos.value.y, widthPx, heightPx, currentObstacles)) {
+                                if (pathClear(pos.value.x to pos.value.y, x to pos.value.y, widthPx, heightPx, walkBlocks)) {
                                     scope.launch { pos.animateTo(Offset(x, pos.value.y), tween(300)) }
                                 }
                             }

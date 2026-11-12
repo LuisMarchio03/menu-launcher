@@ -5,6 +5,7 @@ import com.brendon978.menulauncher.settings.BlockPosition
 import com.brendon978.menulauncher.settings.ListAlign
 import com.brendon978.menulauncher.settings.InitialStyle
 import com.brendon978.menulauncher.settings.QuickReveal
+import com.brendon978.menulauncher.settings.BarReveal
 import com.brendon978.menulauncher.settings.AppWeight
 import com.brendon978.menulauncher.settings.EmptyNote
 import com.brendon978.menulauncher.settings.LabelStyle
@@ -219,6 +220,7 @@ fun FinishSection(settings: LauncherSettings, onChange: OnChange) {
                         quickStyle = QuickStyle.CIRCLES, detailAlpha = 0.6f, labelStyle = LabelStyle.NORMAL,
                         emptyNote = EmptyNote.TEXT, barCurved = true, appWeight = AppWeight.NORMAL, spacing = 1f,
                         edgeVeil = 0f, compactInfo = false, quickReveal = QuickReveal.ALWAYS, motion = false, aiRing = true, aiScale = 1f,
+                        barReveal = BarReveal.ALWAYS,
                     )
                 }
             }
@@ -298,6 +300,9 @@ fun BarSideSection(settings: LauncherSettings, onChange: OnChange) {
     OptionChips(listOf("Direita" to BarSide.RIGHT, "Esquerda" to BarSide.LEFT), settings.barSide) { v ->
         onChange { it.withBarSide(v) }
     }
+    SubLabel("Aparece")
+    OptionChips(listOf("Ao rolar ou tocar na borda" to BarReveal.ON_SCROLL, "Sempre" to BarReveal.ALWAYS), settings.barReveal) { v -> onChange { it.copy(barReveal = v) } }
+    Hint("Escondida, a barra surge quando você rola a lista ou encosta o dedo na borda, e some sozinha logo depois.")
 }
 
 @Composable
